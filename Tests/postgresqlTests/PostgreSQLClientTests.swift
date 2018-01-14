@@ -8,7 +8,7 @@ class PostgreSQLClientTests: XCTestCase {
     func testExample() throws {
         let eventLoop = try DefaultEventLoop(label: "codes.vapor.postgresql.client.test")
         let client = try PostgreSQLClient.connect(on: eventLoop)
-        let startup = PostgreSQLStartupMessage.versionThree(parameters: ["user": "tanner"])
+        let startup = PostgreSQLStartupMessage.versionThree(parameters: ["user": "postgres"])
         let res = try client.send(.startupMessage(startup)).await(on: eventLoop)
         print(res)
     }
@@ -23,7 +23,7 @@ class PostgreSQLClientTests: XCTestCase {
         let parserStream = PostgreSQLMessageParser().stream(on: eventLoop)
         let serializerStream = PostgreSQLMessageSerializer().stream(on: eventLoop)
 
-        let startup = PostgreSQLStartupMessage.versionThree(parameters: ["user": "tanner"])
+        let startup = PostgreSQLStartupMessage.versionThree(parameters: ["user": "postgres"])
         let requests = StaticStream<PostgreSQLMessage>(data: [.startupMessage(startup)])
 
         requests.stream(to: serializerStream)
