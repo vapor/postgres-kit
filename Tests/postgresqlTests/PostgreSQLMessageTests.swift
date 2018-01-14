@@ -5,21 +5,11 @@ import XCTest
 class PostgreSQLMessageTests: XCTestCase {
     func testExample() throws {
         let startup = PostgreSQLStartupMessage.versionThree(parameters: ["user": "tanner"])
-        let data = try PostgreSQLMessageEncoder().encode(startup)
-        XCTAssertEqual(data.hexDebug, "[0x0, 0x0, 0x0, 0x11, 0x0, 0x3, 0x0, 0x0, 0x75, 0x73, 0x65, 0x72, 0x0, 0x74, 0x61, 0x6E, 0x6E, 0x65, 0x72, 0x0, 0x0]")
+        let data = try PostgreSQLMessageEncoder().encode(.startupMessage(startup))
+        XCTAssertEqual(data.hexDebug, "0x00 00 00 15 00 03 00 00 75 73 65 72 00 74 61 6E 6E 65 72 00 00")
     }
 
     static var allTests = [
         ("testExample", testExample),
     ]
-}
-
-extension Data {
-    public var hexDebug: String {
-        var hex: [String] = []
-        for byte in self {
-            hex.append("0x" + String(byte, radix: 16, uppercase: true))
-        }
-        return "[" + hex.joined(separator: ", ") + "]"
-    }
 }
