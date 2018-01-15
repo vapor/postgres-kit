@@ -30,6 +30,38 @@ final class PostgreSQLClient {
             }
         }
     }
+
+    func query(_ string: String) -> Future<[[String: PostgreSQLData]]> {
+        let query = PostgreSQLQuery(query: "SELECT version();")
+        return send(.query(query)).map(to: [[String: PostgreSQLData]].self) { queryOutput in
+            var results: [[String: PostgreSQLData]] = []
+            var previous: PostgreSQLRowDescription?
+            for message in queryOutput {
+                switch message {
+                case .rowDescription(let row):
+                    previous = row
+                case .dataRow(let data):
+                    let row = previous!
+                    var entry: [String: PostgreSQLData] = [:]
+                    for (i, field) in row.fields.enumerated() {
+                        let col = data.columns[i]
+                        let data: PostgreSQLData
+                        switch field.dataTypeObjectID {
+                        case 25: // text
+                            data = col.value.flatMap { String(data: $0, encoding: .utf8) }.flatMap { .string($0) } ?? .null
+                        default:
+                            fatalError("Unsupported type: \(field)")
+                        }
+                        entry[field.name] = data
+                    }
+                    results.append(entry)
+                    previous = nil
+                default: break
+                }
+            }
+            return results
+        }
+    }
 }
 
 /// Enqueues a single input and waits for multiple output.
@@ -112,7 +144,6 @@ public final class AsymmetricQueueStream<I, O>: Stream, ConnectionContext {
             if let current = currentInput {
                 context = current
             } else {
-                print("extra: \(input)")
                 let next = queuedInput.popLast()!
                 currentInput = next
                 context = next
