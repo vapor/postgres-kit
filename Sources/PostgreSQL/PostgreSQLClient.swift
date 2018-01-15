@@ -44,7 +44,7 @@ final class PostgreSQLClient {
                     currentRow = row
                 case .dataRow(let data):
                     guard let row = currentRow else {
-                        fatalError("Unexpected PostgreSQLDataRow without preceeding PostgreSQLRowDescription.")
+                        fatalError("Unexpected PostgreSQLDataRow without preceding PostgreSQLRowDescription.")
                     }
 
                     var parsed: [String: PostgreSQLData] = [:]
@@ -55,27 +55,18 @@ final class PostgreSQLClient {
                         let col = data.columns[i]
                         let data: PostgreSQLData
                         switch field.formatCode {
-                        case 0: // text
-                            func makeString() throws -> String? {
-                                return try col.value.flatMap { data in
-                                    guard let string = String(data: data, encoding: .utf8) else {
-                                        throw PostgreSQLError(identifier: "utf8String", reason: "Unexpected non-UTF8 string.")
-                                    }
-                                    return string
-                                }
-                            }
-
+                        case .text:
                             switch field.dataType {
                             case .bool:
-                                data = try makeString().flatMap { $0 == "t" }.flatMap { .bool($0) } ?? .null
+                                data = try col.makeString().flatMap { $0 == "t" }.flatMap { .bool($0) } ?? .null
                             case .text, .name:
-                                data = try makeString().flatMap { .string($0) } ?? .null
+                                data = try col.makeString().flatMap { .string($0) } ?? .null
                             case .oid, .regproc, .int4:
-                                data = try makeString().flatMap { Int32($0) }.flatMap { .int32($0) } ?? .null
+                                data = try col.makeString().flatMap { Int32($0) }.flatMap { .int32($0) } ?? .null
                             case .int2:
-                                data = try makeString().flatMap { Int16($0) }.flatMap { .int16($0) } ?? .null
+                                data = try col.makeString().flatMap { Int16($0) }.flatMap { .int16($0) } ?? .null
                             case .char:
-                                data = try makeString().flatMap { Character($0) }.flatMap { .character($0) } ?? .null
+                                data = try col.makeString().flatMap { Character($0) }.flatMap { .character($0) } ?? .null
                             case .pg_node_tree:
                                 print("\(field.name): is pg node tree")
                                 data = .null
@@ -83,8 +74,7 @@ final class PostgreSQLClient {
                                 print("\(field.name): is acl item")
                                 data = .null
                             }
-                        case 1: fatalError("Binary format code not supported.")
-                        default: fatalError("Unexpected format code: \(field.formatCode)")
+                        case .binary: fatalError("Binary format code not supported.")
                         }
 
                         parsed[field.name] = data

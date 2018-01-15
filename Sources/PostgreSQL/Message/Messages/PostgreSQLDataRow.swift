@@ -27,6 +27,7 @@ struct PostgreSQLDataRowColumn: Decodable {
     /// The value of the column, in the format indicated by the associated format code. n is the above length.
     var value: Data?
 
+    /// See Decodable.decode
     init(from decoder: Decoder) throws {
         let single = try decoder.singleValueContainer()
         /// The length of the column value, in bytes (this count does not include itself).
@@ -44,6 +45,16 @@ struct PostgreSQLDataRowColumn: Decodable {
             }
             value = Data(bytes)
         default: fatalError("Illegal data row column value count: \(count)")
+        }
+    }
+
+
+    func makeString(encoding: String.Encoding = .utf8) throws -> String? {
+        return try value.flatMap { data in
+            guard let string = String(data: data, encoding: encoding) else {
+                throw PostgreSQLError(identifier: "utf8String", reason: "Unexpected non-UTF8 string.")
+            }
+            return string
         }
     }
 }

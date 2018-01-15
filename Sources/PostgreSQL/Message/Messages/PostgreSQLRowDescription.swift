@@ -44,7 +44,7 @@ struct PostgreSQLRowDescriptionField: Decodable {
     /// Currently will be zero (text) or one (binary).
     /// In a RowDescription returned from the statement variant of Describe,
     /// the format code is not yet known and will always be zero.
-    var formatCode: Int16
+    var formatCode: PostgreSQLFormatCode
 
     /// See Decodable.decode
     init(from decoder: Decoder) throws {
@@ -55,13 +55,40 @@ struct PostgreSQLRowDescriptionField: Decodable {
         dataType = try single.decode(PostgreSQLDataType.self)
         dataTypeSize = try single.decode(Int16.self)
         dataTypeModifier = try single.decode(Int32.self)
-        formatCode = try single.decode(Int16.self)
+        formatCode = try single.decode(PostgreSQLFormatCode.self)
+    }
+}
+
+/// The format code being used for the field.
+/// Currently will be zero (text) or one (binary).
+/// In a RowDescription returned from the statement variant of Describe,
+/// the format code is not yet known and will always be zero.
+enum PostgreSQLFormatCode: Int16, Decodable {
+    case text = 0
+    case binary = 1
+
+    /// See Decodable.decode
+    init(from decoder: Decoder) throws {
+        let single = try decoder.singleValueContainer()
+        let code = try single.decode(Int16.self)
+        guard let type = PostgreSQLFormatCode.make(code) else {
+            throw PostgreSQLError(
+                identifier: "formatCode",
+                reason: "Unsupported format code: \(code)"
+            )
+        }
+        self = type
+    }
+
+    /// Static make (non-failable)
+    private static func make(_ code: Int16) -> PostgreSQLFormatCode? {
+        return PostgreSQLFormatCode(rawValue: code)
     }
 }
 
 /// The data type's raw object ID.
 /// Use `select * from pg_type where oid in (<idhere>);` to lookup more information.
-enum PostgreSQLDataType: Int32, Decodable, Equatable {
+enum PostgreSQLDataType: Int32, Decodable {
     case bool = 16
     case char = 18
     case name = 19
@@ -79,13 +106,14 @@ enum PostgreSQLDataType: Int32, Decodable, Equatable {
         let objectID = try single.decode(Int32.self)
         guard let type = PostgreSQLDataType.make(objectID) else {
             throw PostgreSQLError(
-                identifier: "unsupportedColumnType",
+                identifier: "dataType",
                 reason: "Unsupported data type: \(objectID)"
             )
         }
         self = type
     }
 
+    /// Static make (non-failable)
     private static func make(_ objectID: Int32) -> PostgreSQLDataType? {
         return PostgreSQLDataType(rawValue: objectID)
     }
