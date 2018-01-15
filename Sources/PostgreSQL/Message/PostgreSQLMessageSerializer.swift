@@ -2,38 +2,54 @@ import Async
 import Bits
 import Foundation
 
-final class PostgreSQLMessageSerializer: ByteSerializer {
+/// Byte-stream serializer for `PostgreSQLMessage`.
+final class PostgreSQLMessageSerializer: TranslatingStream {
+    /// See `TranslatingStream.Input`
     typealias Input = PostgreSQLMessage
+
+    /// See `TranslatingStream.Output`
     typealias Output = ByteBuffer
 
-    var state: ByteSerializerState<PostgreSQLMessageSerializer>
+    /// The internal buffer to serialize messages into.
     let buffer: MutableByteBuffer
 
+    /// Excess data from a previous serialization that needs to be processed.
+    var excess: Data?
+
+    /// Creates a new `PostgreSQLMessageSerializer`.
     init(bufferSize: Int = 4096) {
         buffer = MutableByteBuffer(start: .allocate(capacity: bufferSize), count: bufferSize)
-        state = .init()
     }
 
-    func serialize(_ message: PostgreSQLMessage, state: Data?) throws -> ByteSerializerResult<PostgreSQLMessageSerializer> {
-        if let state = state {
-            return serialize(data: state)
+    /// See `TranslatingStream.translate`
+    func translate(input: PostgreSQLMessage) throws -> Future<TranslatingStreamResult<ByteBuffer>> {
+        return try Future(_translate(input: input))
+    }
+
+    /// Non-future implementation of `TranslatingStream.translate`
+    func _translate(input: PostgreSQLMessage) throws -> TranslatingStreamResult<ByteBuffer> {
+        if let excess = self.excess {
+            self.excess = nil
+            return serialize(data: excess)
+        } else {
+            let data = try PostgreSQLMessageEncoder().encode(input)
+            return serialize(data: data)
         }
-
-        let data = try PostgreSQLMessageEncoder().encode(message)
-        return serialize(data: data)
     }
 
-    func serialize(data: Data) -> ByteSerializerResult<PostgreSQLMessageSerializer> {
-        print("serialize: \(data.hexDebug)")
+    /// Serializes data, storing `excess` if it does not fit in the buffer.
+    func serialize(data: Data) -> TranslatingStreamResult<ByteBuffer> {
         let count = data.copyBytes(to: buffer)
         let view = ByteBuffer(start: buffer.baseAddress, count: count)
         if data.count > count {
-            return .incomplete(view, state: data[count..<data.count])
+            self.excess = data[count..<data.count]
+            return .excess(view)
         } else {
-            return .complete(view)
+            return .sufficient(view)
         }
     }
 
+    /// Called when `PostgreSQLMessageSerializer` deinitializes.
     deinit {
         buffer.baseAddress?.deallocate(capacity: buffer.count)
     }

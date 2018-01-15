@@ -2,29 +2,38 @@ import Async
 import Bits
 import Foundation
 
+/// Byte-stream parser for `PostgreSQLMessage`
 final class PostgreSQLMessageParser: TranslatingStream {
+    /// See `TranslatingStream.Input`
     typealias Input = ByteBuffer
+
+    /// See `TranslatingStream.Output`
     typealias Output = PostgreSQLMessage
 
+    /// Data being worked on currently.
     var buffered: Data
+
+    /// Excess data waiting to be parsed.
     var excess: Data?
 
+    /// Creates a new `PostgreSQLMessageParser`.
     init() {
         buffered = Data()
     }
 
+    /// See TranslatingStream.translate
     func translate(input: ByteBuffer) throws -> Future<TranslatingStreamResult<PostgreSQLMessage>> {
-        return try Future(_translate(input: input))
-    }
-
-    func _translate(input: ByteBuffer) throws -> TranslatingStreamResult<PostgreSQLMessage> {
+        let result: TranslatingStreamResult<PostgreSQLMessage>
         if let excess = self.excess {
-            return try parse(data: excess)
+            self.excess = nil
+            result = try parse(data: excess)
         } else {
-            return try parse(data: Data(input))
+            result = try parse(data: Data(input))
         }
+        return Future(result)
     }
 
+    /// Parses the data, setting `excess` or requesting more data if insufficient.
     func parse(data: Data) throws -> TranslatingStreamResult<PostgreSQLMessage> {
         // print("Parse: \(data.hexDebug)")
         let data = buffered + data
