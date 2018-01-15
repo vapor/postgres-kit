@@ -22,6 +22,6 @@ final class PostgreSQLClient {
 
     /// Sends `RedisData` to the server.
     func send(_ data: PostgreSQLMessage) -> Future<PostgreSQLMessage> {
-        return queueStream.queue(data)
+        return queueStream.enqueue(data)
     }
 }

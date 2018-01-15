@@ -23,9 +23,7 @@ class PostgreSQLClientTests: XCTestCase {
         let parserStream = PostgreSQLMessageParser().stream(on: eventLoop)
         let serializerStream = PostgreSQLMessageSerializer().stream(on: eventLoop)
 
-        let startup = PostgreSQLStartupMessage.versionThree(parameters: ["user": "postgres"])
-        let requests = StaticStream<PostgreSQLMessage>(data: [.startupMessage(startup)])
-
+        let requests = PushStream<PostgreSQLMessage>()
         requests.stream(to: serializerStream)
             .output(to: byteStream)
 
@@ -44,6 +42,9 @@ class PostgreSQLClientTests: XCTestCase {
             print("Closed")
         }.upstream!.request(count: .max)
 
+        let startup = PostgreSQLStartupMessage.versionThree(parameters: ["user": "postgres"])
+        requests.push(.startupMessage(startup))
+
         _ = try promise.future.await(on: eventLoop)
     }
 
@@ -51,38 +52,4 @@ class PostgreSQLClientTests: XCTestCase {
         ("testExample", testExample),
         ("testStreaming", testStreaming),
     ]
-}
-
-public final class StaticStream<O>: Async.OutputStream, ConnectionContext {
-    public typealias Output = O
-
-    public var downstream: AnyInputStream<Output>?
-    public var data: [Output]
-
-    public init(data: [Output]) {
-        self.data = data.reversed()
-    }
-
-    public func connection(_ event: ConnectionEvent) {
-        switch event {
-        case .cancel:
-            data = []
-        case .request(var count):
-            stream: while count > 0 {
-                count -= 1
-                if let data = self.data.popLast() {
-                    downstream!.next(data)
-                } else {
-                    // out of data
-                    break stream
-                }
-            }
-        }
-    }
-
-    public func output<S>(to inputStream: S) where S: Async.InputStream, S.Input == Output {
-        self.downstream = .init(inputStream)
-        inputStream.connect(to: self)
-    }
-
 }
