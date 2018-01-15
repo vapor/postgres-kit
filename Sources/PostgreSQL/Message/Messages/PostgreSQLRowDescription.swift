@@ -66,24 +66,6 @@ struct PostgreSQLRowDescriptionField: Decodable {
 enum PostgreSQLFormatCode: Int16, Decodable {
     case text = 0
     case binary = 1
-
-    /// See Decodable.decode
-    init(from decoder: Decoder) throws {
-        let single = try decoder.singleValueContainer()
-        let code = try single.decode(Int16.self)
-        guard let type = PostgreSQLFormatCode.make(code) else {
-            throw PostgreSQLError(
-                identifier: "formatCode",
-                reason: "Unsupported format code: \(code)"
-            )
-        }
-        self = type
-    }
-
-    /// Static make (non-failable)
-    private static func make(_ code: Int16) -> PostgreSQLFormatCode? {
-        return PostgreSQLFormatCode(rawValue: code)
-    }
 }
 
 /// The data type's raw object ID.
@@ -99,22 +81,4 @@ enum PostgreSQLDataType: Int32, Decodable {
     case oid = 26
     case pg_node_tree = 194
     case _aclitem = 1034
-
-    /// See Decodable.decode
-    init(from decoder: Decoder) throws {
-        let single = try decoder.singleValueContainer()
-        let objectID = try single.decode(Int32.self)
-        guard let type = PostgreSQLDataType.make(objectID) else {
-            throw PostgreSQLError(
-                identifier: "dataType",
-                reason: "Unsupported data type: \(objectID)"
-            )
-        }
-        self = type
-    }
-
-    /// Static make (non-failable)
-    private static func make(_ objectID: Int32) -> PostgreSQLDataType? {
-        return PostgreSQLDataType(rawValue: objectID)
-    }
 }
