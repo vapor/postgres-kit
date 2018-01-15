@@ -31,31 +31,51 @@ final class PostgreSQLClient {
         }
     }
 
+    /// Sends a simple PostgreSQL query command, returning the parsed results.
     func query(_ string: String) -> Future<[[String: PostgreSQLData]]> {
-        let query = PostgreSQLQuery(query: "SELECT version();")
+        let query = PostgreSQLQuery(query: string)
         return send(.query(query)).map(to: [[String: PostgreSQLData]].self) { queryOutput in
             var results: [[String: PostgreSQLData]] = []
-            var previous: PostgreSQLRowDescription?
+            var currentRow: PostgreSQLRowDescription?
+
             for message in queryOutput {
                 switch message {
                 case .rowDescription(let row):
-                    previous = row
+                    currentRow = row
                 case .dataRow(let data):
-                    let row = previous!
-                    var entry: [String: PostgreSQLData] = [:]
+                    guard let row = currentRow else {
+                        fatalError("Unexpected PostgreSQLDataRow without preceeding PostgreSQLRowDescription.")
+                    }
+
+                    var parsed: [String: PostgreSQLData] = [:]
+
+                    // iterate over the fields, parsing values
+                    // based on column type
                     for (i, field) in row.fields.enumerated() {
                         let col = data.columns[i]
                         let data: PostgreSQLData
                         switch field.dataTypeObjectID {
                         case 25: // text
-                            data = col.value.flatMap { String(data: $0, encoding: .utf8) }.flatMap { .string($0) } ?? .null
+                            data = try col.value.flatMap { data in
+                                guard let string = String(data: data, encoding: .utf8) else {
+                                    throw PostgreSQLError(identifier: "utf8String", reason: "Unexpected non-UTF8 string.")
+                                }
+                                return string
+                            }.flatMap { .string($0) } ?? .null
                         default:
-                            fatalError("Unsupported type: \(field)")
+                            throw PostgreSQLError(
+                                identifier: "unsupportedColumnType",
+                                reason: "Unsupported column type on field \(field.name): \(field.dataTypeObjectID)"
+                            )
                         }
-                        entry[field.name] = data
+                        parsed[field.name] = data
                     }
-                    results.append(entry)
-                    previous = nil
+
+                    // append the result
+                    results.append(parsed)
+
+                    // reset current row
+                    currentRow = nil
                 default: break
                 }
             }
