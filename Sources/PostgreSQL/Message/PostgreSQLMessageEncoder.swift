@@ -66,7 +66,7 @@ internal final class _PostgreSQLMessageEncoder: Encoder, SingleValueEncodingCont
     func encode(_ value: Int16) throws {
         var value = value.bigEndian
         withUnsafeBytes(of: &value) { buffer in
-            let buffer = buffer.baseAddress!.assumingMemoryBound(to: UInt8.self)
+            let buffer = buffer.unsafeBaseAddress.assumingMemoryBound(to: UInt8.self)
             self.data.append(buffer, count: 2)
         }
     }
@@ -75,7 +75,7 @@ internal final class _PostgreSQLMessageEncoder: Encoder, SingleValueEncodingCont
     func encode(_ value: Int32) throws {
         var value = value.bigEndian
         withUnsafeBytes(of: &value) { buffer in
-            let buffer = buffer.baseAddress!.assumingMemoryBound(to: UInt8.self)
+            let buffer = buffer.unsafeBaseAddress.assumingMemoryBound(to: UInt8.self)
             self.data.append(buffer, count: 4)
         }
     }
@@ -84,7 +84,7 @@ internal final class _PostgreSQLMessageEncoder: Encoder, SingleValueEncodingCont
     func encode(_ value: Int64) throws {
         var value = value.bigEndian
         withUnsafeBytes(of: &value) { buffer in
-            let buffer = buffer.baseAddress!.assumingMemoryBound(to: UInt8.self)
+            let buffer = buffer.unsafeBaseAddress.assumingMemoryBound(to: UInt8.self)
             self.data.append(buffer, count: 8)
         }
     }

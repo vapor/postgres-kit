@@ -81,30 +81,33 @@ internal final class _PostgreSQLMessageDecoder: Decoder, SingleValueDecodingCont
     /// See SingleValueDecodingContainer.decode
     func decode(_ type: Int32.Type) throws -> Int32 {
         var int: Int32 = 0
-        int += Int32(self.data.popFirst()! << 24)
-        int += Int32(self.data.popFirst()! << 16)
-        int += Int32(self.data.popFirst()! << 8)
-        int += Int32(self.data.popFirst()!)
+        int += Int32(self.data.unsafePopFirst() << 24)
+        int += Int32(self.data.unsafePopFirst() << 16)
+        int += Int32(self.data.unsafePopFirst() << 8)
+        int += Int32(self.data.unsafePopFirst())
         return int
     }
 
     /// See SingleValueDecodingContainer.decode
     func decode(_ type: UInt8.Type) throws -> UInt8 {
-        return self.data.popFirst()!
+        return self.data.unsafePopFirst()
     }
 
     /// See SingleValueDecodingContainer.decode
     func decode(_ type: String.Type) throws -> String {
         var bytes: [UInt8] = []
         parse: while true {
-            let byte = self.data.popFirst()!
+            let byte = self.data.unsafePopFirst()
             switch byte {
             case 0: break parse // c style strings
             default: bytes.append(byte)
             }
         }
         let data = Data(bytes: bytes)
-        return String(data: data, encoding: .utf8)!
+        guard let string = String(data: data, encoding: .utf8) else {
+            fatalError("Unsupported decode type: non-UTF8 string")
+        }
+        return string
     }
 
     /// See SingleValueDecodingContainer.decode
