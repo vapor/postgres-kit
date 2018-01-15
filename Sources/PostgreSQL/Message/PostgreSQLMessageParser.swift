@@ -35,7 +35,6 @@ final class PostgreSQLMessageParser: TranslatingStream {
 
     /// Parses the data, setting `excess` or requesting more data if insufficient.
     func parse(data: Data) throws -> TranslatingStreamResult<PostgreSQLMessage> {
-        // print("Parse: \(data.hexDebug)")
         let data = buffered + data
         guard let (message, remaining) = try PostgreSQLMessageDecoder().decode(data) else {
             buffered.append(data)

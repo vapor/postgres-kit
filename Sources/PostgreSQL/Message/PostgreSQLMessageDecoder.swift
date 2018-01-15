@@ -90,19 +90,32 @@ internal final class _PostgreSQLMessageDecoder: Decoder, SingleValueDecodingCont
 
     /// See SingleValueDecodingContainer.decode
     func decode(_ type: Int16.Type) throws -> Int16 {
-        var int: Int16 = 0
-        int += Int16(self.data.unsafePopFirst() << 8)
-        int += Int16(self.data.unsafePopFirst())
-        return int
+        return try decode(fixedWidthInteger: Int16.self)
     }
 
     /// See SingleValueDecodingContainer.decode
     func decode(_ type: Int32.Type) throws -> Int32 {
-        var int: Int32 = 0
-        int += Int32(self.data.unsafePopFirst() << 24)
-        int += Int32(self.data.unsafePopFirst() << 16)
-        int += Int32(self.data.unsafePopFirst() << 8)
-        int += Int32(self.data.unsafePopFirst())
+        return try decode(fixedWidthInteger: Int32.self)
+    }
+
+    /// Decodes a fixed width integer.
+    func decode<B>(fixedWidthInteger type: B.Type) throws -> B where B: FixedWidthInteger {
+        guard data.count >= MemoryLayout<B>.size else {
+            fatalError("Unexpected end of data while decoding \(B.self).")
+        }
+
+
+        let int: B = data.withUnsafeBytes { (pointer: UnsafePointer<UInt8>) -> B in
+            return pointer.withMemoryRebound(to: B.self, capacity: 1) { (pointer: UnsafePointer<B>) -> B in
+                return pointer.pointee.bigEndian
+            }
+        }
+
+        /// FIXME: performance
+        for _ in 0..<MemoryLayout<B>.size {
+            _ = data.unsafePopFirst()
+        }
+
         return int
     }
 

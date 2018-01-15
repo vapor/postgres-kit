@@ -54,28 +54,44 @@ final class PostgreSQLClient {
                     for (i, field) in row.fields.enumerated() {
                         let col = data.columns[i]
                         let data: PostgreSQLData
-                        switch field.dataTypeObjectID {
-                        case 25: // text
-                            data = try col.value.flatMap { data in
-                                guard let string = String(data: data, encoding: .utf8) else {
-                                    throw PostgreSQLError(identifier: "utf8String", reason: "Unexpected non-UTF8 string.")
+                        switch field.formatCode {
+                        case 0: // text
+                            func makeString() throws -> String? {
+                                return try col.value.flatMap { data in
+                                    guard let string = String(data: data, encoding: .utf8) else {
+                                        throw PostgreSQLError(identifier: "utf8String", reason: "Unexpected non-UTF8 string.")
+                                    }
+                                    return string
                                 }
-                                return string
-                            }.flatMap { .string($0) } ?? .null
-                        default:
-                            throw PostgreSQLError(
-                                identifier: "unsupportedColumnType",
-                                reason: "Unsupported column type on field \(field.name): \(field.dataTypeObjectID)"
-                            )
+                            }
+
+                            switch field.dataType {
+                            case .bool:
+                                data = try makeString().flatMap { $0 == "t" }.flatMap { .bool($0) } ?? .null
+                            case .text, .name:
+                                data = try makeString().flatMap { .string($0) } ?? .null
+                            case .oid, .regproc, .int4:
+                                data = try makeString().flatMap { Int32($0) }.flatMap { .int32($0) } ?? .null
+                            case .int2:
+                                data = try makeString().flatMap { Int16($0) }.flatMap { .int16($0) } ?? .null
+                            case .char:
+                                data = try makeString().flatMap { Character($0) }.flatMap { .character($0) } ?? .null
+                            case .pg_node_tree:
+                                print("\(field.name): is pg node tree")
+                                data = .null
+                            case ._aclitem:
+                                print("\(field.name): is acl item")
+                                data = .null
+                            }
+                        case 1: fatalError("Binary format code not supported.")
+                        default: fatalError("Unexpected format code: \(field.formatCode)")
                         }
+
                         parsed[field.name] = data
                     }
 
                     // append the result
                     results.append(parsed)
-
-                    // reset current row
-                    currentRow = nil
                 default: break
                 }
             }

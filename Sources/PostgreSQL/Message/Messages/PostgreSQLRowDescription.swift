@@ -32,7 +32,7 @@ struct PostgreSQLRowDescriptionField: Decodable {
     var columnAttributeNumber: Int16
 
     /// The object ID of the field's data type.
-    var dataTypeObjectID: Int32
+    var dataType: PostgreSQLDataType
 
     /// The data type size (see pg_type.typlen). Note that negative values denote variable-width types.
     var dataTypeSize: Int16
@@ -52,9 +52,41 @@ struct PostgreSQLRowDescriptionField: Decodable {
         name = try single.decode(String.self)
         tableObjectID = try single.decode(Int32.self)
         columnAttributeNumber = try single.decode(Int16.self)
-        dataTypeObjectID = try single.decode(Int32.self)
+        dataType = try single.decode(PostgreSQLDataType.self)
         dataTypeSize = try single.decode(Int16.self)
         dataTypeModifier = try single.decode(Int32.self)
         formatCode = try single.decode(Int16.self)
+    }
+}
+
+/// The data type's raw object ID.
+/// Use `select * from pg_type where oid in (<idhere>);` to lookup more information.
+enum PostgreSQLDataType: Int32, Decodable, Equatable {
+    case bool = 16
+    case char = 18
+    case name = 19
+    case int2 = 21
+    case int4 = 23
+    case regproc = 24
+    case text = 25
+    case oid = 26
+    case pg_node_tree = 194
+    case _aclitem = 1034
+
+    /// See Decodable.decode
+    init(from decoder: Decoder) throws {
+        let single = try decoder.singleValueContainer()
+        let objectID = try single.decode(Int32.self)
+        guard let type = PostgreSQLDataType.make(objectID) else {
+            throw PostgreSQLError(
+                identifier: "unsupportedColumnType",
+                reason: "Unsupported data type: \(objectID)"
+            )
+        }
+        self = type
+    }
+
+    private static func make(_ objectID: Int32) -> PostgreSQLDataType? {
+        return PostgreSQLDataType(rawValue: objectID)
     }
 }

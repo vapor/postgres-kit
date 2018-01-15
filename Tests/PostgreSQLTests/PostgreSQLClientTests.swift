@@ -5,27 +5,31 @@ import XCTest
 import TCP
 
 class PostgreSQLClientTests: XCTestCase {
-    func testStreaming() throws {
+    func testVersion() throws {
+        let (client, eventLoop) = try PostgreSQLClient.makeTest()
+        let results = try client.query("SELECT version();").await(on: eventLoop)
+        XCTAssert(results[0]["version"]?.string?.contains("10.1") == true)
+    }
+
+    func testSelectTypes() throws {
+        let (client, eventLoop) = try PostgreSQLClient.makeTest()
+        let results = try client.query("select * from pg_type;").await(on: eventLoop)
+        XCTAssert(results.count > 350)
+    }
+
+    static var allTests = [
+        ("testVersion", testVersion),
+    ]
+}
+
+extension PostgreSQLClient {
+    /// Creates a test event loop and psql client.
+    static func makeTest() throws -> (PostgreSQLClient, EventLoop) {
         let eventLoop = try DefaultEventLoop(label: "codes.vapor.postgresql.client.test")
         let client = try PostgreSQLClient.connect(on: eventLoop)
 
         let startup = PostgreSQLStartupMessage.versionThree(parameters: ["user": "postgres"])
-        let startupRes = try client.send(.startupMessage(startup)).await(on: eventLoop)
-        for log in startupRes {
-            switch log {
-            case .parameterStatus(let param):
-                if param.parameter == "session_authorization" {
-                    XCTAssertEqual(param.value, "postgres")
-                }
-            default: break
-            }
-        }
-
-        let results = try client.query("SELECT version();").await(on: eventLoop)
-        print(results[0]["version"]!)
+        _ = try client.send(.startupMessage(startup)).await(on: eventLoop)
+        return (client, eventLoop)
     }
-
-    static var allTests = [
-        ("testStreaming", testStreaming),
-    ]
 }
