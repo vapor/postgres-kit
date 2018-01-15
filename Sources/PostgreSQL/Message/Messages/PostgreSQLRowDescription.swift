@@ -9,7 +9,6 @@ struct PostgreSQLRowDescription: Decodable {
 
         /// Specifies the number of fields in a row (can be zero).
         let fieldCount = try single.decode(Int16.self)
-
         var fields: [PostgreSQLRowDescriptionField] = []
         for _ in 0..<fieldCount {
             try fields.append(single.decode(PostgreSQLRowDescriptionField.self))
@@ -45,18 +44,6 @@ struct PostgreSQLRowDescriptionField: Decodable {
     /// In a RowDescription returned from the statement variant of Describe,
     /// the format code is not yet known and will always be zero.
     var formatCode: PostgreSQLFormatCode
-
-    /// See Decodable.decode
-    init(from decoder: Decoder) throws {
-        let single = try decoder.singleValueContainer()
-        name = try single.decode(String.self)
-        tableObjectID = try single.decode(Int32.self)
-        columnAttributeNumber = try single.decode(Int16.self)
-        dataType = try single.decode(PostgreSQLDataType.self)
-        dataTypeSize = try single.decode(Int16.self)
-        dataTypeModifier = try single.decode(Int32.self)
-        formatCode = try single.decode(PostgreSQLFormatCode.self)
-    }
 }
 
 /// The format code being used for the field.
