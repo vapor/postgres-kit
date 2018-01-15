@@ -8,4 +8,8 @@ enum PostgreSQLMessage {
     case parameterStatus(PostgreSQLParameterStatus)
     case backendKeyData(PostgreSQLBackendKeyData)
     case readyForQuery(PostgreSQLReadyForQuery)
+    case query(PostgreSQLQuery)
+    case rowDescription(PostgreSQLRowDescription)
+    case dataRow(PostgreSQLDataRow)
+    case close(PostgreSQLCloseCommand)
 }

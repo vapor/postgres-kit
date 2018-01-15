@@ -1,3 +1,4 @@
+import Bits
 import Foundation
 
 /// Non-encoder wrapper for `_PostgreSQLMessageEncoder`.
@@ -8,12 +9,22 @@ final class PostgreSQLMessageEncoder {
     /// Encodes a `PostgreSQLMessage` to `Data`.
     func encode(_ message: PostgreSQLMessage) throws -> Data {
         let encoder = _PostgreSQLMessageEncoder()
+        let identifier: Byte?
         switch message {
-        case .startupMessage(let message): try message.encode(to: encoder)
-        default: fatalError("Unsupported encodable type")
+        case .startupMessage(let message):
+            identifier = nil
+            try message.encode(to: encoder)
+        case .query(let query):
+            identifier = .Q
+            try query.encode(to: encoder)
+        default: fatalError("Unsupported encodable type: \(type(of: message))")
         }
         encoder.updateSize()
-        return encoder.data
+        if let prefix = identifier {
+            return [prefix] + encoder.data
+        } else {
+            return encoder.data
+        }
     }
 }
 

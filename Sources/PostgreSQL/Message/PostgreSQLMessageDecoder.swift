@@ -25,7 +25,12 @@ final class PostgreSQLMessageDecoder {
         case .S: message = try .parameterStatus(decoder.decode())
         case .K: message = try .backendKeyData(decoder.decode())
         case .Z: message = try .readyForQuery(decoder.decode())
-        default: fatalError("Unrecognized message type: \(type)")
+        case .T: message = try .rowDescription(decoder.decode())
+        case .D: message = try .dataRow(decoder.decode())
+        case .C: message = try .close(decoder.decode())
+        default:
+            let string = String(bytes: [type], encoding: .ascii) ?? "n/a"
+            fatalError("Unrecognized message type: \(string) (\(type)")
         }
         return (message, decoder.data.count)
     }
@@ -79,6 +84,19 @@ internal final class _PostgreSQLMessageDecoder: Decoder, SingleValueDecodingCont
     }
 
     /// See SingleValueDecodingContainer.decode
+    func decode(_ type: UInt8.Type) throws -> UInt8 {
+        return self.data.unsafePopFirst()
+    }
+
+    /// See SingleValueDecodingContainer.decode
+    func decode(_ type: Int16.Type) throws -> Int16 {
+        var int: Int16 = 0
+        int += Int16(self.data.unsafePopFirst() << 8)
+        int += Int16(self.data.unsafePopFirst())
+        return int
+    }
+
+    /// See SingleValueDecodingContainer.decode
     func decode(_ type: Int32.Type) throws -> Int32 {
         var int: Int32 = 0
         int += Int32(self.data.unsafePopFirst() << 24)
@@ -86,11 +104,6 @@ internal final class _PostgreSQLMessageDecoder: Decoder, SingleValueDecodingCont
         int += Int32(self.data.unsafePopFirst() << 8)
         int += Int32(self.data.unsafePopFirst())
         return int
-    }
-
-    /// See SingleValueDecodingContainer.decode
-    func decode(_ type: UInt8.Type) throws -> UInt8 {
-        return self.data.unsafePopFirst()
     }
 
     /// See SingleValueDecodingContainer.decode
@@ -124,7 +137,6 @@ internal final class _PostgreSQLMessageDecoder: Decoder, SingleValueDecodingCont
     func decode(_ type: Int.Type) throws -> Int { fatalError("Unsupported decode type: \(type)") }
     func decode(_ type: Int8.Type) throws -> Int8 { fatalError("Unsupported decode type: \(type)") }
     func decode(_ type: Int64.Type) throws -> Int64 { fatalError("Unsupported decode type: \(type)") }
-    func decode(_ type: Int16.Type) throws -> Int16 { fatalError("Unsupported decode type: \(type)") }
     func decode(_ type: UInt.Type) throws -> UInt { fatalError("Unsupported decode type: \(type)") }
     func decode(_ type: UInt16.Type) throws -> UInt16 { fatalError("Unsupported decode type: \(type)") }
     func decode(_ type: UInt32.Type) throws -> UInt32 { fatalError("Unsupported decode type: \(type)") }
