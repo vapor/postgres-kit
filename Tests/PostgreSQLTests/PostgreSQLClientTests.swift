@@ -17,6 +17,17 @@ class PostgreSQLClientTests: XCTestCase {
         XCTAssert(results.count > 350)
     }
 
+    func testParse() throws {
+        let (client, eventLoop) = try! PostgreSQLClient.makeTest()
+        let query = """
+        select * from "pg_type" where "typlen" = $1 or "typlen" = $2
+        """
+        try client.parameterizedQuery(query, [
+            .int32(1),
+            .int32(2),
+        ]).await(on: eventLoop)
+    }
+
     static var allTests = [
         ("testVersion", testVersion),
     ]

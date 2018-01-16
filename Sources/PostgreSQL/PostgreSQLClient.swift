@@ -22,70 +22,73 @@ final class PostgreSQLClient {
 
     /// Sends `PostgreSQLMessage` to the server.
     func send(_ message: PostgreSQLMessage) -> Future<[PostgreSQLMessage]> {
-        return queueStream.enqueue(message) { message in
+        var responses: [PostgreSQLMessage] = []
+        return queueStream.enqueue([message]) { message in
+            print(message)
+            responses.append(message)
             switch message {
             case .readyForQuery: return true
             case .errorResponse(let e): throw e
             default: return false
             }
+        }.map(to: [PostgreSQLMessage].self) {
+            return responses
         }
     }
 
-    /// Sends a simple PostgreSQL query command, returning the parsed results.
-    func query(_ string: String) -> Future<[[String: PostgreSQLData]]> {
+    /// Sends a simple PostgreSQL query command, returning the parsed results to
+    /// the supplied closure.
+    func query(_ string: String, onRow: @escaping ([String: PostgreSQLData]) -> ()) -> Future<Void> {
+        var currentRow: PostgreSQLRowDescription?
         let query = PostgreSQLQuery(query: string)
-        return send(.query(query)).map(to: [[String: PostgreSQLData]].self) { queryOutput in
-            var results: [[String: PostgreSQLData]] = []
-            var currentRow: PostgreSQLRowDescription?
-
-            for message in queryOutput {
-                switch message {
-                case .rowDescription(let row):
-                    currentRow = row
-                case .dataRow(let data):
-                    guard let row = currentRow else {
-                        fatalError("Unexpected PostgreSQLDataRow without preceding PostgreSQLRowDescription.")
-                    }
-
-                    var parsed: [String: PostgreSQLData] = [:]
-
-                    // iterate over the fields, parsing values
-                    // based on column type
-                    for (i, field) in row.fields.enumerated() {
-                        let col = data.columns[i]
-                        let data: PostgreSQLData
-                        switch field.formatCode {
-                        case .text:
-                            switch field.dataType {
-                            case .bool:
-                                data = try col.makeString().flatMap { $0 == "t" }.flatMap { .bool($0) } ?? .null
-                            case .text, .name:
-                                data = try col.makeString().flatMap { .string($0) } ?? .null
-                            case .oid, .regproc, .int4:
-                                data = try col.makeString().flatMap { Int32($0) }.flatMap { .int32($0) } ?? .null
-                            case .int2:
-                                data = try col.makeString().flatMap { Int16($0) }.flatMap { .int16($0) } ?? .null
-                            case .char:
-                                data = try col.makeString().flatMap { Character($0) }.flatMap { .character($0) } ?? .null
-                            case .pg_node_tree:
-                                print("\(field.name): is pg node tree")
-                                data = .null
-                            case ._aclitem:
-                                print("\(field.name): is acl item")
-                                data = .null
-                            }
-                        case .binary: fatalError("Binary format code not supported.")
-                        }
-
-                        parsed[field.name] = data
-                    }
-
-                    // append the result
-                    results.append(parsed)
-                default: break
-                }
+        return queueStream.enqueue([.query(query)]) { message in
+            switch message {
+            case .rowDescription(let row):
+                currentRow = row
+            case .dataRow(let data):
+                let row = currentRow !! "Unexpected PostgreSQLDataRow without preceding PostgreSQLRowDescription."
+                let parsed = try row.parse(data: data)
+                onRow(parsed)
+            case .close: break // query over, waiting for `readyForQuery`
+            case .readyForQuery: return true
+            case .errorResponse(let e): throw e
+            default: fatalError("Unexpected message during PostgreSQLQuery: \(message)")
             }
-            return results
+            return false // more messages, please
+        }
+    }
+
+    /// Sends a simple PostgreSQL query command, collecting the parsed results.
+    func query(_ string: String) -> Future<[[String: PostgreSQLData]]> {
+        var rows: [[String: PostgreSQLData]] = []
+        return query(string) { row in
+            rows.append(row)
+        }.map(to: [[String: PostgreSQLData]].self) {
+            return rows
+        }
+    }
+
+    func parameterizedQuery(_ string: String, _ parameters: [PostgreSQLData] = []) throws -> Future<Void> {
+        let parse = PostgreSQLParseRequest(
+            statementName: "",
+            query: string,
+            parameterTypes: parameters.map { .type(forData: $0) }
+        )
+        let bind = try PostgreSQLBindRequest(
+            portalName: "",
+            statementName: "",
+            parameterFormatCodes: [.binary],
+            parameters: parameters.map { try .serialize(data: $0) },
+            resultFormatCodes: [.binary]
+        )
+        return queueStream.enqueue([.parse(parse), .bind(bind)]) { message in
+            print(message)
+            switch message {
+            case .parseComplete: return false
+            case .errorResponse(let e): throw e
+            case .readyForQuery: return false
+            default: fatalError("Unexpected message during PostgreSQLParseRequest: \(message)")
+            }
         }
     }
 }
@@ -127,11 +130,13 @@ public final class AsymmetricQueueStream<I, O>: Stream, ConnectionContext {
 
     /// Enqueue the supplied output, specifying a closure that will determine
     /// when the Input received is ready.
-    public func enqueue(_ output: Output, readyCheck: @escaping (Input) throws -> Bool) -> Future<[Input]> {
-        let input = AsymmetricQueueStreamInput(readyCheck: readyCheck)
+    public func enqueue(_ output: [Output], onInput: @escaping (Input) throws -> Bool) -> Future<Void> {
+        let input = AsymmetricQueueStreamInput(onInput: onInput)
         self.queuedInput.insert(input, at: 0)
-        self.queuedOutput.insert(output, at: 0)
-        upstream!.request()
+        for o in output {
+            self.queuedOutput.insert(o, at: 0)
+        }
+        upstream!.request(count: UInt(output.count))
         update()
         return input.promise.future
     }
@@ -175,10 +180,9 @@ public final class AsymmetricQueueStream<I, O>: Stream, ConnectionContext {
                 context = next
             }
 
-            context.storage.append(input)
             do {
-                if try context.readyCheck(input) {
-                    context.promise.complete(context.storage)
+                if try context.onInput(input) {
+                    context.promise.complete()
                     currentInput = nil
                 } else {
                     upstream!.request(count: 1)
@@ -198,13 +202,19 @@ public final class AsymmetricQueueStream<I, O>: Stream, ConnectionContext {
 }
 
 final class AsymmetricQueueStreamInput<Input> {
-    var storage: [Input]
-    var promise: Promise<[Input]>
-    var readyCheck: (Input) throws -> Bool
+    var promise: Promise<Void>
+    var onInput: (Input) throws -> Bool
 
-    init(readyCheck: @escaping (Input) throws -> Bool) {
-        self.storage = []
+    init(onInput: @escaping (Input) throws -> Bool) {
         self.promise = .init()
-        self.readyCheck = readyCheck
+        self.onInput = onInput
+    }
+}
+
+infix operator !!
+public func !!<T>(lhs: Optional<T>, rhs: String) -> T {
+    switch lhs {
+    case .none: fatalError(rhs)
+    case .some(let w): return w
     }
 }

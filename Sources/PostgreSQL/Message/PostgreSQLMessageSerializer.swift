@@ -39,6 +39,7 @@ final class PostgreSQLMessageSerializer: TranslatingStream {
 
     /// Serializes data, storing `excess` if it does not fit in the buffer.
     func serialize(data: Data) -> TranslatingStreamResult<ByteBuffer> {
+        print("Serialize: \(data.hexDebug)")
         let count = data.copyBytes(to: buffer)
         let view = ByteBuffer(start: buffer.baseAddress, count: count)
         if data.count > count {

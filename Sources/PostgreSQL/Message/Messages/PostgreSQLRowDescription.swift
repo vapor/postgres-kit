@@ -17,6 +17,17 @@ struct PostgreSQLRowDescription: Decodable {
     }
 }
 
+/// MARK: Parse
+
+extension PostgreSQLRowDescription {
+    /// Parses a `PostgreSQLDataRow` using the metadata from this row description.
+    public func parse(data: PostgreSQLDataRow) throws -> [String: PostgreSQLData] {
+        return try .init(uniqueKeysWithValues: fields.enumerated().map { (i, field) in
+                return try (field.name, data.columns[i].parse(dataType: field.dataType, format: field.formatCode))
+        })
+    }
+}
+
 /// MARK: Field
 
 /// Describes a single field returns in a `RowDescription` message.
@@ -50,14 +61,14 @@ struct PostgreSQLRowDescriptionField: Decodable {
 /// Currently will be zero (text) or one (binary).
 /// In a RowDescription returned from the statement variant of Describe,
 /// the format code is not yet known and will always be zero.
-enum PostgreSQLFormatCode: Int16, Decodable {
+enum PostgreSQLFormatCode: Int16, Codable {
     case text = 0
     case binary = 1
 }
 
 /// The data type's raw object ID.
 /// Use `select * from pg_type where oid in (<idhere>);` to lookup more information.
-enum PostgreSQLDataType: Int32, Decodable {
+enum PostgreSQLDataType: Int32, Codable {
     case bool = 16
     case char = 18
     case name = 19
@@ -68,4 +79,24 @@ enum PostgreSQLDataType: Int32, Decodable {
     case oid = 26
     case pg_node_tree = 194
     case _aclitem = 1034
+}
+
+extension PostgreSQLDataType {
+    /// Converts the supplied `PostgreSQLData` to the best matching `PostgreSQLDataType`
+    static func type(forData data: PostgreSQLData) -> PostgreSQLDataType {
+        switch data {
+        case .bool: return .int2
+        case .character: return .char
+        case .int8: return .char
+        case .int16: return .int2
+        case .int32: return .int4
+        case .int: return .int4
+        case .uint: return .int4
+        case .uint8: return .char
+        case .uint16: return .int2
+        case .uint32: return .int4
+        case .null: return .char // fixme
+        case .string: return .char // fixme
+        }
+    }
 }

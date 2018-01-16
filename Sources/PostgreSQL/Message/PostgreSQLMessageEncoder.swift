@@ -17,6 +17,14 @@ final class PostgreSQLMessageEncoder {
         case .query(let query):
             identifier = .Q
             try query.encode(to: encoder)
+        case .parse(let parseRequest):
+            identifier = .P
+            try parseRequest.encode(to: encoder)
+        case .sync:
+            identifier = .S
+        case .bind(let bind):
+            identifier = .B
+            try bind.encode(to: encoder)
         default: fatalError("Unsupported encodable type: \(type(of: message))")
         }
         encoder.updateSize()
@@ -102,13 +110,28 @@ internal final class _PostgreSQLMessageEncoder: Encoder, SingleValueEncodingCont
 
     /// See SingleValueEncodingContainer.encode
     func encode<T>(_ value: T) throws where T : Encodable {
-        try value.encode(to: self)
+        if T.self == Data.self {
+            let sub = unsafeBitCast(value, to: Data.self)
+            try encode(Int32(sub.count))
+            self.data += sub
+        } else {
+            try value.encode(to: self)
+        }
+    }
+
+    /// See Encoder.container
+    func container<Key>(keyedBy type: Key.Type) -> KeyedEncodingContainer<Key> where Key : CodingKey {
+        let container = _PostgreSQLMessageKeyedEncoder<Key>(encoder: self)
+        return KeyedEncodingContainer(container)
+    }
+
+    /// See Encoder.unkeyedContainer
+    func unkeyedContainer() -> UnkeyedEncodingContainer {
+        return _PostgreSQLMessageUnkeyedEncoder(encoder: self)
     }
 
     // Unsupported
 
-    func container<Key>(keyedBy type: Key.Type) -> KeyedEncodingContainer<Key> where Key : CodingKey { fatalError("Unsupported type: keyed container") }
-    func unkeyedContainer() -> UnkeyedEncodingContainer { fatalError("Unsupported type: unkeyed container") }
     func encode(_ value: Int) throws { fatalError("Unsupported type: \(type(of: value))") }
     func encode(_ value: UInt) throws { fatalError("Unsupported type: \(type(of: value))") }
     func encode(_ value: UInt8) throws { fatalError("Unsupported type: \(type(of: value))") }
@@ -120,3 +143,86 @@ internal final class _PostgreSQLMessageEncoder: Encoder, SingleValueEncodingCont
     func encode(_ value: Bool) throws { fatalError("Unsupported type: \(type(of: value))") }
     func encodeNil() throws { fatalError("Unsupported type: nil") }
 }
+
+fileprivate final class _PostgreSQLMessageKeyedEncoder<K>: KeyedEncodingContainerProtocol where K: CodingKey {
+    typealias Key = K
+    var codingPath: [CodingKey]
+    let encoder: _PostgreSQLMessageEncoder
+
+    init(encoder: _PostgreSQLMessageEncoder) {
+        self.encoder = encoder
+        self.codingPath = []
+    }
+
+    func encodeNil(forKey key: K) throws { try encoder.encodeNil() }
+    func encode(_ value: Bool, forKey key: K) throws { try encoder.encode(value) }
+    func encode(_ value: Int, forKey key: K) throws { try encoder.encode(value) }
+    func encode(_ value: Int8, forKey key: K) throws { try encoder.encode(value) }
+    func encode(_ value: Int16, forKey key: K) throws { try encoder.encode(value) }
+    func encode(_ value: Int32, forKey key: K) throws { try encoder.encode(value) }
+    func encode(_ value: Int64, forKey key: K) throws { try encoder.encode(value) }
+    func encode(_ value: UInt, forKey key: K) throws { try encoder.encode(value) }
+    func encode(_ value: UInt8, forKey key: K) throws { try encoder.encode(value) }
+    func encode(_ value: UInt16, forKey key: K) throws { try encoder.encode(value) }
+    func encode(_ value: UInt32, forKey key: K) throws { try encoder.encode(value) }
+    func encode(_ value: UInt64, forKey key: K) throws { try encoder.encode(value) }
+    func encode(_ value: Float, forKey key: K) throws { try encoder.encode(value) }
+    func encode(_ value: Double, forKey key: K) throws { try encoder.encode(value) }
+    func encode(_ value: String, forKey key: K) throws { try encoder.encode(value) }
+    func encode<T>(_ value: T, forKey key: K) throws where T : Encodable { try encoder.encode(value) }
+    func nestedContainer<NestedKey>(keyedBy keyType: NestedKey.Type, forKey key: K)
+        -> KeyedEncodingContainer<NestedKey> where NestedKey: CodingKey { return encoder.container(keyedBy: NestedKey.self) }
+    func nestedUnkeyedContainer(forKey key: K) -> UnkeyedEncodingContainer { return encoder.unkeyedContainer() }
+    func superEncoder() -> Encoder { return encoder }
+    func superEncoder(forKey key: K) -> Encoder { return encoder }
+}
+
+fileprivate final class _PostgreSQLMessageUnkeyedEncoder: UnkeyedEncodingContainer {
+    var count: Int
+    var codingPath: [CodingKey]
+    let encoder: _PostgreSQLMessageEncoder
+    let countOffset: Int
+
+    init(encoder: _PostgreSQLMessageEncoder) {
+        self.encoder = encoder
+        self.codingPath = []
+        self.countOffset = encoder.data.count
+        self.count = 0
+        // will hold count
+        encoder.data.append(Data([0, 0]))
+    }
+
+    func encodeNil() throws { try encoder.encodeNil() }
+    func encode(_ value: Bool) throws { count += 1; try encoder.encode(value) }
+    func encode(_ value: Int) throws { count += 1; try encoder.encode(value) }
+    func encode(_ value: Int8) throws { count += 1; try encoder.encode(value) }
+    func encode(_ value: Int16) throws { count += 1; try encoder.encode(value) }
+    func encode(_ value: Int32) throws { count += 1; try encoder.encode(value) }
+    func encode(_ value: Int64) throws { count += 1; try encoder.encode(value) }
+    func encode(_ value: UInt) throws { count += 1; try encoder.encode(value) }
+    func encode(_ value: UInt8) throws { count += 1; try encoder.encode(value) }
+    func encode(_ value: UInt16) throws { count += 1; try encoder.encode(value) }
+    func encode(_ value: UInt32) throws { count += 1; try encoder.encode(value) }
+    func encode(_ value: UInt64) throws { count += 1; try encoder.encode(value) }
+    func encode(_ value: Float) throws { count += 1; try encoder.encode(value) }
+    func encode(_ value: Double) throws { count += 1; try encoder.encode(value) }
+    func encode(_ value: String) throws { count += 1; try encoder.encode(value) }
+    func encode<T>(_ value: T) throws where T : Encodable { count += 1; return try encoder.encode(value) }
+    func nestedContainer<NestedKey>(keyedBy keyType: NestedKey.Type)
+        -> KeyedEncodingContainer<NestedKey> where NestedKey: CodingKey { return encoder.container(keyedBy: NestedKey.self) }
+    func nestedUnkeyedContainer() -> UnkeyedEncodingContainer { return encoder.unkeyedContainer() }
+    func superEncoder() -> Encoder { print(#function); return encoder }
+
+    deinit {
+        let size = numericCast(count) as Int16
+        var data = Data([0, 0])
+        data.withUnsafeMutableBytes { (pointer: UnsafeMutablePointer<Int16>) in
+            pointer.pointee = size.bigEndian
+        }
+        encoder.data.replaceSubrange(countOffset..<countOffset + 2, with: data)
+    }
+}
+
+
+
+

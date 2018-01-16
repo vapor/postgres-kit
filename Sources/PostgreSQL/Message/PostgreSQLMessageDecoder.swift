@@ -28,6 +28,7 @@ final class PostgreSQLMessageDecoder {
         case .T: message = try .rowDescription(decoder.decode())
         case .D: message = try .dataRow(decoder.decode())
         case .C: message = try .close(decoder.decode())
+        case .one: message = .parseComplete
         default:
             let string = String(bytes: [type], encoding: .ascii) ?? "n/a"
             fatalError("Unrecognized message type: \(string) (\(type)")
@@ -111,11 +112,7 @@ fileprivate final class _PostgreSQLMessageDecoder: Decoder, SingleValueDecodingC
             }
         }
 
-        /// FIXME: performance
-        for _ in 0..<MemoryLayout<B>.size {
-            _ = data.unsafePopFirst()
-        }
-
+        data = data.advanced(by: MemoryLayout<B>.size)
         return int
     }
 
@@ -130,15 +127,44 @@ fileprivate final class _PostgreSQLMessageDecoder: Decoder, SingleValueDecodingC
             }
         }
         let data = Data(bytes: bytes)
-        guard let string = String(data: data, encoding: .utf8) else {
-            fatalError("Unsupported decode type: non-UTF8 string")
-        }
-        return string
+        return String(data: data, encoding: .utf8) !! "Unsupported decode type: non-UTF8 string"
     }
 
     /// See SingleValueDecodingContainer.decode
     func decode<T>(_ type: T.Type = T.self) throws -> T where T: Decodable {
-        return try T(from: self)
+        if T.self == Data.self {
+            let count = try Int(decode(Int32.self))
+            switch count {
+            case 0: return Data() as! T
+            case 1...:
+                let sub: Data = data.subdata(in: data.startIndex..<data.index(data.startIndex, offsetBy: count))
+                data = data.advanced(by: count)
+                return sub as! T
+            default: fatalError("Illegal data row column value count: \(count)")
+            }
+        } else {
+            return try T(from: self)
+        }
+    }
+
+    /// See SingleValueDecodingContainer.decodeNil
+    func decodeNil() -> Bool {
+        guard data.count >= 4 else {
+            return false
+        }
+
+        /// if Int32 decode == -1, then this should be decoding `Data?.none`
+        let count = data.withUnsafeBytes { (pointer: UnsafePointer<UInt8>) -> Int32 in
+            return pointer.withMemoryRebound(to: Int32.self, capacity: 1) { (pointer: UnsafePointer<Int32>) -> Int32 in
+                return pointer.pointee.bigEndian
+            }
+        }
+        switch count {
+        case -1:
+            data = data.advanced(by: MemoryLayout<Int32>.size)
+            return true
+        default: return false
+        }
     }
 
     /// See Decoder.container
@@ -150,7 +176,6 @@ fileprivate final class _PostgreSQLMessageDecoder: Decoder, SingleValueDecodingC
     // Unsupported
 
     func unkeyedContainer() throws -> UnkeyedDecodingContainer { fatalError("Unsupported decode type: unkeyed container") }
-    func decodeNil() -> Bool { fatalError("Unsupported decode type: nil") }
     func decode(_ type: Bool.Type) throws -> Bool { fatalError("Unsupported decode type: \(type)") }
     func decode(_ type: Int.Type) throws -> Int { fatalError("Unsupported decode type: \(type)") }
     func decode(_ type: Int8.Type) throws -> Int8 { fatalError("Unsupported decode type: \(type)") }
@@ -199,6 +224,7 @@ fileprivate final class _PostgreSQLMessageKeyedDecoder<K>: KeyedDecodingContaine
     func decode<T>(_ type: T.Type, forKey key: K) throws -> T where T : Decodable { return try decoder.decode(T.self) }
     func superDecoder() throws -> Decoder { return decoder }
     func superDecoder(forKey key: K) throws -> Decoder { return decoder }
+    func decodeNil(forKey key: K) throws -> Bool { return decoder.decodeNil() }
 
     // Unsupported
 
@@ -209,9 +235,5 @@ fileprivate final class _PostgreSQLMessageKeyedDecoder<K>: KeyedDecodingContaine
 
     func nestedUnkeyedContainer(forKey key: K) throws -> UnkeyedDecodingContainer {
         fatalError("Unsupported decoding type: nested unkeyed container")
-    }
-
-    func decodeNil(forKey key: K) throws -> Bool {
-        fatalError("Unsupported decoding type: nil for key")
     }
 }
