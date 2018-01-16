@@ -15,6 +15,8 @@ enum PostgreSQLMessage {
     case parse(PostgreSQLParseRequest)
     /// Identifies the message as a Bind command.
     case bind(PostgreSQLBindRequest)
+    /// Identifies the message as a Describe command.
+    case describe(PostgreSQLDescribeRequest)
     /// Identifies the message as an Execute command.
     case execute(PostgreSQLExecuteRequest)
     /// Identifies the message as a Sync command.
@@ -23,4 +25,6 @@ enum PostgreSQLMessage {
     case parseComplete
     /// Identifies the message as a Bind-complete indicator.
     case bindComplete
+
+
 }

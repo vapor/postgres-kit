@@ -25,6 +25,9 @@ final class PostgreSQLMessageEncoder {
         case .bind(let bind):
             identifier = .B
             try bind.encode(to: encoder)
+        case .describe(let describe):
+            identifier = .D
+            try describe.encode(to: encoder)
         case .execute(let execute):
             identifier = .E
             try execute.encode(to: encoder)
@@ -85,6 +88,11 @@ internal final class _PostgreSQLMessageEncoder: Encoder, SingleValueEncodingCont
     }
 
     /// See SingleValueEncodingContainer.encode
+    func encode(_ value: UInt8) throws {
+        self.data.append(value)
+    }
+
+    /// See SingleValueEncodingContainer.encode
     func encode(_ value: Int16) throws {
         var value = value.bigEndian
         withUnsafeBytes(of: &value) { buffer in
@@ -137,7 +145,6 @@ internal final class _PostgreSQLMessageEncoder: Encoder, SingleValueEncodingCont
 
     func encode(_ value: Int) throws { fatalError("Unsupported type: \(type(of: value))") }
     func encode(_ value: UInt) throws { fatalError("Unsupported type: \(type(of: value))") }
-    func encode(_ value: UInt8) throws { fatalError("Unsupported type: \(type(of: value))") }
     func encode(_ value: UInt16) throws { fatalError("Unsupported type: \(type(of: value))") }
     func encode(_ value: UInt32) throws { fatalError("Unsupported type: \(type(of: value))") }
     func encode(_ value: UInt64) throws { fatalError("Unsupported type: \(type(of: value))") }
@@ -214,7 +221,7 @@ fileprivate final class _PostgreSQLMessageUnkeyedEncoder: UnkeyedEncodingContain
     func nestedContainer<NestedKey>(keyedBy keyType: NestedKey.Type)
         -> KeyedEncodingContainer<NestedKey> where NestedKey: CodingKey { return encoder.container(keyedBy: NestedKey.self) }
     func nestedUnkeyedContainer() -> UnkeyedEncodingContainer { return encoder.unkeyedContainer() }
-    func superEncoder() -> Encoder { print(#function); return encoder }
+    func superEncoder() -> Encoder { return encoder }
 
     deinit {
         let size = numericCast(count) as Int16

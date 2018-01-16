@@ -24,7 +24,6 @@ final class PostgreSQLClient {
     func send(_ message: PostgreSQLMessage) -> Future<[PostgreSQLMessage]> {
         var responses: [PostgreSQLMessage] = []
         return queueStream.enqueue([message]) { message in
-            print(message)
             responses.append(message)
             switch message {
             case .readyForQuery: return true
@@ -33,6 +32,16 @@ final class PostgreSQLClient {
             }
         }.map(to: [PostgreSQLMessage].self) {
             return responses
+        }
+    }
+
+    /// Sends a simple PostgreSQL query command, collecting the parsed results.
+    func query(_ string: String) -> Future<[[String: PostgreSQLData]]> {
+        var rows: [[String: PostgreSQLData]] = []
+        return query(string) { row in
+            rows.append(row)
+            }.map(to: [[String: PostgreSQLData]].self) {
+                return rows
         }
     }
 
@@ -58,16 +67,21 @@ final class PostgreSQLClient {
         }
     }
 
-    /// Sends a simple PostgreSQL query command, collecting the parsed results.
-    func query(_ string: String) -> Future<[[String: PostgreSQLData]]> {
+    /// Sends a parameterized PostgreSQL query command, collecting the parsed results.
+    func parameterizedQuery(
+        _ string: String,
+        _ parameters: [PostgreSQLData] = []
+    ) throws -> Future<[[String: PostgreSQLData]]> {
         var rows: [[String: PostgreSQLData]] = []
-        return query(string) { row in
+        return try parameterizedQuery(string, parameters) { row in
             rows.append(row)
         }.map(to: [[String: PostgreSQLData]].self) {
             return rows
         }
     }
 
+    /// Sends a parameterized PostgreSQL query command, returning the parsed results to
+    /// the supplied closure.
     func parameterizedQuery(
         _ string: String,
         _ parameters: [PostgreSQLData] = [],
@@ -85,15 +99,15 @@ final class PostgreSQLClient {
             parameters: parameters.map { try .serialize(data: $0) },
             resultFormatCodes: [.binary]
         )
+        let describe = PostgreSQLDescribeRequest(type: .portal, name: "")
         let execute = PostgreSQLExecuteRequest(
             portalName: "",
             maxRows: 0
         )
         var currentRow: PostgreSQLRowDescription?
         return queueStream.enqueue([
-            .parse(parse), .bind(bind), .execute(execute), .sync
+            .parse(parse), .bind(bind), .describe(describe), .execute(execute), .sync
         ]) { message in
-            print(message)
             switch message {
             case .errorResponse(let e): throw e
             case .parseComplete: return false
@@ -157,7 +171,7 @@ public final class AsymmetricQueueStream<I, O>: Stream, ConnectionContext {
         for o in output {
             self.queuedOutput.insert(o, at: 0)
         }
-        upstream!.request(count: UInt(output.count))
+        upstream!.request(count: 1)
         update()
         return input.promise.future
     }

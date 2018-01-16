@@ -47,7 +47,35 @@ struct PostgreSQLDataRowColumn: Decodable {
 
     /// Parses this column to the specified data type assuming binary format.
     func parseBinary(dataType: PostgreSQLDataType) throws -> PostgreSQLData {
-        fatalError("Binary format code not supported.")
+        switch dataType {
+        case .name, .text:
+            return try makeString().flatMap { .string($0) } ?? .null
+        case .oid, .regproc, .int4:
+            return makeFixedWidthInteger(Int32.self).flatMap { .int32($0) } ?? .null
+        case .int2:
+            return makeFixedWidthInteger(Int16.self).flatMap { .int16($0) } ?? .null
+        case .bool:
+            return makeFixedWidthInteger(Byte.self).flatMap { .bool($0 == 1) } ?? .null
+        case .char:
+            return makeFixedWidthInteger(Byte.self).flatMap { byte in
+                let char = Character(Unicode.Scalar(byte))
+                return .character(char)
+            } ?? .null
+        case .pg_node_tree:
+            print("pg node tree")
+            return .null
+        case ._aclitem:
+            print("acl item")
+            return .null
+        }
+    }
+
+    func makeFixedWidthInteger<I>(_ type: I.Type = I.self) -> I? where I: FixedWidthInteger {
+        return value.flatMap { data in
+            return data.withUnsafeBytes { (pointer: UnsafePointer<I>) -> I in
+                return pointer.pointee.bigEndian
+            }
+        }
     }
 
     /// Parses this column to the specified data type assuming text format.

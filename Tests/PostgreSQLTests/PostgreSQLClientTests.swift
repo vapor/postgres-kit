@@ -22,10 +22,14 @@ class PostgreSQLClientTests: XCTestCase {
         let query = """
         select * from "pg_type" where "typlen" = $1 or "typlen" = $2
         """
-        try client.parameterizedQuery(query, [
+        let rows = try client.parameterizedQuery(query, [
             .int32(1),
             .int32(2),
         ]).await(on: eventLoop)
+
+        for row in rows {
+            XCTAssert(row["typlen"]?.int == 1 || row["typlen"]?.int == 2)
+        }
     }
 
     static var allTests = [
