@@ -68,7 +68,11 @@ final class PostgreSQLClient {
         }
     }
 
-    func parameterizedQuery(_ string: String, _ parameters: [PostgreSQLData] = []) throws -> Future<Void> {
+    func parameterizedQuery(
+        _ string: String,
+        _ parameters: [PostgreSQLData] = [],
+        onRow: @escaping ([String: PostgreSQLData]) -> ()
+    ) throws -> Future<Void> {
         let parse = PostgreSQLParseRequest(
             statementName: "",
             query: string,
@@ -81,12 +85,29 @@ final class PostgreSQLClient {
             parameters: parameters.map { try .serialize(data: $0) },
             resultFormatCodes: [.binary]
         )
-        return queueStream.enqueue([.parse(parse), .bind(bind)]) { message in
+        let execute = PostgreSQLExecuteRequest(
+            portalName: "",
+            maxRows: 0
+        )
+        var currentRow: PostgreSQLRowDescription?
+        return queueStream.enqueue([
+            .parse(parse), .bind(bind), .execute(execute), .sync
+        ]) { message in
             print(message)
             switch message {
-            case .parseComplete: return false
             case .errorResponse(let e): throw e
-            case .readyForQuery: return false
+            case .parseComplete: return false
+            case .bindComplete: return false
+            case .rowDescription(let row):
+                currentRow = row
+                return false
+            case .dataRow(let data):
+                let row = currentRow !! "Unexpected PostgreSQLDataRow without preceding PostgreSQLRowDescription."
+                let parsed = try row.parse(data: data)
+                onRow(parsed)
+                return false
+            case .close: return false
+            case .readyForQuery: return true
             default: fatalError("Unexpected message during PostgreSQLParseRequest: \(message)")
             }
         }

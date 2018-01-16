@@ -25,6 +25,9 @@ final class PostgreSQLMessageEncoder {
         case .bind(let bind):
             identifier = .B
             try bind.encode(to: encoder)
+        case .execute(let execute):
+            identifier = .E
+            try execute.encode(to: encoder)
         default: fatalError("Unsupported encodable type: \(type(of: message))")
         }
         encoder.updateSize()
