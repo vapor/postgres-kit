@@ -22,6 +22,7 @@ extension PostgreSQLDataType {
         case .float4: return .float(data.makeFloatingPoint())
         case .float8: return .double(data.makeFloatingPoint())
         case .bpchar: return try .string(data.makeString())
+        case .point: return .point(x: data[0..<8].makeFixedWidthInteger(), y: data[8..<16].makeFixedWidthInteger())
         case .timestamp, .date, .time, .numeric, .pg_node_tree, ._aclitem:
             fatalError("Unexpected binary for \(self) (preferred format): \(data.hexDebug)")
         }
@@ -43,6 +44,14 @@ extension PostgreSQLDataType {
         case .date: return try .date(data.makeString().parseDate(format:  "yyyy-MM-dd"))
         case .time: return try .date(data.makeString().parseDate(format:  "HH:mm:ss"))
         case .void: return .null
+        case .point:
+            let string = try data.makeString()
+            let parts = string.split(separator: ",")
+            var x = parts[0]
+            var y = parts[1]
+            assert(x.popFirst()! == "(")
+            assert(y.popLast()! == ")")
+            return .point(x: Int(x)!, y: Int(y)!)
         case .pg_node_tree, ._aclitem: return try .string(data.makeString())
         }
     }

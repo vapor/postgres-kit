@@ -14,6 +14,7 @@ enum PostgreSQLDataType: Int32, Codable {
     case text = 25
     case oid = 26
     case pg_node_tree = 194
+    case point = 600
     case float4 = 700
     case float8 = 701
     case _aclitem = 1034
@@ -44,6 +45,7 @@ extension PostgreSQLDataType {
         case .float: return .float4
         case .data: return .bytea
         case .date: return .timestamp
+        case .point: return .point
         }
     }
 }
@@ -70,6 +72,7 @@ extension PostgreSQLDataType {
         case .bpchar: return .binary
         case .varchar: return .binary
         case .void: return .binary
+        case .point: return .binary
 
         // Text
         // Converting these to binary supporting may improve performance

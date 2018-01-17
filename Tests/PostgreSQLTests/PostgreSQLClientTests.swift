@@ -50,8 +50,8 @@ class PostgreSQLClientTests: XCTestCase {
             "timestamp" timestamp,
             "date" date,
             "time" time,
-            "boolean" boolean-- ,
-            -- "point" point,
+            "boolean" boolean,
+            "point" point
             -- "line" line,
             -- "lseg" lseg,
             -- "box" box,
@@ -85,8 +85,8 @@ class PostgreSQLClientTests: XCTestCase {
             now(), -- "timestamp" timestamp
             current_date, -- "date" date
             localtime, -- "time" time
-            true -- "boolean" boolean
-            -- "point" point,
+            true, -- "boolean" boolean
+            point(13,14) -- "point" point,
             -- "line" line,
             -- "lseg" lseg,
             -- "box" box,
@@ -100,7 +100,7 @@ class PostgreSQLClientTests: XCTestCase {
             -- "uuid" uuid
         );
         """
-        let insertResult = try client.query(insertQuery).await(on: eventLoop)
+        let insertResult = try! client.query(insertQuery).await(on: eventLoop)
         XCTAssertEqual(insertResult.count, 0)
         let queryResult = try client.query("select * from kitchen_sink").await(on: eventLoop)
         if queryResult.count == 1 {
@@ -116,6 +116,7 @@ class PostgreSQLClientTests: XCTestCase {
             XCTAssertEqual(row["text"], .string("11"))
             XCTAssertEqual(row["bytea"], .data(Data([0x31, 0x32])))
             XCTAssertEqual(row["boolean"], .uint8(0x01))
+            XCTAssertEqual(row["point"], .point(x: 13, y: 14))
         } else {
             XCTFail("query result count is: \(queryResult.count)")
         }
@@ -139,8 +140,8 @@ class PostgreSQLClientTests: XCTestCase {
             "timestamp" timestamp,
             "date" date,
             "time" time,
-            "boolean" boolean-- ,
-            -- "point" point,
+            "boolean" boolean,
+            "point" point
             -- "line" line,
             -- "lseg" lseg,
             -- "box" box,
@@ -174,8 +175,8 @@ class PostgreSQLClientTests: XCTestCase {
             $12, -- "timestamp" timestamp
             $13, -- "date" date
             $14, -- "time" time
-            $15 -- "boolean" boolean
-            -- "point" point,
+            $15, -- "boolean" boolean
+            $16 -- "point" point
             -- "line" line,
             -- "lseg" lseg,
             -- "box" box,
@@ -205,6 +206,7 @@ class PostgreSQLClientTests: XCTestCase {
             PostgreSQLData.date(Date()), // date
             PostgreSQLData.date(Date()), // time
             PostgreSQLData.uint8(1), // boolean
+            PostgreSQLData.point(x: 11, y: 12) // point
         ]).await(on: eventLoop)
         XCTAssertEqual(insertResult.count, 0)
 
@@ -222,6 +224,7 @@ class PostgreSQLClientTests: XCTestCase {
             XCTAssertEqual(row["text"], .string("10"))
             XCTAssertEqual(row["bytea"], .data(Data([0x31, 0x32])))
             XCTAssertEqual(row["boolean"], .uint8(0x01))
+            XCTAssertEqual(row["point"], .point(x: 11, y: 12))
         } else {
             XCTFail("parameterized result count is: \(parameterizedResult.count)")
         }

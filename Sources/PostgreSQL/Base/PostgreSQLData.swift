@@ -18,6 +18,8 @@ public enum PostgreSQLData {
 
     case float(Float)
     case double(Double)
+
+    case point(x: Int, y: Int)
     
     case null
 }
@@ -90,6 +92,7 @@ extension PostgreSQLData: Equatable {
         case (.uint(let a), .uint(let b)): return a == b
         case (.float(let a), .float(let b)): return a == b
         case (.double(let a), .double(let b)): return a == b
+        case (.point(let a), .point(let b)): return a == b
         case (.null, .null): return true
         default: return false
         }
@@ -117,6 +120,7 @@ extension PostgreSQLData: CustomStringConvertible {
         case .uint(let val): return "\(val) (uint)"
         case .float(let val): return "\(val) (float)"
         case .double(let val): return "\(val) (double)"
+        case .point(let x, let y): return "(\(x), \(y))"
         case .null: return "null"
         }
     }
