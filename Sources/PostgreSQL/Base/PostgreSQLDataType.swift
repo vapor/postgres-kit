@@ -44,4 +44,31 @@ extension PostgreSQLDataType {
         case .date: return .timestamp
         }
     }
+
+    /// If true, this type supports binary format.
+    var supportsBinaryFormat: Bool {
+        switch self {
+        case .bool: return true
+        case .bytea: return true
+        case .char: return true
+        case .name: return true
+        case .int8: return true
+        case .int2: return true
+        case .int4: return true
+        case .regproc: return true
+        case .text: return true
+        case .oid: return true
+        case .pg_node_tree: return false
+        case .float4: return true
+        case .float8: return true
+        case ._aclitem: return false
+        case .bpchar: return true
+        case .varchar: return true
+        case .date: return false
+        case .time: return false
+        case .timestamp: return false
+        case .numeric: return false
+        case .void: return true
+        }
+    }
 }

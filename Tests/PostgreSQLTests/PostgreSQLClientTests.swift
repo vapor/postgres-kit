@@ -75,7 +75,7 @@ class PostgreSQLClientTests: XCTestCase {
             2, -- "integer" integer
             3, -- "bigint" bigint
             4, -- "decimal" decimal
-            5, -- "numeric" numeric
+            5.3, -- "numeric" numeric
             6, -- "real" real
             7, -- "double" double precision
             '9', -- "varchar" varchar(64)
@@ -102,9 +102,9 @@ class PostgreSQLClientTests: XCTestCase {
         """
         let insertResult = try client.query(insertQuery).await(on: eventLoop)
         XCTAssertEqual(insertResult.count, 0)
-        let selectResult = try client.query("select * from kitchen_sink").await(on: eventLoop)
-        if selectResult.count == 1 {
-            let row = selectResult[0]
+        let queryResult = try client.query("select * from kitchen_sink").await(on: eventLoop)
+        if queryResult.count == 1 {
+            let row = queryResult[0]
             print(row)
             XCTAssertEqual(row["smallint"], .int16(1))
             XCTAssertEqual(row["integer"], .int32(2))
@@ -118,13 +118,28 @@ class PostgreSQLClientTests: XCTestCase {
             XCTAssertEqual(row["bytea"], .data(Data([0x31, 0x32])))
             XCTAssertEqual(row["boolean"], .uint8(0x01))
         } else {
-            XCTFail("Select count is: \(selectResult.count)")
+            XCTFail("query result count is: \(queryResult.count)")
+        }
+
+        let parameterizedResult = try client.parameterizedQuery("select * from kitchen_sink").await(on: eventLoop)
+        if parameterizedResult.count == 1 {
+            let row = parameterizedResult[0]
+            print(row)
+            XCTAssertEqual(row["smallint"], .int16(1))
+            XCTAssertEqual(row["integer"], .int32(2))
+            XCTAssertEqual(row["bigint"], .int(3))
+            XCTAssertEqual(row["decimal"], .double(4))
+            XCTAssertEqual(row["real"], .float(6))
+            XCTAssertEqual(row["double"], .double(7))
+            XCTAssertEqual(row["varchar"], .string("9"))
+            XCTAssertEqual(row["char"], .string("10  "))
+            XCTAssertEqual(row["text"], .string("11"))
+            XCTAssertEqual(row["bytea"], .data(Data([0x31, 0x32])))
+            XCTAssertEqual(row["boolean"], .uint8(0x01))
+        } else {
+            XCTFail("parameterized result count is: \(parameterizedResult.count)")
         }
     }
-
-    /*
-
- */
 
     static var allTests = [
         ("testVersion", testVersion),

@@ -95,9 +95,11 @@ final class PostgreSQLClient {
         let bind = try PostgreSQLBindRequest(
             portalName: "",
             statementName: "",
-            parameterFormatCodes: [.binary],
+            parameterFormatCodes: parse.parameterTypes.map {
+                $0.supportsBinaryFormat ? .binary : .text
+            },
             parameters: parameters.map { try .serialize(data: $0) },
-            resultFormatCodes: [.binary]
+            resultFormatCodes: [.text] // support .binary in the future
         )
         let describe = PostgreSQLDescribeRequest(type: .portal, name: "")
         let execute = PostgreSQLExecuteRequest(

@@ -39,7 +39,6 @@ struct PostgreSQLDataRowColumn: Decodable {
     /// Parses this column to the specified data type assuming binary format.
     func parseBinary(dataType: PostgreSQLDataType) throws -> PostgreSQLData {
         guard let value = self.value else { return .null }
-
         switch dataType {
         case .name, .text, .varchar: return try .string(value.makeString())
         case .int8: return .int(value.makeFixedWidthInteger())
@@ -47,21 +46,9 @@ struct PostgreSQLDataRowColumn: Decodable {
         case .int2: return .int16(value.makeFixedWidthInteger())
         case .bool, .char: return .uint8(value.makeFixedWidthInteger())
         case .bytea: return .data(value)
-        case .bpchar, .timestamp, .date, .time:
-            fatalError("\(dataType): \(value.hexDebug)")
-        case .float4:
-            fatalError("float4: \(value.hexDebug)")
-        case .float8:
-            fatalError("float8: \(value.hexDebug)")
-        case .numeric:
-            fatalError("numeric: \(value.hexDebug)")
-        case .pg_node_tree:
-            print("pg node tree")
-            return .null
-        case ._aclitem:
-            print("acl item")
-            return .null
         case .void: return .null
+        case .bpchar, .timestamp, .date, .time, .float4, .float8, .numeric, .pg_node_tree, ._aclitem:
+            fatalError("Unexpected binary \(dataType): \(value.hexDebug)")
         }
     }
 
@@ -69,9 +56,7 @@ struct PostgreSQLDataRowColumn: Decodable {
     func parseText(dataType: PostgreSQLDataType) throws -> PostgreSQLData {
         guard let value = self.value else { return .null }
         switch dataType {
-        case .bool:
-            let bool = try value.makeString() == "t"
-            return .uint8(bool ? 1 : 0)
+        case .bool: return try .uint8(value.makeString() == "t" ? 1 : 0)
         case .text, .name, .varchar, .bpchar: return try .string(value.makeString())
         case .int8: return try Int(value.makeString()).flatMap { .int($0) } ?? .null
         case .oid, .regproc, .int4: return try Int32(value.makeString()).flatMap { .int32($0) } ?? .null
@@ -80,34 +65,24 @@ struct PostgreSQLDataRowColumn: Decodable {
         case .float4: return try Float(value.makeString()).flatMap { .float($0) } ?? .null
         case .numeric, .float8: return try Double(value.makeString()).flatMap { .double($0) } ?? .null
         case .bytea: return try value.makeString().hexadecimal().flatMap { .data($0) } ?? .null
-        case .timestamp:
-            let string = try value.makeString()
-            let formatter = DateFormatter()
-            formatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSSSSS"
-            let date = formatter.date(from: string) !! "Malformed timestamp: \(string)"
-            return .date(date)
-        case .date:
-            let string = try value.makeString()
-            let formatter = DateFormatter()
-            formatter.dateFormat = "yyyy-MM-dd"
-            let date = formatter.date(from: string) !! "Malformed date: \(string)"
-            return .date(date)
-        case .time:
-            let string = try value.makeString()
-            let formatter = DateFormatter()
-            formatter.dateFormat = "HH:mm:ss.SSSSSS"
-            let date = formatter.date(from: string) !! "Malformed time: \(string)"
-            return .date(date)
+        case .timestamp: return try .date(value.makeString().parseDate(format:  "yyyy-MM-dd HH:mm:ss.SSSSSS"))
+        case .date: return try .date(value.makeString().parseDate(format:  "yyyy-MM-dd"))
+        case .time: return try .date(value.makeString().parseDate(format:  "HH:mm:ss.SSSSSS"))
         case .void: return .null
-        case .pg_node_tree:
-            print("pg node tree")
-            return .null
-        case ._aclitem:
-            print("acl item")
-            return .null
+        case .pg_node_tree, ._aclitem: return try .string(value.makeString())
         }
-//        print(String(data: value, encoding: .utf8))
-//        fatalError("\(dataType): \(value.hexDebug)")
+    }
+}
+
+extension String {
+    /// Parses a Date from this string with the supplied date format.
+    func parseDate(format: String) throws -> Date {
+        let formatter = DateFormatter()
+        formatter.dateFormat = format
+        guard let date = formatter.date(from: self) else {
+            throw PostgreSQLError(identifier: "date", reason: "Malformed date: \(self)")
+        }
+        return date
     }
 }
 
