@@ -9,17 +9,17 @@ public enum PostgreSQLData {
     case int8(Int8)
     case int16(Int16)
     case int32(Int32)
-    case int(Int)
+    case int64(Int64)
 
     case uint8(UInt8)
     case uint16(UInt16)
     case uint32(UInt32)
-    case uint(UInt)
+    case uint64(UInt64)
 
     case float(Float)
     case double(Double)
 
-    case point(x: Int, y: Int)
+    case point(x: Double, y: Double)
     
     case null
 }
@@ -41,12 +41,14 @@ extension PostgreSQLData {
         case .int8(let i): return Int(i)
         case .int16(let i): return Int(i)
         case .int32(let i): return Int(i)
-        case .int(let i): return i
+        case .int64(let i):
+            guard i <= Int64(Int.max) else { return nil }
+            return Int(i)
         case .uint8(let ui): return Int(ui)
         case .uint16(let ui): return Int(ui)
         case .uint32(let ui): return Int(ui)
-        case .uint(let ui):
-            guard ui < UInt(Int.max) else { return nil }
+        case .uint64(let ui):
+            guard ui <= UInt64(Int.max) else { return nil }
             return Int(ui)
         case .string(let s): return Int(s)
         default: return nil
@@ -85,11 +87,11 @@ extension PostgreSQLData: Equatable {
         case (.int8(let a), .int8(let b)): return a == b
         case (.int16(let a), .int16(let b)): return a == b
         case (.int32(let a), .int32(let b)): return a == b
-        case (.int(let a), .int(let b)): return a == b
+        case (.int64(let a), .int64(let b)): return a == b
         case (.uint8(let a), .uint8(let b)): return a == b
         case (.uint16(let a), .uint16(let b)): return a == b
         case (.uint32(let a), .uint32(let b)): return a == b
-        case (.uint(let a), .uint(let b)): return a == b
+        case (.uint64(let a), .uint64(let b)): return a == b
         case (.float(let a), .float(let b)): return a == b
         case (.double(let a), .double(let b)): return a == b
         case (.point(let a), .point(let b)): return a == b
@@ -113,11 +115,11 @@ extension PostgreSQLData: CustomStringConvertible {
         case .int8(let val): return "\(val) (int8)"
         case .int16(let val): return "\(val) (int16)"
         case .int32(let val): return "\(val) (int32)"
-        case .int(let val): return "\(val) (int)"
+        case .int64(let val): return "\(val) (int64)"
         case .uint8(let val): return "\(val) (uint8)"
         case .uint16(let val): return "\(val) (uint16)"
         case .uint32(let val): return "\(val) (uint32)"
-        case .uint(let val): return "\(val) (uint)"
+        case .uint64(let val): return "\(val) (uint64)"
         case .float(let val): return "\(val) (float)"
         case .double(let val): return "\(val) (double)"
         case .point(let x, let y): return "(\(x), \(y))"

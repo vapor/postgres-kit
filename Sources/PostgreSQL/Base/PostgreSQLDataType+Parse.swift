@@ -13,7 +13,7 @@ extension PostgreSQLDataType {
     private func parseBinary(from data: Data) throws -> PostgreSQLData {
         switch self {
         case .name, .text, .varchar: return try .string(data.makeString())
-        case .int8: return .int(data.makeFixedWidthInteger())
+        case .int8: return .int64(data.makeFixedWidthInteger())
         case .oid, .regproc, .int4: return .int32(data.makeFixedWidthInteger())
         case .int2: return .int16(data.makeFixedWidthInteger())
         case .bool, .char: return .uint8(data.makeFixedWidthInteger())
@@ -22,7 +22,7 @@ extension PostgreSQLDataType {
         case .float4: return .float(data.makeFloatingPoint())
         case .float8: return .double(data.makeFloatingPoint())
         case .bpchar: return try .string(data.makeString())
-        case .point: return .point(x: data[0..<8].makeFixedWidthInteger(), y: data[8..<16].makeFixedWidthInteger())
+        case .point: return .point(x: data[0..<8].makeFloatingPoint(), y: data[8..<16].makeFloatingPoint())
         case .timestamp, .date, .time, .numeric, .pg_node_tree, ._aclitem:
             fatalError("Unexpected binary for \(self) (preferred format): \(data.hexDebug)")
         }
@@ -33,7 +33,7 @@ extension PostgreSQLDataType {
         switch self {
         case .bool: return try .uint8(data.makeString() == "t" ? 1 : 0)
         case .text, .name, .varchar, .bpchar: return try .string(data.makeString())
-        case .int8: return try Int(data.makeString()).flatMap { .int($0) } ?? .null
+        case .int8: return try Int64(data.makeString()).flatMap { .int64($0) } ?? .null
         case .oid, .regproc, .int4: return try Int32(data.makeString()).flatMap { .int32($0) } ?? .null
         case .int2: return try Int16(data.makeString()).flatMap { .int16($0) } ?? .null
         case .char: return .uint8(data[0])
@@ -51,7 +51,8 @@ extension PostgreSQLDataType {
             var y = parts[1]
             assert(x.popFirst()! == "(")
             assert(y.popLast()! == ")")
-            return .point(x: Int(x)!, y: Int(y)!)
+            print(string)
+            return .point(x: Double(x)!, y: Double(y)!)
         case .pg_node_tree, ._aclitem: return try .string(data.makeString())
         }
     }

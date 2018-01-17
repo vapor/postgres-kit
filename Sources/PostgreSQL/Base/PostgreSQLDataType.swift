@@ -34,8 +34,8 @@ extension PostgreSQLDataType {
         case .int8: return .char
         case .int16: return .int2
         case .int32: return .int4
-        case .int: return .int8
-        case .uint: return .int8
+        case .int64: return .int8
+        case .uint64: return .int8
         case .uint8: return .bool
         case .uint16: return .int2
         case .uint32: return .int4
