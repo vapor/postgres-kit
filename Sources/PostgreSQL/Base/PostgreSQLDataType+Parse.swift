@@ -16,7 +16,7 @@ extension PostgreSQLDataType {
         case .int8: return .int64(data.makeFixedWidthInteger())
         case .oid, .regproc, .int4: return .int32(data.makeFixedWidthInteger())
         case .int2: return .int16(data.makeFixedWidthInteger())
-        case .bool, .char: return .uint8(data.makeFixedWidthInteger())
+        case .bool, .char: return .int8(data.makeFixedWidthInteger())
         case .bytea: return .data(data)
         case .void: return .null
         case .float4: return .float(data.makeFloatingPoint())
@@ -31,14 +31,14 @@ extension PostgreSQLDataType {
     /// Parses this column to the specified data type assuming text format.
     private func parseText(from data: Data) throws -> PostgreSQLData {
         switch self {
-        case .bool: return try .uint8(data.makeString() == "t" ? 1 : 0)
-        case .text, .name, .varchar, .bpchar: return try .string(data.makeString())
+        case .bool: return try .int8(data.makeString() == "t" ? 1 : 0)
+        case .text, .name, .varchar, .bpchar,.numeric: return try .string(data.makeString())
         case .int8: return try Int64(data.makeString()).flatMap { .int64($0) } ?? .null
         case .oid, .regproc, .int4: return try Int32(data.makeString()).flatMap { .int32($0) } ?? .null
         case .int2: return try Int16(data.makeString()).flatMap { .int16($0) } ?? .null
-        case .char: return .uint8(data[0])
+        case .char: return .int8(Int8(bitPattern: data[0]))
         case .float4: return try Float(data.makeString()).flatMap { .float($0) } ?? .null
-        case .numeric, .float8: return try Double(data.makeString()).flatMap { .double($0) } ?? .null
+        case .float8: return try Double(data.makeString()).flatMap { .double($0) } ?? .null
         case .bytea: return try .data(Data(hexString: data[2...].makeString()))
         case .timestamp: return try .date(data.makeString().parseDate(format:  "yyyy-MM-dd HH:mm:ss"))
         case .date: return try .date(data.makeString().parseDate(format:  "yyyy-MM-dd"))

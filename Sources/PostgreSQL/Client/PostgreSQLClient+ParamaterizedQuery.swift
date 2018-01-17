@@ -29,20 +29,14 @@ extension PostgreSQLClient {
         let describe = PostgreSQLDescribeRequest(type: .statement, name: "")
         var currentRow: PostgreSQLRowDescription?
         var currentParameters: PostgreSQLParameterDescription?
-        return queueStream.enqueue([
+        return send([
             .parse(parse), .describe(describe), .sync
         ]) { message in
             switch message {
-            case .errorResponse(let e): throw e
-            case .parseComplete: return false
-            case .rowDescription(let row):
-                currentRow = row
-                return false
-            case .parameterDescription(let parameters):
-                currentParameters = parameters
-                return false
-            case .noData: return false
-            case .readyForQuery: return true
+            case .parseComplete: break
+            case .rowDescription(let row): currentRow = row
+            case .parameterDescription(let parameters): currentParameters = parameters
+            case .noData: break
             default: fatalError("Unexpected message during PostgreSQLParseRequest: \(message)")
             }
         }.flatMap(to: Void.self) {
@@ -63,20 +57,17 @@ extension PostgreSQLClient {
                 portalName: "",
                 maxRows: 0
             )
-            return self.queueStream.enqueue([
+            return self.send([
                 .bind(bind), .execute(execute), .sync
             ]) { message in
                 switch message {
-                case .errorResponse(let e): throw e
-                case .bindComplete: return false
+                case .bindComplete: break
                 case .dataRow(let data):
                     let row = currentRow !! "Unexpected PostgreSQLDataRow without preceding PostgreSQLRowDescription."
                     let parsed = try row.parse(data: data, formats: _resultFormats)
                     onRow(parsed)
-                    return false
-                case .close: return false
-                case .noData: return false
-                case .readyForQuery: return true
+                case .close: break
+                case .noData: break
                 default: fatalError("Unexpected message during PostgreSQLParseRequest: \(message)")
                 }
             }

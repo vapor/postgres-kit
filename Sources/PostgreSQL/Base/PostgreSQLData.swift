@@ -6,15 +6,12 @@ public enum PostgreSQLData {
     case data(Data)
     case date(Date)
 
+    case bool(Bool)
+
     case int8(Int8)
     case int16(Int16)
     case int32(Int32)
     case int64(Int64)
-
-    case uint8(UInt8)
-    case uint16(UInt16)
-    case uint32(UInt32)
-    case uint64(UInt64)
 
     case float(Float)
     case double(Double)
@@ -44,12 +41,6 @@ extension PostgreSQLData {
         case .int64(let i):
             guard i <= Int64(Int.max) else { return nil }
             return Int(i)
-        case .uint8(let ui): return Int(ui)
-        case .uint16(let ui): return Int(ui)
-        case .uint32(let ui): return Int(ui)
-        case .uint64(let ui):
-            guard ui <= UInt64(Int.max) else { return nil }
-            return Int(ui)
         case .string(let s): return Int(s)
         default: return nil
         }
@@ -88,10 +79,6 @@ extension PostgreSQLData: Equatable {
         case (.int16(let a), .int16(let b)): return a == b
         case (.int32(let a), .int32(let b)): return a == b
         case (.int64(let a), .int64(let b)): return a == b
-        case (.uint8(let a), .uint8(let b)): return a == b
-        case (.uint16(let a), .uint16(let b)): return a == b
-        case (.uint32(let a), .uint32(let b)): return a == b
-        case (.uint64(let a), .uint64(let b)): return a == b
         case (.float(let a), .float(let b)): return a == b
         case (.double(let a), .double(let b)): return a == b
         case (.point(let a), .point(let b)): return a == b
@@ -116,13 +103,10 @@ extension PostgreSQLData: CustomStringConvertible {
         case .int16(let val): return "\(val) (int16)"
         case .int32(let val): return "\(val) (int32)"
         case .int64(let val): return "\(val) (int64)"
-        case .uint8(let val): return "\(val) (uint8)"
-        case .uint16(let val): return "\(val) (uint16)"
-        case .uint32(let val): return "\(val) (uint32)"
-        case .uint64(let val): return "\(val) (uint64)"
         case .float(let val): return "\(val) (float)"
         case .double(let val): return "\(val) (double)"
         case .point(let x, let y): return "(\(x), \(y))"
+        case .bool(let bool): return bool.description
         case .null: return "null"
         }
     }

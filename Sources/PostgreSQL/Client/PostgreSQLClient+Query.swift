@@ -6,8 +6,8 @@ extension PostgreSQLClient {
         var rows: [[String: PostgreSQLData]] = []
         return query(string) { row in
             rows.append(row)
-            }.map(to: [[String: PostgreSQLData]].self) {
-                return rows
+        }.map(to: [[String: PostgreSQLData]].self) {
+            return rows
         }
     }
 
@@ -16,7 +16,7 @@ extension PostgreSQLClient {
     public func query(_ string: String, onRow: @escaping ([String: PostgreSQLData]) -> ()) -> Future<Void> {
         var currentRow: PostgreSQLRowDescription?
         let query = PostgreSQLQuery(query: string)
-        return queueStream.enqueue([.query(query)]) { message in
+        return send([.query(query)]) { message in
             switch message {
             case .rowDescription(let row):
                 currentRow = row
@@ -25,11 +25,8 @@ extension PostgreSQLClient {
                 let parsed = try row.parse(data: data, formats: row.fields.map { $0.formatCode })
                 onRow(parsed)
             case .close: break // query over, waiting for `readyForQuery`
-            case .readyForQuery: return true
-            case .errorResponse(let e): throw e
             default: fatalError("Unexpected message during PostgreSQLQuery: \(message)")
             }
-            return false // more messages, please
         }
     }
 }

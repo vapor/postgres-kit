@@ -31,16 +31,13 @@ extension PostgreSQLDataType {
     /// Converts the supplied `PostgreSQLData` to the best matching `PostgreSQLDataType`
     static func type(forData data: PostgreSQLData) -> PostgreSQLDataType {
         switch data {
+        case .bool: return .bool
         case .int8: return .char
         case .int16: return .int2
         case .int32: return .int4
         case .int64: return .int8
-        case .uint64: return .int8
-        case .uint8: return .bool
-        case .uint16: return .int2
-        case .uint32: return .int4
         case .null: return .void
-        case .string: return .varchar
+        case .string: return .text
         case .double: return .float8
         case .float: return .float4
         case .data: return .bytea

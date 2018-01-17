@@ -3,7 +3,7 @@ import Async
 /// A PostgreSQL frontend client.
 public final class PostgreSQLClient {
     /// Handles enqueued redis commands and responses.
-    internal let queueStream: AsymmetricQueueStream<PostgreSQLMessage, PostgreSQLMessage>
+    private let queueStream: AsymmetricQueueStream<PostgreSQLMessage, PostgreSQLMessage>
 
     /// Creates a new Redis client on the provided data source and sink.
     init<Stream>(stream: Stream, on worker: Worker) where Stream: ByteStream {
@@ -21,24 +21,29 @@ public final class PostgreSQLClient {
     }
 
     /// Sends `PostgreSQLMessage` to the server.
-    func send(_ message: PostgreSQLMessage) -> Future<[PostgreSQLMessage]> {
-        var responses: [PostgreSQLMessage] = []
-        return queueStream.enqueue([message]) { message in
-            responses.append(message)
+    func send(_ message: [PostgreSQLMessage], onResponse: @escaping (PostgreSQLMessage) throws -> ()) -> Future<Void> {
+        return queueStream.enqueue(message) { message in
             switch message {
             case .readyForQuery: return true
-            case .errorResponse(let e): throw e
-            default: return false
+            case .error(let e): throw e
+            case .notice(let n):
+                print(n)
+                return false
+            default:
+                try onResponse(message)
+                return false // request until ready for query
             }
-        }.map(to: [PostgreSQLMessage].self) {
-            return responses
         }
     }
 
-    /// Authenticates the `PostgreSQLClient` using a username with no password.
-    public func authenticate(username: String) -> Future<Void> {
-        let startup = PostgreSQLStartupMessage.versionThree(parameters: ["user": username])
-        return send(.startupMessage(startup)).transform(to: ())
+    /// Sends `PostgreSQLMessage` to the server.
+    func send(_ message: [PostgreSQLMessage]) -> Future<[PostgreSQLMessage]> {
+        var responses: [PostgreSQLMessage] = []
+        return send(message) { response in
+            responses.append(response)
+        }.map(to: [PostgreSQLMessage].self) {
+            return responses
+        }
     }
 }
 

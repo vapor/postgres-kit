@@ -108,14 +108,14 @@ class PostgreSQLClientTests: XCTestCase {
             XCTAssertEqual(row["smallint"], .int16(1))
             XCTAssertEqual(row["integer"], .int32(2))
             XCTAssertEqual(row["bigint"], .int64(3))
-            XCTAssertEqual(row["decimal"], .double(4))
+            XCTAssertEqual(row["decimal"], .string("4"))
             XCTAssertEqual(row["real"], .float(6))
             XCTAssertEqual(row["double"], .double(7))
             XCTAssertEqual(row["varchar"], .string("9"))
             XCTAssertEqual(row["char"], .string("10  "))
             XCTAssertEqual(row["text"], .string("11"))
             XCTAssertEqual(row["bytea"], .data(Data([0x31, 0x32])))
-            XCTAssertEqual(row["boolean"], .uint8(0x01))
+            XCTAssertEqual(row["boolean"], .int8(0x01))
             XCTAssertEqual(row["point"], .point(x: 13.5, y: 14))
         } else {
             XCTFail("query result count is: \(queryResult.count)")
@@ -156,7 +156,7 @@ class PostgreSQLClientTests: XCTestCase {
         );
         """
         _ = try client.query("drop table if exists kitchen_sink;").await(on: eventLoop)
-        let createResult = try client.query(createQuery).await(on: eventLoop)
+        let createResult = try! client.query(createQuery).await(on: eventLoop)
         XCTAssertEqual(createResult.count, 0)
 
         let insertQuery = """
@@ -164,7 +164,7 @@ class PostgreSQLClientTests: XCTestCase {
             $1, -- "smallint" smallint
             $2, -- "integer" integer
             $3, -- "bigint" bigint
-            $4, -- "decimal" decimal
+            $4::numeric, -- "decimal" decimal
             $5, -- "numeric" numeric
             $6, -- "real" real
             $7, -- "double" double precision
@@ -194,7 +194,7 @@ class PostgreSQLClientTests: XCTestCase {
             PostgreSQLData.int16(1), // smallint
             PostgreSQLData.int32(2), // integer
             PostgreSQLData.int64(3), // bigint
-            PostgreSQLData.double(4), // decimal
+            PostgreSQLData.string("3.14159"), // decimal
             PostgreSQLData.double(5), // numeric
             PostgreSQLData.float(6), // real
             PostgreSQLData.double(7), // double
@@ -205,8 +205,8 @@ class PostgreSQLClientTests: XCTestCase {
             PostgreSQLData.date(Date()), // timestamp
             PostgreSQLData.date(Date()), // date
             PostgreSQLData.date(Date()), // time
-            PostgreSQLData.uint8(1), // boolean
-            PostgreSQLData.point(x: 11.5, y: 12) // point
+            PostgreSQLData.bool(true), // boolean
+            PostgreSQLData.point(x: 11.5, y: 12), // point
         ]).await(on: eventLoop)
         XCTAssertEqual(insertResult.count, 0)
 
@@ -216,14 +216,14 @@ class PostgreSQLClientTests: XCTestCase {
             XCTAssertEqual(row["smallint"], .int16(1))
             XCTAssertEqual(row["integer"], .int32(2))
             XCTAssertEqual(row["bigint"], .int64(3))
-            XCTAssertEqual(row["decimal"], .double(4))
+            XCTAssertEqual(row["decimal"], .string("3.14159"))
             XCTAssertEqual(row["real"], .float(6))
             XCTAssertEqual(row["double"], .double(7))
             XCTAssertEqual(row["varchar"], .string("8"))
             XCTAssertEqual(row["char"], .string("9   "))
             XCTAssertEqual(row["text"], .string("10"))
             XCTAssertEqual(row["bytea"], .data(Data([0x31, 0x32])))
-            XCTAssertEqual(row["boolean"], .uint8(0x01))
+            XCTAssertEqual(row["boolean"], .int8(0x01))
             XCTAssertEqual(row["point"], .point(x: 11.5, y: 12))
         } else {
             XCTFail("parameterized result count is: \(parameterizedResult.count)")

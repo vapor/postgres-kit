@@ -20,7 +20,8 @@ final class PostgreSQLMessageDecoder {
 
         let message: PostgreSQLMessage
         switch type {
-        case .E: message = try .errorResponse(decoder.decode())
+        case .E: message = try .error(decoder.decode())
+        case .N: message = try .notice(decoder.decode())
         case .R: message = try .authenticationRequest(decoder.decode())
         case .S: message = try .parameterStatus(decoder.decode())
         case .K: message = try .backendKeyData(decoder.decode())

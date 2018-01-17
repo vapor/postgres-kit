@@ -3,7 +3,10 @@ import Bits
 /// A frontend or backend PostgreSQL message.
 enum PostgreSQLMessage {
     case startupMessage(PostgreSQLStartupMessage)
-    case errorResponse(PostgreSQLErrorResponse)
+    /// Identifies the message as an error.
+    case error(PostgreSQLDiagnosticResponse)
+    /// Identifies the message as a notice.
+    case notice(PostgreSQLDiagnosticResponse)
     case authenticationRequest(PostgreSQLAuthenticationRequest)
     case parameterStatus(PostgreSQLParameterStatus)
     case backendKeyData(PostgreSQLBackendKeyData)
