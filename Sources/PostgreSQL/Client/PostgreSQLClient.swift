@@ -1,9 +1,9 @@
 import Async
 
 /// A PostgreSQL frontend client.
-final class PostgreSQLClient {
+public final class PostgreSQLClient {
     /// Handles enqueued redis commands and responses.
-    private let queueStream: AsymmetricQueueStream<PostgreSQLMessage, PostgreSQLMessage>
+    internal let queueStream: AsymmetricQueueStream<PostgreSQLMessage, PostgreSQLMessage>
 
     /// Creates a new Redis client on the provided data source and sink.
     init<Stream>(stream: Stream, on worker: Worker) where Stream: ByteStream {
@@ -35,99 +35,9 @@ final class PostgreSQLClient {
         }
     }
 
-    /// Sends a simple PostgreSQL query command, collecting the parsed results.
-    func query(_ string: String) -> Future<[[String: PostgreSQLData]]> {
-        var rows: [[String: PostgreSQLData]] = []
-        return query(string) { row in
-            rows.append(row)
-            }.map(to: [[String: PostgreSQLData]].self) {
-                return rows
-        }
-    }
-
-    /// Sends a simple PostgreSQL query command, returning the parsed results to
-    /// the supplied closure.
-    func query(_ string: String, onRow: @escaping ([String: PostgreSQLData]) -> ()) -> Future<Void> {
-        var currentRow: PostgreSQLRowDescription?
-        let query = PostgreSQLQuery(query: string)
-        return queueStream.enqueue([.query(query)]) { message in
-            switch message {
-            case .rowDescription(let row):
-                currentRow = row
-            case .dataRow(let data):
-                let row = currentRow !! "Unexpected PostgreSQLDataRow without preceding PostgreSQLRowDescription."
-                let parsed = try row.parse(data: data)
-                onRow(parsed)
-            case .close: break // query over, waiting for `readyForQuery`
-            case .readyForQuery: return true
-            case .errorResponse(let e): throw e
-            default: fatalError("Unexpected message during PostgreSQLQuery: \(message)")
-            }
-            return false // more messages, please
-        }
-    }
-
-    /// Sends a parameterized PostgreSQL query command, collecting the parsed results.
-    func parameterizedQuery(
-        _ string: String,
-        _ parameters: [PostgreSQLData] = []
-    ) throws -> Future<[[String: PostgreSQLData]]> {
-        var rows: [[String: PostgreSQLData]] = []
-        return try parameterizedQuery(string, parameters) { row in
-            rows.append(row)
-        }.map(to: [[String: PostgreSQLData]].self) {
-            return rows
-        }
-    }
-
-    /// Sends a parameterized PostgreSQL query command, returning the parsed results to
-    /// the supplied closure.
-    func parameterizedQuery(
-        _ string: String,
-        _ parameters: [PostgreSQLData] = [],
-        onRow: @escaping ([String: PostgreSQLData]) -> ()
-    ) throws -> Future<Void> {
-        let parse = PostgreSQLParseRequest(
-            statementName: "",
-            query: string,
-            parameterTypes: parameters.map { .type(forData: $0) }
-        )
-        let bind = try PostgreSQLBindRequest(
-            portalName: "",
-            statementName: "",
-            parameterFormatCodes: parse.parameterTypes.map {
-                $0.supportsBinaryFormat ? .binary : .text
-            },
-            parameters: parameters.map { try .serialize(data: $0) },
-            resultFormatCodes: [.text] // support .binary in the future
-        )
-        let describe = PostgreSQLDescribeRequest(type: .portal, name: "")
-        let execute = PostgreSQLExecuteRequest(
-            portalName: "",
-            maxRows: 0
-        )
-        var currentRow: PostgreSQLRowDescription?
-        return queueStream.enqueue([
-            .parse(parse), .bind(bind), .describe(describe), .execute(execute), .sync
-        ]) { message in
-            switch message {
-            case .errorResponse(let e): throw e
-            case .parseComplete: return false
-            case .bindComplete: return false
-            case .rowDescription(let row):
-                currentRow = row
-                return false
-            case .dataRow(let data):
-                let row = currentRow !! "Unexpected PostgreSQLDataRow without preceding PostgreSQLRowDescription."
-                let parsed = try row.parse(data: data)
-                onRow(parsed)
-                return false
-            case .close: return false
-            case .noData: return false
-            case .readyForQuery: return true
-            default: fatalError("Unexpected message during PostgreSQLParseRequest: \(message)")
-            }
-        }
+    public func authenticate(username: String) -> Future<Void> {
+        let startup = PostgreSQLStartupMessage.versionThree(parameters: ["user": username])
+        return send(.startupMessage(startup)).transform(to: ())
     }
 }
 

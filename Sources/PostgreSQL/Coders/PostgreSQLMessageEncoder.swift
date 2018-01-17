@@ -187,6 +187,8 @@ fileprivate final class _PostgreSQLMessageKeyedEncoder<K>: KeyedEncodingContaine
     func superEncoder(forKey key: K) -> Encoder { return encoder }
 }
 
+/// MARK: Unkeyed
+
 fileprivate final class _PostgreSQLMessageUnkeyedEncoder: UnkeyedEncodingContainer {
     var count: Int
     var codingPath: [CodingKey]

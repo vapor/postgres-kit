@@ -13,6 +13,8 @@ enum PostgreSQLMessage {
     case dataRow(PostgreSQLDataRow)
     case close(PostgreSQLCloseCommand)
     case parse(PostgreSQLParseRequest)
+    /// Identifies the message as a parameter description.
+    case parameterDescription(PostgreSQLParameterDescription)
     /// Identifies the message as a Bind command.
     case bind(PostgreSQLBindRequest)
     /// Identifies the message as a Describe command.

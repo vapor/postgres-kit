@@ -1,7 +1,7 @@
 import Async
 import Foundation
 import XCTest
-@testable import PostgreSQL
+import PostgreSQL
 import TCP
 
 class PostgreSQLClientTests: XCTestCase {
@@ -189,7 +189,7 @@ class PostgreSQLClientTests: XCTestCase {
             -- "uuid" uuid
         );
         """
-        let insertResult = try client.parameterizedQuery(insertQuery, [
+        let insertResult = try! client.parameterizedQuery(insertQuery, [
             PostgreSQLData.int16(1), // smallint
             PostgreSQLData.int32(2), // integer
             PostgreSQLData.int(3), // bigint
@@ -208,7 +208,7 @@ class PostgreSQLClientTests: XCTestCase {
         ]).await(on: eventLoop)
         XCTAssertEqual(insertResult.count, 0)
 
-        let parameterizedResult = try client.parameterizedQuery("select * from kitchen_sink").await(on: eventLoop)
+        let parameterizedResult = try! client.parameterizedQuery("select * from kitchen_sink").await(on: eventLoop)
         if parameterizedResult.count == 1 {
             let row = parameterizedResult[0]
             XCTAssertEqual(row["smallint"], .int16(1))
@@ -241,9 +241,7 @@ extension PostgreSQLClient {
     static func makeTest() throws -> (PostgreSQLClient, EventLoop) {
         let eventLoop = try DefaultEventLoop(label: "codes.vapor.postgresql.client.test")
         let client = try PostgreSQLClient.connect(on: eventLoop)
-
-        let startup = PostgreSQLStartupMessage.versionThree(parameters: ["user": "postgres"])
-        _ = try client.send(.startupMessage(startup)).await(on: eventLoop)
+        _ = try client.authenticate(username: "postgres").await(on: eventLoop)
         return (client, eventLoop)
     }
 }

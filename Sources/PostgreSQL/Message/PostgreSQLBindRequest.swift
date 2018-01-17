@@ -30,44 +30,7 @@ struct PostgreSQLBindParameter: Encodable {
     var data: Data?
 
     /// Serializes the `PostgreSQLData` to this parameter.
-    static func serialize(data: PostgreSQLData) throws -> PostgreSQLBindParameter {
-        let serialized: Data?
-        switch data {
-        case .string(let string): serialized = Data(string.utf8)
-        case .null: serialized = nil
-        case .int8(let int): serialized = Data(int.bytes)
-        case .int16(let int): serialized = Data(int.bytes)
-        case .int32(let int): serialized = Data(int.bytes)
-        case .int(let int): serialized = Data(int.bytes)
-        case .uint8(let int): serialized = Data(int.bytes)
-        case .uint16(let int): serialized = Data(int.bytes)
-        case .uint32(let int): serialized = Data(int.bytes)
-        case .uint(let int): serialized = Data(int.bytes)
-        case .double(let double): serialized = Data(double.bytes)
-        case .float(let float): serialized = Data(float.bytes)
-        case .data(let data): serialized = data
-        case .date(let date): serialized = Data(date.description.utf8)
-        }
-        return .init(data: serialized)
-    }
-}
-
-extension FixedWidthInteger {
-    /// Big-endian bytes for this integer.
-    var bytes: [UInt8] {
-        var bytes = [UInt8](repeating: 0, count: Self.bitWidth / 8)
-        var intNetwork = bigEndian
-        memcpy(&bytes, &intNetwork, bytes.count)
-        return bytes
-    }
-}
-
-extension FloatingPoint {
-    /// Big-endian bytes for this floating-point number.
-    var bytes: [UInt8] {
-        var bytes = [UInt8](repeating: 0, count: MemoryLayout<Self>.size)
-        var copy = self
-        memcpy(&bytes, &copy, bytes.count)
-        return bytes.reversed()
+    static func make(data: PostgreSQLData, format: PostgreSQLFormatCode) throws -> PostgreSQLBindParameter {
+        return try .init(data: data.serialize(format: format))
     }
 }

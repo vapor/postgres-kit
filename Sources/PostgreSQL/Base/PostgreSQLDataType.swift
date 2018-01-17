@@ -1,3 +1,5 @@
+import Foundation
+
 /// The data type's raw object ID.
 /// Use `select * from pg_type where oid = <idhere>;` to lookup more information.
 enum PostgreSQLDataType: Int32, Codable {
@@ -24,7 +26,6 @@ enum PostgreSQLDataType: Int32, Codable {
     case void = 2278
 }
 
-
 extension PostgreSQLDataType {
     /// Converts the supplied `PostgreSQLData` to the best matching `PostgreSQLDataType`
     static func type(forData data: PostgreSQLData) -> PostgreSQLDataType {
@@ -47,32 +48,37 @@ extension PostgreSQLDataType {
     }
 }
 
-
 extension PostgreSQLDataType {
-    /// If true, this type supports binary format.
-    var supportsBinaryFormat: Bool {
+    /// This type's preferred format.
+    /// Note: Ensure that the types parse and serialize support the preferred type!
+    var preferredFormat: PostgreSQLFormatCode {
         switch self {
-        case .bool: return true
-        case .bytea: return true
-        case .char: return true
-        case .name: return true
-        case .int8: return true
-        case .int2: return true
-        case .int4: return true
-        case .regproc: return true
-        case .text: return true
-        case .oid: return true
-        case .pg_node_tree: return false
-        case .float4: return true
-        case .float8: return true
-        case ._aclitem: return false
-        case .bpchar: return true
-        case .varchar: return true
-        case .date: return false
-        case .time: return false
-        case .timestamp: return false
-        case .numeric: return false
-        case .void: return true
+        // Binary
+        // These data types will use binary format where possible
+        case .bool: return .binary
+        case .bytea: return .binary
+        case .char: return .binary
+        case .name: return .binary
+        case .int8: return .binary
+        case .int2: return .binary
+        case .int4: return .binary
+        case .regproc: return .binary
+        case .text: return .binary
+        case .oid: return .binary
+        case .float4: return .binary
+        case .float8: return .binary
+        case .bpchar: return .binary
+        case .varchar: return .binary
+        case .void: return .binary
+
+        // Text
+        // Converting these to binary supporting may improve performance
+        case ._aclitem: return .text
+        case .pg_node_tree: return .text
+        case .date: return .text
+        case .time: return .text
+        case .timestamp: return .text
+        case .numeric: return .text
         }
     }
 }

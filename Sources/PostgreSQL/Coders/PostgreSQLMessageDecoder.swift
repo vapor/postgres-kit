@@ -31,6 +31,7 @@ final class PostgreSQLMessageDecoder {
         case .one: message = .parseComplete
         case .two: message = .bindComplete
         case .n: message = .noData
+        case .t: message = try .parameterDescription(decoder.decode())
         default:
             let string = String(bytes: [type], encoding: .ascii) ?? "n/a"
             fatalError("Unrecognized message type: \(string) (\(type)")
@@ -175,9 +176,12 @@ fileprivate final class _PostgreSQLMessageDecoder: Decoder, SingleValueDecodingC
         return KeyedDecodingContainer(container)
     }
 
-    // Unsupported
+    /// See Decoder.unkeyedContainer
+    func unkeyedContainer() throws -> UnkeyedDecodingContainer {
+        return _PostgreSQLMessageUnkeyedDecoder(decoder: self)
+    }
 
-    func unkeyedContainer() throws -> UnkeyedDecodingContainer { fatalError("Unsupported decode type: unkeyed container") }
+    // Unsupported
     func decode(_ type: Bool.Type) throws -> Bool { fatalError("Unsupported decode type: \(type)") }
     func decode(_ type: Int.Type) throws -> Int { fatalError("Unsupported decode type: \(type)") }
     func decode(_ type: Int8.Type) throws -> Int8 { fatalError("Unsupported decode type: \(type)") }
@@ -191,7 +195,6 @@ fileprivate final class _PostgreSQLMessageDecoder: Decoder, SingleValueDecodingC
 }
 
 // MARK: Keyed
-
 
 fileprivate final class _PostgreSQLMessageKeyedDecoder<K>: KeyedDecodingContainerProtocol where K: CodingKey {
     typealias Key = K
@@ -237,5 +240,48 @@ fileprivate final class _PostgreSQLMessageKeyedDecoder<K>: KeyedDecodingContaine
 
     func nestedUnkeyedContainer(forKey key: K) throws -> UnkeyedDecodingContainer {
         fatalError("Unsupported decoding type: nested unkeyed container")
+    }
+}
+
+/// MARK: Unkeyed
+
+fileprivate final class _PostgreSQLMessageUnkeyedDecoder: UnkeyedDecodingContainer {
+    var count: Int?
+    var isAtEnd: Bool {
+        return currentIndex == count
+    }
+    var currentIndex: Int
+    var codingPath: [CodingKey]
+    var decoder: _PostgreSQLMessageDecoder
+
+    /// Creates a new internal `_PostgreSQLMessageUnkeyedDecoder`
+    init(decoder: _PostgreSQLMessageDecoder) {
+        self.codingPath = []
+        self.decoder = decoder
+        self.count = try! Int(decoder.decode(Int16.self))
+        currentIndex = 0
+    }
+
+    func decode(_ type: Bool.Type) throws -> Bool { currentIndex += 1; return try decoder.decode(Bool.self) }
+    func decode(_ type: Int.Type) throws -> Int { currentIndex += 1; return try decoder.decode(Int.self) }
+    func decode(_ type: Int8.Type) throws -> Int8 { currentIndex += 1; return try decoder.decode(Int8.self) }
+    func decode(_ type: Int16.Type) throws -> Int16 { currentIndex += 1; return try decoder.decode(Int16.self) }
+    func decode(_ type: Int32.Type) throws -> Int32 { currentIndex += 1; return try decoder.decode(Int32.self) }
+    func decode(_ type: Int64.Type) throws -> Int64 { currentIndex += 1; return try decoder.decode(Int64.self) }
+    func decode(_ type: UInt.Type) throws -> UInt { currentIndex += 1; return try decoder.decode(UInt.self) }
+    func decode(_ type: UInt8.Type) throws -> UInt8 { currentIndex += 1; return try decoder.decode(UInt8.self) }
+    func decode(_ type: UInt16.Type) throws -> UInt16 { currentIndex += 1; return try decoder.decode(UInt16.self) }
+    func decode(_ type: UInt32.Type) throws -> UInt32 { currentIndex += 1; return try decoder.decode(UInt32.self) }
+    func decode(_ type: UInt64.Type) throws -> UInt64 { currentIndex += 1; return try decoder.decode(UInt64.self) }
+    func decode(_ type: Float.Type) throws -> Float { currentIndex += 1; return try decoder.decode(Float.self) }
+    func decode(_ type: Double.Type) throws -> Double { currentIndex += 1; return try decoder.decode(Double.self) }
+    func decode(_ type: String.Type) throws -> String { currentIndex += 1; return try decoder.decode(String.self) }
+    func decodeNil() throws -> Bool {currentIndex += 1; return decoder.decodeNil() }
+    func decode<T>(_ type: T.Type) throws -> T where T : Decodable { currentIndex += 1; return try decoder.decode(T.self) }
+    func nestedUnkeyedContainer() throws -> UnkeyedDecodingContainer { currentIndex += 1; return _PostgreSQLMessageUnkeyedDecoder(decoder: decoder) }
+    func superDecoder() throws -> Decoder { return decoder }
+    func nestedContainer<NestedKey>(keyedBy type: NestedKey.Type) throws -> KeyedDecodingContainer<NestedKey> where NestedKey : CodingKey {
+        let container = _PostgreSQLMessageKeyedDecoder<NestedKey>(decoder: decoder)
+        return KeyedDecodingContainer(container)
     }
 }
