@@ -74,19 +74,10 @@ struct PostgreSQLDataRowColumn: Decodable {
     }
 }
 
-extension String {
-    /// Parses a Date from this string with the supplied date format.
-    func parseDate(format: String) throws -> Date {
-        let formatter = DateFormatter()
-        formatter.dateFormat = format
-        guard let date = formatter.date(from: self) else {
-            throw PostgreSQLError(identifier: "date", reason: "Malformed date: \(self)")
-        }
-        return date
-    }
-}
+/// MARK: Data Helpers
 
 extension Data {
+    /// Converts this data to a fixed-width integer.
     func makeFixedWidthInteger<I>(_ type: I.Type = I.self) -> I where I: FixedWidthInteger {
         return withUnsafeBytes { (pointer: UnsafePointer<I>) -> I in
             return pointer.pointee.bigEndian
@@ -103,13 +94,25 @@ extension Data {
     }
 }
 
+/// MARK: String Helpers
+
 extension String {
+    /// Parses a Date from this string with the supplied date format.
+    func parseDate(format: String) throws -> Date {
+        let formatter = DateFormatter()
+        formatter.dateFormat = format
+        guard let date = formatter.date(from: self) else {
+            throw PostgreSQLError(identifier: "date", reason: "Malformed date: \(self)")
+        }
+        return date
+    }
+
     /// Create `Data` from hexadecimal string representation
     ///
     /// This takes a hexadecimal representation and creates a `Data` object. Note, if the string has any spaces or non-hex characters (e.g. starts with '<' and with a '>'), those are ignored and only hex characters are processed.
     ///
     /// - returns: Data represented by this hexadecimal string.
-
+    /// https://stackoverflow.com/questions/26501276/converting-hex-string-to-nsdata-in-swift
     func hexadecimal() -> Data? {
         var data = Data(capacity: count / 2)
 
