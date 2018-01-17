@@ -123,6 +123,7 @@ final class PostgreSQLClient {
                 onRow(parsed)
                 return false
             case .close: return false
+            case .noData: return false
             case .readyForQuery: return true
             default: fatalError("Unexpected message during PostgreSQLParseRequest: \(message)")
             }

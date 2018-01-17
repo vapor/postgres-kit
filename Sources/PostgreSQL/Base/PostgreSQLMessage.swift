@@ -25,6 +25,6 @@ enum PostgreSQLMessage {
     case parseComplete
     /// Identifies the message as a Bind-complete indicator.
     case bindComplete
-
-
+    /// Identifies the message as a no-data indicator.
+    case noData
 }

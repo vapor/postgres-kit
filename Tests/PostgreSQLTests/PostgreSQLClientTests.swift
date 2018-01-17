@@ -105,7 +105,6 @@ class PostgreSQLClientTests: XCTestCase {
         let queryResult = try client.query("select * from kitchen_sink").await(on: eventLoop)
         if queryResult.count == 1 {
             let row = queryResult[0]
-            print(row)
             XCTAssertEqual(row["smallint"], .int16(1))
             XCTAssertEqual(row["integer"], .int32(2))
             XCTAssertEqual(row["bigint"], .int(3))
@@ -120,20 +119,107 @@ class PostgreSQLClientTests: XCTestCase {
         } else {
             XCTFail("query result count is: \(queryResult.count)")
         }
+    }
+
+    func testParameterizedTypes() throws {
+        let (client, eventLoop) = try PostgreSQLClient.makeTest()
+        let createQuery = """
+        create table kitchen_sink (
+            "smallint" smallint,
+            "integer" integer,
+            "bigint" bigint,
+            "decimal" decimal,
+            "numeric" numeric,
+            "real" real,
+            "double" double precision,
+            "varchar" varchar(64),
+            "char" char(4),
+            "text" text,
+            "bytea" bytea,
+            "timestamp" timestamp,
+            "date" date,
+            "time" time,
+            "boolean" boolean-- ,
+            -- "point" point,
+            -- "line" line,
+            -- "lseg" lseg,
+            -- "box" box,
+            -- "path" path,
+            -- "polygon" polygon,
+            -- "circle" circle,
+            -- "cidr" cidr,
+            -- "inet" inet,
+            -- "macaddr" macaddr,
+            -- "bit" bit(16),
+            -- "uuid" uuid
+        );
+        """
+        _ = try client.query("drop table if exists kitchen_sink;").await(on: eventLoop)
+        let createResult = try client.query(createQuery).await(on: eventLoop)
+        XCTAssertEqual(createResult.count, 0)
+
+        let insertQuery = """
+        insert into kitchen_sink values (
+            $1, -- "smallint" smallint
+            $2, -- "integer" integer
+            $3, -- "bigint" bigint
+            $4, -- "decimal" decimal
+            $5, -- "numeric" numeric
+            $6, -- "real" real
+            $7, -- "double" double precision
+            $8, -- "varchar" varchar(64)
+            $9, -- "char" char(4)
+            $10, -- "text" text
+            $11, -- "bytea" bytea
+            $12, -- "timestamp" timestamp
+            $13, -- "date" date
+            $14, -- "time" time
+            $15 -- "boolean" boolean
+            -- "point" point,
+            -- "line" line,
+            -- "lseg" lseg,
+            -- "box" box,
+            -- "path" path,
+            -- "polygon" polygon,
+            -- "circle" circle,
+            -- "cidr" cidr,
+            -- "inet" inet,
+            -- "macaddr" macaddr,
+            -- "bit" bit(16),
+            -- "uuid" uuid
+        );
+        """
+        let insertResult = try client.parameterizedQuery(insertQuery, [
+            PostgreSQLData.int16(1), // smallint
+            PostgreSQLData.int32(2), // integer
+            PostgreSQLData.int(3), // bigint
+            PostgreSQLData.double(4), // decimal
+            PostgreSQLData.double(5), // numeric
+            PostgreSQLData.float(6), // real
+            PostgreSQLData.double(7), // double
+            PostgreSQLData.string("8"), // varchar
+            PostgreSQLData.string("9"), // char
+            PostgreSQLData.string("10"), // text
+            PostgreSQLData.data(Data([0x31, 0x32])), // bytea
+            PostgreSQLData.date(Date()), // timestamp
+            PostgreSQLData.date(Date()), // date
+            PostgreSQLData.date(Date()), // time
+            PostgreSQLData.uint8(1), // boolean
+        ]).await(on: eventLoop)
+        XCTAssertEqual(insertResult.count, 0)
 
         let parameterizedResult = try client.parameterizedQuery("select * from kitchen_sink").await(on: eventLoop)
         if parameterizedResult.count == 1 {
             let row = parameterizedResult[0]
-            print(row)
             XCTAssertEqual(row["smallint"], .int16(1))
             XCTAssertEqual(row["integer"], .int32(2))
             XCTAssertEqual(row["bigint"], .int(3))
             XCTAssertEqual(row["decimal"], .double(4))
             XCTAssertEqual(row["real"], .float(6))
             XCTAssertEqual(row["double"], .double(7))
-            XCTAssertEqual(row["varchar"], .string("9"))
-            XCTAssertEqual(row["char"], .string("10  "))
-            XCTAssertEqual(row["text"], .string("11"))
+            XCTAssertEqual(row["varchar"], .string("8"))
+            XCTAssertEqual(row["char"], .string("9   "))
+            XCTAssertEqual(row["text"], .string("10"))
             XCTAssertEqual(row["bytea"], .data(Data([0x31, 0x32])))
             XCTAssertEqual(row["boolean"], .uint8(0x01))
         } else {
@@ -143,6 +229,10 @@ class PostgreSQLClientTests: XCTestCase {
 
     static var allTests = [
         ("testVersion", testVersion),
+        ("testSelectTypes", testSelectTypes),
+        ("testParse", testParse),
+        ("testTypes", testTypes),
+        ("testParameterizedTypes", testParameterizedTypes),
     ]
 }
 

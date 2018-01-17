@@ -24,6 +24,7 @@ enum PostgreSQLDataType: Int32, Codable {
     case void = 2278
 }
 
+
 extension PostgreSQLDataType {
     /// Converts the supplied `PostgreSQLData` to the best matching `PostgreSQLDataType`
     static func type(forData data: PostgreSQLData) -> PostgreSQLDataType {
@@ -33,7 +34,7 @@ extension PostgreSQLDataType {
         case .int32: return .int4
         case .int: return .int8
         case .uint: return .int8
-        case .uint8: return .char
+        case .uint8: return .bool
         case .uint16: return .int2
         case .uint32: return .int4
         case .null: return .void
@@ -44,7 +45,10 @@ extension PostgreSQLDataType {
         case .date: return .timestamp
         }
     }
+}
 
+
+extension PostgreSQLDataType {
     /// If true, this type supports binary format.
     var supportsBinaryFormat: Bool {
         switch self {

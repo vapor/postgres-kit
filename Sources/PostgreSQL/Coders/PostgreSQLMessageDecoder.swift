@@ -30,6 +30,7 @@ final class PostgreSQLMessageDecoder {
         case .C: message = try .close(decoder.decode())
         case .one: message = .parseComplete
         case .two: message = .bindComplete
+        case .n: message = .noData
         default:
             let string = String(bytes: [type], encoding: .ascii) ?? "n/a"
             fatalError("Unrecognized message type: \(string) (\(type)")

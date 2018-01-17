@@ -65,9 +65,9 @@ struct PostgreSQLDataRowColumn: Decodable {
         case .float4: return try Float(value.makeString()).flatMap { .float($0) } ?? .null
         case .numeric, .float8: return try Double(value.makeString()).flatMap { .double($0) } ?? .null
         case .bytea: return try value.makeString().hexadecimal().flatMap { .data($0) } ?? .null
-        case .timestamp: return try .date(value.makeString().parseDate(format:  "yyyy-MM-dd HH:mm:ss.SSSSSS"))
+        case .timestamp: return try .date(value.makeString().parseDate(format:  "yyyy-MM-dd HH:mm:ss"))
         case .date: return try .date(value.makeString().parseDate(format:  "yyyy-MM-dd"))
-        case .time: return try .date(value.makeString().parseDate(format:  "HH:mm:ss.SSSSSS"))
+        case .time: return try .date(value.makeString().parseDate(format:  "HH:mm:ss"))
         case .void: return .null
         case .pg_node_tree, ._aclitem: return try .string(value.makeString())
         }
@@ -100,7 +100,11 @@ extension String {
     /// Parses a Date from this string with the supplied date format.
     func parseDate(format: String) throws -> Date {
         let formatter = DateFormatter()
-        formatter.dateFormat = format
+        if contains(".") {
+            formatter.dateFormat = format + ".SSSSSS"
+        } else {
+            formatter.dateFormat = format
+        }
         guard let date = formatter.date(from: self) else {
             throw PostgreSQLError(identifier: "date", reason: "Malformed date: \(self)")
         }
