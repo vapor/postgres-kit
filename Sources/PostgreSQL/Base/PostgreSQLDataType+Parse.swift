@@ -51,7 +51,6 @@ extension PostgreSQLDataType {
             var y = parts[1]
             assert(x.popFirst()! == "(")
             assert(y.popLast()! == ")")
-            print(string)
             return .point(x: Double(x)!, y: Double(y)!)
         case .pg_node_tree, ._aclitem: return try .string(data.makeString())
         }
@@ -113,8 +112,6 @@ extension Data {
         var gen = hexString.makeIterator()
         while let c1 = gen.next(), let c2 = gen.next() {
             let s = String([c1, c2])
-            print(s)
-
             guard let d = UInt8(s, radix: 16) else {
                 break
             }
