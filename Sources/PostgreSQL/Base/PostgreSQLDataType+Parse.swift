@@ -39,7 +39,7 @@ extension PostgreSQLDataType {
         case .char: return .uint8(data[0])
         case .float4: return try Float(data.makeString()).flatMap { .float($0) } ?? .null
         case .numeric, .float8: return try Double(data.makeString()).flatMap { .double($0) } ?? .null
-        case .bytea: return try data.makeString().hexadecimal().flatMap { .data($0) } ?? .null
+        case .bytea: return try .data(Data(hexString: data[2...].makeString()))
         case .timestamp: return try .date(data.makeString().parseDate(format:  "yyyy-MM-dd HH:mm:ss"))
         case .date: return try .date(data.makeString().parseDate(format:  "yyyy-MM-dd"))
         case .time: return try .date(data.makeString().parseDate(format:  "HH:mm:ss"))
@@ -102,26 +102,26 @@ extension String {
         }
         return date
     }
-
-    /// Create `Data` from hexadecimal string representation
-    ///
-    /// This takes a hexadecimal representation and creates a `Data` object. Note, if the string has any spaces or non-hex characters (e.g. starts with '<' and with a '>'), those are ignored and only hex characters are processed.
-    ///
-    /// - returns: Data represented by this hexadecimal string.
-    /// https://stackoverflow.com/questions/26501276/converting-hex-string-to-nsdata-in-swift
-    fileprivate func hexadecimal() -> Data? {
-        var data = Data(capacity: count / 2)
-
-        let regex = try! NSRegularExpression(pattern: "[0-9a-f]{1,2}", options: .caseInsensitive)
-        regex.enumerateMatches(in: self, range: NSMakeRange(0, utf16.count)) { match, flags, stop in
-            let byteString = (self as NSString).substring(with: match!.range)
-            var num = UInt8(byteString, radix: 16)!
-            data.append(&num, count: 1)
-        }
-
-        guard data.count > 0 else { return nil }
-
-        return data
-    }
 }
 
+extension Data {
+    /// Initialize data from a hex string.
+    fileprivate init(hexString: String) {
+        var data = Data()
+
+        var gen = hexString.makeIterator()
+        while let c1 = gen.next(), let c2 = gen.next() {
+            let s = String([c1, c2])
+            print(s)
+
+            guard let d = UInt8(s, radix: 16) else {
+                break
+            }
+
+            data.append(d)
+        }
+
+        self.init(data)
+    }
+
+}
