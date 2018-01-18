@@ -105,7 +105,7 @@ internal final class PostgreSQLDataKeyedEncodingContainer<K>: KeyedEncodingConta
 
     /// See `KeyedEncodingContainerProtocol.nestedUnkeyedContainer`
     func nestedUnkeyedContainer(forKey key: K) -> UnkeyedEncodingContainer {
-        fatalError("Not yet supported")
+        return PostgreSQLDataUnkeyedEncodingContainer(partialData: partialData, at: codingPath + [key])
     }
 
     /// See `KeyedEncodingContainerProtocol.superEncoder`

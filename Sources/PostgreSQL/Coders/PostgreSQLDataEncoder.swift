@@ -38,7 +38,7 @@ internal final class _PostgreSQLDataEncoder: Encoder {
 
     /// See `Encoder.unkeyedContainer`
     func unkeyedContainer() -> UnkeyedEncodingContainer {
-        fatalError()
+        return PostgreSQLDataUnkeyedEncodingContainer(partialData: partialData, at: codingPath)
     }
 
     /// See `Encoder.singleValueContainer`
