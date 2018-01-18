@@ -45,7 +45,6 @@ internal final class _PostgreSQLDataDecoder: Decoder {
 
     /// See `Decoder.singleValueContainer`
     func singleValueContainer() -> SingleValueDecodingContainer {
-        fatalError()
+        return PostgreSQLDataSingleValueDecodingContainer(partialData: partialData, at: codingPath)
     }
 }
-

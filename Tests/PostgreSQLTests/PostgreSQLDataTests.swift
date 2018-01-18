@@ -9,7 +9,7 @@ class PostgreSQLDataTests: XCTestCase {
     }
 
     func testDecode() throws {
-        let kitchenSink = try PostgreSQLDataDecoder().decode(KitchenSink.self, from: .kitchenSink)
+        let kitchenSink = try! PostgreSQLDataDecoder().decode(KitchenSink.self, from: .kitchenSink)
         XCTAssertEqual(kitchenSink, .test)
     }
 

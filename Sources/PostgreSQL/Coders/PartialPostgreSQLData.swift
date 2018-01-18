@@ -17,14 +17,22 @@ final class PartialPostgreSQLData {
     /// Returns the value, if one at from the given path.
     func get(at path: [CodingKey]) -> PostgreSQLData? {
         var child = data
-
         for seg in path {
-            guard let c = child.dictionary?[seg.stringValue] else {
+            switch child {
+            case .array(let arr):
+                guard let index = seg.intValue, arr.count > index else {
+                    return nil
+                }
+                child = arr[index]
+            case .dictionary(let dict):
+                guard let value = dict[seg.stringValue] else {
+                    return nil
+                }
+                child = value
+            default:
                 return nil
             }
-            child = c
         }
-
         return child
     }
 
@@ -103,10 +111,10 @@ extension PartialPostgreSQLData {
 
 extension PartialPostgreSQLData {
     /// Gets a value at the supplied path or throws a decoding error.
-    func requireGet(at path: [CodingKey]) throws -> PostgreSQLData {
+    func requireGet<T>(_ type: T.Type, at path: [CodingKey]) throws -> PostgreSQLData {
         switch get(at: path) {
         case .some(let w): return w
-        case .none: throw DecodingError.valueNotFound(Bool.self, .init(codingPath: path, debugDescription: ""))
+        case .none: throw DecodingError.valueNotFound(T.self, .init(codingPath: path, debugDescription: ""))
         }
     }
 
@@ -114,7 +122,7 @@ extension PartialPostgreSQLData {
     func requireFixedWidthItenger<I>(_ type: I.Type = I.self, at path: [CodingKey]) throws -> I
         where I: FixedWidthInteger
     {
-        switch try requireGet(at: path) {
+        switch try requireGet(I.self, at: path) {
         case .int8(let value): return try safeCast(value, at: path)
         case .int16(let value): return try safeCast(value, at: path)
         case .int32(let value): return try safeCast(value, at: path)
@@ -145,7 +153,7 @@ extension PartialPostgreSQLData {
     func requireFloatingPoint<F>(_ type: F.Type = F.self, at path: [CodingKey]) throws -> F
         where F: BinaryFloatingPoint
     {
-        switch try requireGet(at: path) {
+        switch try requireGet(F.self, at: path) {
         case .int8(let value): return F(value)
         case .int16(let value): return F(value)
         case .int32(let value): return F(value)
@@ -158,7 +166,7 @@ extension PartialPostgreSQLData {
 
     /// Gets a `String` from the supplied path or throws a decoding error.
     func requireString(at path: [CodingKey]) throws -> String {
-        switch try requireGet(at: path) {
+        switch try requireGet(String.self, at: path) {
         case .string(let value): return value
         default: throw DecodingError.typeMismatch(String.self, .init(codingPath: path, debugDescription: ""))
         }
@@ -166,7 +174,7 @@ extension PartialPostgreSQLData {
 
     /// Gets a `Bool` from the supplied path or throws a decoding error.
     func requireBool(at path: [CodingKey]) throws -> Bool {
-        switch try requireGet(at: path) {
+        switch try requireGet(Bool.self, at: path) {
         case .bool(let value): return value
         default: throw DecodingError.typeMismatch(Bool.self, .init(codingPath: path, debugDescription: ""))
         }
