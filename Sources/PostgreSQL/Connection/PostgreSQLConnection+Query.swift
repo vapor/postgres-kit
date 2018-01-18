@@ -1,6 +1,6 @@
 import Async
 
-extension PostgreSQLClient {
+extension PostgreSQLConnection {
     /// Sends a parameterized PostgreSQL query command, collecting the parsed results.
     public func query(
         _ string: String,
@@ -77,7 +77,7 @@ extension PostgreSQLClient {
 
 /// MARK: Codable
 
-extension PostgreSQLClient {
+extension PostgreSQLConnection {
     /// Sends a parameterized PostgreSQL query command, collecting the parsed results.
     public func query(
         _ string: String,

@@ -1,7 +1,7 @@
 import Async
 
 /// A PostgreSQL frontend client.
-public final class PostgreSQLClient {
+public final class PostgreSQLConnection {
     /// Handles enqueued redis commands and responses.
     private let queueStream: AsymmetricQueueStream<PostgreSQLMessage, PostgreSQLMessage>
 
@@ -44,6 +44,11 @@ public final class PostgreSQLClient {
         }.map(to: [PostgreSQLMessage].self) {
             return responses
         }
+    }
+
+    /// Closes this client.
+    public func close() {
+        queueStream.close()
     }
 }
 

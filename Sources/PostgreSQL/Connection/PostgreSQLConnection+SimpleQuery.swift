@@ -1,6 +1,6 @@
 import Async
 
-extension PostgreSQLClient {
+extension PostgreSQLConnection {
     /// Sends a simple PostgreSQL query command, collecting the parsed results.
     public func simpleQuery(_ string: String) -> Future<[[String: PostgreSQLData]]> {
         var rows: [[String: PostgreSQLData]] = []

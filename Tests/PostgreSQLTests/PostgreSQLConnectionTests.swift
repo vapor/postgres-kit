@@ -4,21 +4,21 @@ import XCTest
 import PostgreSQL
 import TCP
 
-class PostgreSQLClientTests: XCTestCase {
+class PostgreSQLConnectionTests: XCTestCase {
     func testVersion() throws {
-        let (client, eventLoop) = try PostgreSQLClient.makeTest()
+        let (client, eventLoop) = try PostgreSQLConnection.makeTest()
         let results = try client.simpleQuery("SELECT version();").await(on: eventLoop)
         XCTAssert(results[0]["version"]?.string?.contains("10.1") == true)
     }
 
     func testSelectTypes() throws {
-        let (client, eventLoop) = try PostgreSQLClient.makeTest()
+        let (client, eventLoop) = try PostgreSQLConnection.makeTest()
         let results = try client.query("select * from pg_type;").await(on: eventLoop)
         XCTAssert(results.count > 350)
     }
 
     func testParse() throws {
-        let (client, eventLoop) = try PostgreSQLClient.makeTest()
+        let (client, eventLoop) = try PostgreSQLConnection.makeTest()
         let query = """
         select * from "pg_type" where "typlen" = $1 or "typlen" = $2
         """
@@ -33,7 +33,7 @@ class PostgreSQLClientTests: XCTestCase {
     }
 
     func testTypes() throws {
-        let (client, eventLoop) = try PostgreSQLClient.makeTest()
+        let (client, eventLoop) = try PostgreSQLConnection.makeTest()
         let createQuery = """
         create table kitchen_sink (
             "smallint" smallint,
@@ -123,7 +123,7 @@ class PostgreSQLClientTests: XCTestCase {
     }
 
     func testParameterizedTypes() throws {
-        let (client, eventLoop) = try PostgreSQLClient.makeTest()
+        let (client, eventLoop) = try PostgreSQLConnection.makeTest()
         let createQuery = """
         create table kitchen_sink (
             "smallint" smallint,
@@ -231,7 +231,7 @@ class PostgreSQLClientTests: XCTestCase {
     }
 
     func testParameterizedEncodable() throws {
-        let (client, eventLoop) = try PostgreSQLClient.makeTest()
+        let (client, eventLoop) = try PostgreSQLConnection.makeTest()
         _ = try client.query("drop table if exists foo;").await(on: eventLoop)
         let createResult = try client.query("create table foo (fooid integer);").await(on: eventLoop)
         XCTAssertEqual(createResult.count, 0)
@@ -256,11 +256,11 @@ class PostgreSQLClientTests: XCTestCase {
     ]
 }
 
-extension PostgreSQLClient {
+extension PostgreSQLConnection {
     /// Creates a test event loop and psql client.
-    static func makeTest() throws -> (PostgreSQLClient, EventLoop) {
+    static func makeTest() throws -> (PostgreSQLConnection, EventLoop) {
         let eventLoop = try DefaultEventLoop(label: "codes.vapor.postgresql.client.test")
-        let client = try PostgreSQLClient.connect(on: eventLoop)
+        let client = try PostgreSQLConnection.connect(on: eventLoop)
         _ = try client.authenticate(username: "postgres").await(on: eventLoop)
         return (client, eventLoop)
     }
