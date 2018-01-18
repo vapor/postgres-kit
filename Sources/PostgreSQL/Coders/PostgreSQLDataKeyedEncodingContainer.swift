@@ -2,7 +2,7 @@
 internal final class PostgreSQLDataKeyedEncodingContainer<K>: KeyedEncodingContainerProtocol
     where K: CodingKey
 {
-    /// See `KeyedEncodingContainerProtocol.Key`
+    /// See `KeyedEncodingContainerProtocol.codingPath`
     var codingPath: [CodingKey]
 
     /// Data being encoded.

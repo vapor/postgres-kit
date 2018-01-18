@@ -28,6 +28,14 @@ final class PartialPostgreSQLData {
         return child
     }
 
+    /// Gets a value at the supplied path or throws a decoding error.
+    func requireGet(at path: [CodingKey]) throws -> PostgreSQLData {
+        switch get(at: path) {
+        case .some(let w): return w
+        case .none: throw DecodingError.valueNotFound(Bool.self, .init(codingPath: path, debugDescription: ""))
+        }
+    }
+
     /// Sets the mutable `PostgreSQLData` to supplied data at coding path.
     private func set(_ context: inout PostgreSQLData, to value: PostgreSQLData, at path: [CodingKey]) {
         guard path.count >= 1 else {
