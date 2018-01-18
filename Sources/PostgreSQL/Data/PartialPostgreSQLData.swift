@@ -134,7 +134,7 @@ extension PartialPostgreSQLData {
     {
         if let convertible = D.self as? PostgreSQLDataCustomConvertible.Type {
             let data = try requireGet(D.self, at: path)
-            return try unsafeBitCast(convertible.convertFromPostgreSQLData(from: data), to: D.self)
+            return try convertible.convertFromPostgreSQLData(from: data) as! D
         } else {
             let decoder = _PostgreSQLDataDecoder(partialData: self, at: path)
             return try D(from: decoder)

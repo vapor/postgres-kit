@@ -122,7 +122,7 @@ internal final class _PostgreSQLMessageEncoder: Encoder, SingleValueEncodingCont
     /// See SingleValueEncodingContainer.encode
     func encode<T>(_ value: T) throws where T : Encodable {
         if T.self == Data.self {
-            let sub = unsafeBitCast(value, to: Data.self)
+            let sub = value as! Data
             try encode(Int32(sub.count))
             self.data += sub
         } else {
