@@ -10,7 +10,7 @@ final class PartialPostgreSQLData {
     }
 
     /// Sets the `PostgreSQLData` at supplied coding path.
-    func set(_ data: PostgreSQLData, at path: [CodingKey]) throws {
+    func set(_ data: PostgreSQLData, at path: [CodingKey]) {
         set(&self.data, to: data, at: path)
     }
 
@@ -26,14 +26,6 @@ final class PartialPostgreSQLData {
         }
 
         return child
-    }
-
-    /// Gets a value at the supplied path or throws a decoding error.
-    func requireGet(at path: [CodingKey]) throws -> PostgreSQLData {
-        switch get(at: path) {
-        case .some(let w): return w
-        case .none: throw DecodingError.valueNotFound(Bool.self, .init(codingPath: path, debugDescription: ""))
-        }
     }
 
     /// Sets the mutable `PostgreSQLData` to supplied data at coding path.
@@ -85,6 +77,98 @@ final class PartialPostgreSQLData {
                     end.stringValue: child
                 ])
             }
+        }
+    }
+}
+
+
+/// MARK: Encoding Convenience
+
+extension PartialPostgreSQLData {
+    /// Sets a generic fixed width integer to the supplied path.
+    func setFixedWidthInteger<U>(_ value: U, at path: [CodingKey]) throws
+        where U: FixedWidthInteger
+    {
+        switch U.bitWidth {
+        case 8: try set(.int8(safeCast(value, at: path)), at: path)
+        case 16: try set(.int16(safeCast(value, at: path)), at: path)
+        case 32: try set(.int32(safeCast(value, at: path)), at: path)
+        case 64: try set(.int64(safeCast(value, at: path)), at: path)
+        default: throw DecodingError.typeMismatch(U.self, .init(codingPath: path, debugDescription: "Integer bit width not supported: \(U.bitWidth)"))
+        }
+    }
+}
+
+/// MARK: Decoding Convenience
+
+extension PartialPostgreSQLData {
+    /// Gets a value at the supplied path or throws a decoding error.
+    func requireGet(at path: [CodingKey]) throws -> PostgreSQLData {
+        switch get(at: path) {
+        case .some(let w): return w
+        case .none: throw DecodingError.valueNotFound(Bool.self, .init(codingPath: path, debugDescription: ""))
+        }
+    }
+
+    /// Gets a `Float` from the supplied path or throws a decoding error.
+    func requireFixedWidthItenger<I>(_ type: I.Type = I.self, at path: [CodingKey]) throws -> I
+        where I: FixedWidthInteger
+    {
+        switch try requireGet(at: path) {
+        case .int8(let value): return try safeCast(value, at: path)
+        case .int16(let value): return try safeCast(value, at: path)
+        case .int32(let value): return try safeCast(value, at: path)
+        case .int64(let value): return try safeCast(value, at: path)
+        default: throw DecodingError.typeMismatch(type, .init(codingPath: path, debugDescription: ""))
+        }
+    }
+
+    /// Safely casts one `FixedWidthInteger` to another.
+    private func safeCast<I, V>(_ value: V, at path: [CodingKey], to type: I.Type = I.self) throws -> I where V: FixedWidthInteger, I: FixedWidthInteger {
+        if let existing = value as? I {
+            return existing
+        }
+
+        guard I.bitWidth >= V.bitWidth else {
+            throw DecodingError.typeMismatch(type, .init(codingPath: path, debugDescription: "Bit width too wide: \(I.bitWidth) < \(V.bitWidth)"))
+        }
+        guard value <= I.max else {
+            throw DecodingError.typeMismatch(type, .init(codingPath: path, debugDescription: "Value too large: \(value) > \(I.max)"))
+        }
+        guard value >= I.min else {
+            throw DecodingError.typeMismatch(type, .init(codingPath: path, debugDescription: "Value too small: \(value) < \(I.min)"))
+        }
+        return I(value)
+    }
+
+    /// Gets a `FloatingPoint` from the supplied path or throws a decoding error.
+    func requireFloatingPoint<F>(_ type: F.Type = F.self, at path: [CodingKey]) throws -> F
+        where F: BinaryFloatingPoint
+    {
+        switch try requireGet(at: path) {
+        case .int8(let value): return F(value)
+        case .int16(let value): return F(value)
+        case .int32(let value): return F(value)
+        case .int64(let value): return F(value)
+        case .float(let value): return F(value)
+        case .double(let value): return F(value)
+        default: throw DecodingError.typeMismatch(F.self, .init(codingPath: path, debugDescription: ""))
+        }
+    }
+
+    /// Gets a `String` from the supplied path or throws a decoding error.
+    func requireString(at path: [CodingKey]) throws -> String {
+        switch try requireGet(at: path) {
+        case .string(let value): return value
+        default: throw DecodingError.typeMismatch(String.self, .init(codingPath: path, debugDescription: ""))
+        }
+    }
+
+    /// Gets a `Bool` from the supplied path or throws a decoding error.
+    func requireBool(at path: [CodingKey]) throws -> Bool {
+        switch try requireGet(at: path) {
+        case .bool(let value): return value
+        default: throw DecodingError.typeMismatch(Bool.self, .init(codingPath: path, debugDescription: ""))
         }
     }
 }

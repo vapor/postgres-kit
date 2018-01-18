@@ -16,96 +16,77 @@ internal final class PostgreSQLDataKeyedEncodingContainer<K>: KeyedEncodingConta
 
     /// See `KeyedEncodingContainerProtocol.encodeNil`
     func encodeNil(forKey key: K) throws {
-        try partialData.set(.null, at: codingPath + [key])
+        partialData.set(.null, at: codingPath + [key])
     }
 
     /// See `KeyedEncodingContainerProtocol.encode`
     func encode(_ value: Bool, forKey key: K) throws {
-        try partialData.set(.bool(value), at: codingPath + [key])
+        partialData.set(.bool(value), at: codingPath + [key])
     }
 
     /// See `KeyedEncodingContainerProtocol.encode`
     func encode(_ value: Int, forKey key: K) throws {
-        switch MemoryLayout<Int>.size {
-        case 8: try partialData.set(.int64(Int64(value)), at: codingPath + [key])
-        case 4: try partialData.set(.int32(Int32(value)), at: codingPath + [key])
-        default: fatalError("Unsuported MemoryLayout<Int>.size")
-        }
+        try partialData.setFixedWidthInteger(value, at: codingPath + [key])
     }
 
     /// See `KeyedEncodingContainerProtocol.encode`
     func encode(_ value: Int8, forKey key: K) throws {
-        try partialData.set(.int8(value), at: codingPath + [key])
+        partialData.set(.int8(value), at: codingPath + [key])
     }
 
     /// See `KeyedEncodingContainerProtocol.encode`
     func encode(_ value: Int16, forKey key: K) throws {
-        try partialData.set(.int16(value), at: codingPath + [key])
+        partialData.set(.int16(value), at: codingPath + [key])
     }
 
     /// See `KeyedEncodingContainerProtocol.encode`
     func encode(_ value: Int32, forKey key: K) throws {
-        try partialData.set(.int32(value), at: codingPath + [key])
+        partialData.set(.int32(value), at: codingPath + [key])
     }
 
     /// See `KeyedEncodingContainerProtocol.encode`
     func encode(_ value: Int64, forKey key: K) throws {
-        try partialData.set(.int64(value), at: codingPath + [key])
+        partialData.set(.int64(value), at: codingPath + [key])
     }
 
     /// See `KeyedEncodingContainerProtocol.encode`
     func encode(_ value: UInt, forKey key: K) throws {
-        guard value <= UInt(Int64.max) else {
-            throw PostgreSQLError(identifier: "uint", reason: "UInt value \(value) too large to store in Int64.")
-        }
-        try encode(Int64(value), forKey: key)
+        try partialData.setFixedWidthInteger(value, at: codingPath + [key])
     }
 
     /// See `KeyedEncodingContainerProtocol.encode`
     func encode(_ value: UInt8, forKey key: K) throws {
-        guard value <= UInt(Int8.max) else {
-            throw PostgreSQLError(identifier: "uint", reason: "UInt8 value \(value) too large to store in Int8.")
-        }
-        try encode(Int8(value), forKey: key)
+        try partialData.setFixedWidthInteger(value, at: codingPath + [key])
     }
 
     /// See `KeyedEncodingContainerProtocol.encode`
     func encode(_ value: UInt16, forKey key: K) throws {
-        guard value <= UInt(Int16.max) else {
-            throw PostgreSQLError(identifier: "uint", reason: "UInt16 value \(value) too large to store in Int16.")
-        }
-        try encode(Int16(value), forKey: key)
+        try partialData.setFixedWidthInteger(value, at: codingPath + [key])
     }
 
     /// See `KeyedEncodingContainerProtocol.encode`
     func encode(_ value: UInt32, forKey key: K) throws {
-        guard value <= UInt(Int32.max) else {
-            throw PostgreSQLError(identifier: "uint", reason: "UInt32 value \(value) too large to store in Int32.")
-        }
-        try encode(Int32(value), forKey: key)
+        try partialData.setFixedWidthInteger(value, at: codingPath + [key])
     }
 
     /// See `KeyedEncodingContainerProtocol.encode`
     func encode(_ value: UInt64, forKey key: K) throws {
-        guard value <= UInt(Int64.max) else {
-            throw PostgreSQLError(identifier: "uint", reason: "UInt64 value \(value) too large to store in Int64.")
-        }
-        try encode(Int64(value), forKey: key)
+        try partialData.setFixedWidthInteger(value, at: codingPath + [key])
     }
 
     /// See `KeyedEncodingContainerProtocol.encode`
     func encode(_ value: Float, forKey key: K) throws {
-        try partialData.set(.float(value), at: codingPath + [key])
+        partialData.set(.float(value), at: codingPath + [key])
     }
 
     /// See `KeyedEncodingContainerProtocol.encode`
     func encode(_ value: Double, forKey key: K) throws {
-        try partialData.set(.double(value), at: codingPath + [key])
+        partialData.set(.double(value), at: codingPath + [key])
     }
 
     /// See `KeyedEncodingContainerProtocol.encode`
     func encode(_ value: String, forKey key: K) throws {
-        try partialData.set(.string(value), at: codingPath + [key])
+        partialData.set(.string(value), at: codingPath + [key])
     }
 
     /// See `KeyedEncodingContainerProtocol.encode`

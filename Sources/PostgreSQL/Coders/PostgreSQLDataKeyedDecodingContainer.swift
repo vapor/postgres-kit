@@ -33,128 +33,72 @@ final class PostgreSQLDataKeyedDecodingContainer<K>: KeyedDecodingContainerProto
 
     /// See `KeyedDecodingContainerProtocol.decode`
     func decode(_ type: Bool.Type, forKey key: K) throws -> Bool {
-        switch try partialData.requireGet(at: codingPath + [key]) {
-        case .bool(let value): return value
-        default: throw DecodingError.typeMismatch(type, .init(codingPath: codingPath + [key], debugDescription: ""))
-        }
+        return try partialData.requireBool(at: codingPath + [key])
     }
 
     /// See `KeyedDecodingContainerProtocol.decode`
     func decode(_ type: Int.Type, forKey key: K) throws -> Int {
-        switch try partialData.requireGet(at: codingPath + [key]) {
-        case .int64(let value):
-            guard MemoryLayout<Int>.size == 8 else {
-                throw DecodingError.typeMismatch(Int.self, .init(codingPath: codingPath + [key], debugDescription: ""))
-            }
-            return Int(value)
-        case .int32(let value):
-            guard MemoryLayout<Int>.size == 4 else {
-                throw DecodingError.typeMismatch(Int.self, .init(codingPath: codingPath + [key], debugDescription: ""))
-            }
-            return Int(value)
-        default: throw DecodingError.typeMismatch(type, .init(codingPath: codingPath + [key], debugDescription: ""))
-        }
+        return try partialData.requireFixedWidthItenger(at: codingPath + [key])
     }
 
     /// See `KeyedDecodingContainerProtocol.decode`
     func decode(_ type: Int8.Type, forKey key: K) throws -> Int8 {
-        switch try partialData.requireGet(at: codingPath + [key]) {
-        case .int8(let value): return value
-        default: throw DecodingError.typeMismatch(type, .init(codingPath: codingPath + [key], debugDescription: ""))
-        }
+        return try partialData.requireFixedWidthItenger(at: codingPath + [key])
     }
 
     /// See `KeyedDecodingContainerProtocol.decode`
     func decode(_ type: Int16.Type, forKey key: K) throws -> Int16 {
-        switch try partialData.requireGet(at: codingPath + [key]) {
-        case .int16(let value): return value
-        default: throw DecodingError.typeMismatch(type, .init(codingPath: codingPath + [key], debugDescription: ""))
-        }
+        return try partialData.requireFixedWidthItenger(at: codingPath + [key])
     }
 
     /// See `KeyedDecodingContainerProtocol.decode`
     func decode(_ type: Int32.Type, forKey key: K) throws -> Int32 {
-        switch try partialData.requireGet(at: codingPath + [key]) {
-        case .int32(let value): return value
-        default: throw DecodingError.typeMismatch(type, .init(codingPath: codingPath + [key], debugDescription: ""))
-        }
+        return try partialData.requireFixedWidthItenger(at: codingPath + [key])
     }
 
     /// See `KeyedDecodingContainerProtocol.decode`
     func decode(_ type: Int64.Type, forKey key: K) throws -> Int64 {
-        switch try partialData.requireGet(at: codingPath + [key]) {
-        case .int64(let value): return value
-        default: throw DecodingError.typeMismatch(type, .init(codingPath: codingPath + [key], debugDescription: ""))
-        }
+        return try partialData.requireFixedWidthItenger(at: codingPath + [key])
     }
 
     /// See `KeyedDecodingContainerProtocol.decode`
     func decode(_ type: UInt.Type, forKey key: K) throws -> UInt {
-        let value = try decode(Int.self, forKey: key)
-        guard value >= UInt.min else {
-            throw PostgreSQLError(identifier: "uint", reason: "Int value \(value) too small to store in UInt.")
-        }
-        return UInt(value)
+        return try partialData.requireFixedWidthItenger(at: codingPath + [key])
     }
 
     /// See `KeyedDecodingContainerProtocol.decode`
     func decode(_ type: UInt8.Type, forKey key: K) throws -> UInt8 {
-        let value = try decode(Int8.self, forKey: key)
-        guard value >= UInt8.min else {
-            throw PostgreSQLError(identifier: "uint", reason: "Int8 value \(value) too small to store in UInt8.")
-        }
-        return UInt8(value)
+        return try partialData.requireFixedWidthItenger(at: codingPath + [key])
     }
 
     /// See `KeyedDecodingContainerProtocol.decode`
     func decode(_ type: UInt16.Type, forKey key: K) throws -> UInt16 {
-        let value = try decode(Int16.self, forKey: key)
-        guard value >= UInt16.min else {
-            throw PostgreSQLError(identifier: "uint", reason: "Int16 value \(value) too small to store in UInt16.")
-        }
-        return UInt16(value)
+        return try partialData.requireFixedWidthItenger(at: codingPath + [key])
     }
 
     /// See `KeyedDecodingContainerProtocol.decode`
     func decode(_ type: UInt32.Type, forKey key: K) throws -> UInt32 {
-        let value = try decode(Int32.self, forKey: key)
-        guard value >= UInt32.min else {
-            throw PostgreSQLError(identifier: "uint", reason: "Int32 value \(value) too small to store in UInt32.")
-        }
-        return UInt32(value)
+        return try partialData.requireFixedWidthItenger(at: codingPath + [key])
     }
 
     /// See `KeyedDecodingContainerProtocol.decode`
     func decode(_ type: UInt64.Type, forKey key: K) throws -> UInt64 {
-        let value = try decode(Int64.self, forKey: key)
-        guard value >= UInt64.min else {
-            throw PostgreSQLError(identifier: "uint", reason: "Int64 value \(value) too small to store in UInt64.")
-        }
-        return UInt64(value)
+        return try partialData.requireFixedWidthItenger(at: codingPath + [key])
     }
 
     /// See `KeyedDecodingContainerProtocol.decode`
     func decode(_ type: Float.Type, forKey key: K) throws -> Float {
-        switch try partialData.requireGet(at: codingPath + [key]) {
-        case .float(let value): return value
-        default: throw DecodingError.typeMismatch(type, .init(codingPath: codingPath + [key], debugDescription: ""))
-        }
+        return try partialData.requireFloatingPoint(at: codingPath + [key])
     }
 
     /// See `KeyedDecodingContainerProtocol.decode`
     func decode(_ type: Double.Type, forKey key: K) throws -> Double {
-        switch try partialData.requireGet(at: codingPath + [key]) {
-        case .double(let value): return value
-        default: throw DecodingError.typeMismatch(type, .init(codingPath: codingPath + [key], debugDescription: ""))
-        }
+        return try partialData.requireFloatingPoint(at: codingPath + [key])
     }
 
     /// See `KeyedDecodingContainerProtocol.decode`
     func decode(_ type: String.Type, forKey key: K) throws -> String {
-        switch try partialData.requireGet(at: codingPath + [key]) {
-        case .string(let value): return value
-        default: throw DecodingError.typeMismatch(type, .init(codingPath: codingPath + [key], debugDescription: ""))
-        }
+        return try partialData.requireString(at: codingPath + [key])
     }
 
     /// See `KeyedDecodingContainerProtocol.decode`
