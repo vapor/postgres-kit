@@ -41,7 +41,7 @@ extension PostgreSQLConnection {
             default: fatalError("Unexpected message during PostgreSQLParseRequest: \(message)")
             }
         }.flatMap(to: Void.self) {
-            let parameterDataTypes = (currentParameters !! "Unexpected nil parameters").dataTypes
+            let parameterDataTypes = currentParameters?.dataTypes ?? [] // no parameters
             let resultDataTypes = currentRow?.fields.map { $0.dataType } ?? [] // nil currentRow means no resutls
 
             // cache so we don't compute twice
