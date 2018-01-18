@@ -156,7 +156,7 @@ class PostgreSQLClientTests: XCTestCase {
         );
         """
         _ = try client.query("drop table if exists kitchen_sink;").await(on: eventLoop)
-        let createResult = try! client.query(createQuery).await(on: eventLoop)
+        let createResult = try client.query(createQuery).await(on: eventLoop)
         XCTAssertEqual(createResult.count, 0)
 
         let insertQuery = """
@@ -190,7 +190,7 @@ class PostgreSQLClientTests: XCTestCase {
             -- "uuid" uuid
         );
         """
-        let insertResult = try! client.parameterizedQuery(insertQuery, [
+        let insertResult = try client.parameterizedQuery(insertQuery, [
             PostgreSQLData.int16(1), // smallint
             PostgreSQLData.int32(2), // integer
             PostgreSQLData.int64(3), // bigint
