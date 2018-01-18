@@ -5,6 +5,9 @@ public final class PostgreSQLDatabase: Database {
     /// This database's configuration.
     public let config: PostgreSQLDatabaseConfig
 
+    /// If non-nil, will log queries.
+    public var logger: PostgreSQLLogger?
+
     /// Creates a new `PostgreSQLDatabase`.
     public init(config: PostgreSQLDatabaseConfig) {
         self.config = config

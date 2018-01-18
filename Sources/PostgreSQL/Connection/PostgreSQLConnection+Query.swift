@@ -9,8 +9,8 @@ extension PostgreSQLConnection {
         var rows: [[String: PostgreSQLData]] = []
         return try query(string, parameters) { row in
             rows.append(row)
-            }.map(to: [[String: PostgreSQLData]].self) {
-                return rows
+        }.map(to: [[String: PostgreSQLData]].self) {
+            return rows
         }
     }
 
@@ -21,6 +21,7 @@ extension PostgreSQLConnection {
         _ parameters: [PostgreSQLData] = [],
         onRow: @escaping ([String: PostgreSQLData]) -> ()
     ) throws -> Future<Void> {
+        logger?.log(query: string, parameters: parameters)
         let parse = PostgreSQLParseRequest(
             statementName: "",
             query: string,

@@ -5,6 +5,9 @@ public final class PostgreSQLConnection {
     /// Handles enqueued redis commands and responses.
     private let queueStream: AsymmetricQueueStream<PostgreSQLMessage, PostgreSQLMessage>
 
+    /// If non-nil, will log queries.
+    public var logger: PostgreSQLLogger?
+
     /// Creates a new Redis client on the provided data source and sink.
     init<Stream>(stream: Stream, on worker: Worker) where Stream: ByteStream {
         let queueStream = AsymmetricQueueStream<PostgreSQLMessage, PostgreSQLMessage>()
