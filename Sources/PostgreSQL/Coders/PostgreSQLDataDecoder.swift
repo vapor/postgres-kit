@@ -40,7 +40,7 @@ internal final class _PostgreSQLDataDecoder: Decoder {
 
     /// See `Decoder.unkeyedContainer`
     func unkeyedContainer() -> UnkeyedDecodingContainer {
-        fatalError()
+        return PostgreSQLDataUnkeyedDecodingContainer(partialData: partialData, at: codingPath)
     }
 
     /// See `Decoder.singleValueContainer`
