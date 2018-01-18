@@ -18,6 +18,8 @@ public enum PostgreSQLData {
 
     case point(x: Double, y: Double)
 
+    case uuid(UUID)
+
     case dictionary([String: PostgreSQLData])
     case array([PostgreSQLData])
     
@@ -103,6 +105,7 @@ extension PostgreSQLData: Equatable {
         case (.point(let a), .point(let b)): return a == b
         case (.dictionary(let a), .dictionary(let b)): return a == b
         case (.array(let a), .array(let b)): return a == b
+        case (.uuid(let a), .uuid(let b)): return a == b
         case (.null, .null): return true
         default: return false
         }
@@ -130,6 +133,7 @@ extension PostgreSQLData: CustomStringConvertible {
         case .bool(let bool): return bool.description
         case .dictionary(let d): return d.description
         case .array(let a): return a.description
+        case .uuid(let uuid): return "\(uuid) (uuid)"
         case .null: return "null"
         }
     }

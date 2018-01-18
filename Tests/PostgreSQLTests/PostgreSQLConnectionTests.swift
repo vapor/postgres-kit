@@ -141,7 +141,8 @@ class PostgreSQLConnectionTests: XCTestCase {
             "date" date,
             "time" time,
             "boolean" boolean,
-            "point" point
+            "point" point,
+            "uuid" uuid
             -- "line" line,
             -- "lseg" lseg,
             -- "box" box,
@@ -152,7 +153,6 @@ class PostgreSQLConnectionTests: XCTestCase {
             -- "inet" inet,
             -- "macaddr" macaddr,
             -- "bit" bit(16),
-            -- "uuid" uuid
         );
         """
         _ = try client.query("drop table if exists kitchen_sink;").await(on: eventLoop)
@@ -176,7 +176,8 @@ class PostgreSQLConnectionTests: XCTestCase {
             $13, -- "date" date
             $14, -- "time" time
             $15, -- "boolean" boolean
-            $16 -- "point" point
+            $16, -- "point" point
+            $17 -- "uuid" uuid
             -- "line" line,
             -- "lseg" lseg,
             -- "box" box,
@@ -187,9 +188,9 @@ class PostgreSQLConnectionTests: XCTestCase {
             -- "inet" inet,
             -- "macaddr" macaddr,
             -- "bit" bit(16),
-            -- "uuid" uuid
         );
         """
+        let uuid = UUID()
         let insertResult = try client.query(insertQuery, [
             PostgreSQLData.int16(1), // smallint
             PostgreSQLData.int32(2), // integer
@@ -207,6 +208,7 @@ class PostgreSQLConnectionTests: XCTestCase {
             PostgreSQLData.date(Date()), // time
             PostgreSQLData.bool(true), // boolean
             PostgreSQLData.point(x: 11.5, y: 12), // point
+            PostgreSQLData.uuid(uuid) // new uuid
         ]).await(on: eventLoop)
         XCTAssertEqual(insertResult.count, 0)
 
@@ -225,6 +227,7 @@ class PostgreSQLConnectionTests: XCTestCase {
             XCTAssertEqual(row["bytea"], .data(Data([0x31, 0x32])))
             XCTAssertEqual(row["boolean"], .int8(0x01))
             XCTAssertEqual(row["point"], .point(x: 11.5, y: 12))
+            XCTAssertEqual(row["uuid"], .uuid(uuid))
         } else {
             XCTFail("parameterized result count is: \(parameterizedResult.count)")
         }

@@ -27,6 +27,7 @@ public struct PostgreSQLDataType: Codable, Equatable {
     public static let timestamp = PostgreSQLDataType(raw: 1114)
     public static let numeric = PostgreSQLDataType(raw: 1700)
     public static let void = PostgreSQLDataType(raw: 2278)
+    public static let uuid = PostgreSQLDataType(raw: 2950)
 
     /// See `Equatable.==`
     public static func ==(lhs: PostgreSQLDataType, rhs: PostgreSQLDataType) -> Bool {
@@ -58,6 +59,7 @@ extension PostgreSQLDataType {
         case .data: return .bytea
         case .date: return .timestamp
         case .point: return .point
+        case .uuid: return .uuid
         case .dictionary: fatalError("Unsupported \(#function) for dictionary")
         case .array: fatalError("Unsupported \(#function) for array")
         }
@@ -87,6 +89,7 @@ extension PostgreSQLDataType {
         case .varchar: return .binary
         case .void: return .binary
         case .point: return .binary
+        case .uuid: return .binary
 
         // Text
         // Converting these to binary supporting may improve performance

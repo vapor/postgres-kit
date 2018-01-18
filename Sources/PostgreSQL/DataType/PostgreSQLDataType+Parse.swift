@@ -23,6 +23,7 @@ extension PostgreSQLDataType {
         case .float8: return .double(data.makeFloatingPoint())
         case .bpchar: return try .string(data.makeString())
         case .point: return .point(x: data[0..<8].makeFloatingPoint(), y: data[8..<16].makeFloatingPoint())
+        case .uuid: return .uuid(UUID(uuid: data.unsafeCast()))
         case .timestamp, .date, .time, .numeric, .pg_node_tree, ._aclitem:
             throw PostgreSQLError(identifier: "dataType", reason: "Unsupported data type during parse binary: \(self)")
         default:
@@ -68,15 +69,17 @@ extension PostgreSQLDataType {
 extension Data {
     /// Converts this data to a floating-point number.
     fileprivate func makeFloatingPoint<F>(_ type: F.Type = F.self) -> F where F: FloatingPoint {
-        return Data(reversed()).withUnsafeBytes { (pointer: UnsafePointer<F>) -> F in
-            return pointer.pointee
-        }
+        return Data(reversed()).unsafeCast()
     }
 
     /// Converts this data to a fixed-width integer.
     fileprivate func makeFixedWidthInteger<I>(_ type: I.Type = I.self) -> I where I: FixedWidthInteger {
-        return withUnsafeBytes { (pointer: UnsafePointer<I>) -> I in
-            return pointer.pointee.bigEndian
+        return unsafeCast(to: I.self).bigEndian
+    }
+
+    fileprivate func unsafeCast<T>(to type: T.Type = T.self) -> T {
+        return withUnsafeBytes { (pointer: UnsafePointer<T>) -> T in
+            return pointer.pointee
         }
     }
 
