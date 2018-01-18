@@ -24,7 +24,9 @@ extension PostgreSQLDataType {
         case .bpchar: return try .string(data.makeString())
         case .point: return .point(x: data[0..<8].makeFloatingPoint(), y: data[8..<16].makeFloatingPoint())
         case .timestamp, .date, .time, .numeric, .pg_node_tree, ._aclitem:
-            fatalError("Unexpected binary for \(self) (preferred format): \(data.hexDebug)")
+            throw PostgreSQLError(identifier: "dataType", reason: "Unsupported data type during parse binary: \(self)")
+        default:
+            throw PostgreSQLError(identifier: "dataType", reason: "Unrecognized data type during parse binary: \(self)")
         }
     }
 
@@ -53,6 +55,8 @@ extension PostgreSQLDataType {
             assert(y.popLast()! == ")")
             return .point(x: Double(x)!, y: Double(y)!)
         case .pg_node_tree, ._aclitem: return try .string(data.makeString())
+        default:
+            throw PostgreSQLError(identifier: "dataType", reason: "Unrecognized data type during parse text: \(self)")
         }
     }
 }
