@@ -7,7 +7,7 @@ import TCP
 class PostgreSQLClientTests: XCTestCase {
     func testVersion() throws {
         let (client, eventLoop) = try PostgreSQLClient.makeTest()
-        let results = try client.query("SELECT version();").await(on: eventLoop)
+        let results = try client.simpleQuery("SELECT version();").await(on: eventLoop)
         XCTAssert(results[0]["version"]?.string?.contains("10.1") == true)
     }
 
@@ -22,7 +22,7 @@ class PostgreSQLClientTests: XCTestCase {
         let query = """
         select * from "pg_type" where "typlen" = $1 or "typlen" = $2
         """
-        let rows = try client.parameterizedQuery(query, [
+        let rows = try client.query(query, [
             .int32(1),
             .int32(2),
         ]).await(on: eventLoop)
@@ -190,7 +190,7 @@ class PostgreSQLClientTests: XCTestCase {
             -- "uuid" uuid
         );
         """
-        let insertResult = try client.parameterizedQuery(insertQuery, [
+        let insertResult = try client.query(insertQuery, [
             PostgreSQLData.int16(1), // smallint
             PostgreSQLData.int32(2), // integer
             PostgreSQLData.int64(3), // bigint
@@ -210,7 +210,7 @@ class PostgreSQLClientTests: XCTestCase {
         ]).await(on: eventLoop)
         XCTAssertEqual(insertResult.count, 0)
 
-        let parameterizedResult = try client.parameterizedQuery("select * from kitchen_sink").await(on: eventLoop)
+        let parameterizedResult = try client.query("select * from kitchen_sink").await(on: eventLoop)
         if parameterizedResult.count == 1 {
             let row = parameterizedResult[0]
             XCTAssertEqual(row["smallint"], .int16(1))
@@ -235,9 +235,9 @@ class PostgreSQLClientTests: XCTestCase {
         _ = try client.query("drop table if exists foo;").await(on: eventLoop)
         let createResult = try client.query("create table foo (fooid integer);").await(on: eventLoop)
         XCTAssertEqual(createResult.count, 0)
-        let insertResult = try client.parameterizedQuery("insert into foo values ($1);", encoding: [Int(123)]).await(on: eventLoop)
+        let insertResult = try client.query("insert into foo values ($1);", encoding: [Int(123)]).await(on: eventLoop)
         XCTAssertEqual(insertResult.count, 0)
-        let parameterizedResult = try client.parameterizedQuery("select * from foo").await(on: eventLoop)
+        let parameterizedResult = try client.query("select * from foo").await(on: eventLoop)
         if parameterizedResult.count == 1 {
             let row = parameterizedResult[0]
             XCTAssertEqual(row["fooid"], .int32(123))
