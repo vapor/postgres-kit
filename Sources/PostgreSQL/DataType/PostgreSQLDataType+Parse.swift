@@ -104,6 +104,7 @@ extension String {
         } else {
             formatter.dateFormat = format
         }
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
         guard let date = formatter.date(from: self) else {
             throw PostgreSQLError(identifier: "date", reason: "Malformed date: \(self)")
         }
