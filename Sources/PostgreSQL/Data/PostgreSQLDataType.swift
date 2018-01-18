@@ -43,6 +43,8 @@ extension PostgreSQLDataType {
         case .data: return .bytea
         case .date: return .timestamp
         case .point: return .point
+        case .dictionary: fatalError("Unsupported \(#function) for dictionary")
+        case .array: fatalError("Unsupported \(#function) for array")
         }
     }
 }

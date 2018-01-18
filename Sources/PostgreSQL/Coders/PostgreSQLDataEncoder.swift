@@ -1,5 +1,8 @@
 /// Encodes `Encodable` items to `PostgreSQLData`.
 public final class PostgreSQLDataEncoder {
+    /// Creates a new `PostgreSQLDataEncoder`.
+    public init() {}
+
     /// Encodes the supplied `Encodable` to `PostgreSQLData`
     public func encode(_ encodable: Encodable) throws -> PostgreSQLData {
         let data = PartialPostgreSQLData(data: .null)

@@ -4,4 +4,5 @@ import XCTest
 XCTMain([
     testCase(PostgreSQLClientTests.allTests),
     testCase(PostgreSQLMessageTests.allTests),
+    testCase(PostgreSQLDataTests.allTests),
 ])

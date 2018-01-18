@@ -17,6 +17,9 @@ public enum PostgreSQLData {
     case double(Double)
 
     case point(x: Double, y: Double)
+
+    case dictionary([String: PostgreSQLData])
+    case array([PostgreSQLData])
     
     case null
 }
@@ -64,6 +67,22 @@ extension PostgreSQLData {
             return nil
         }
     }
+
+    /// Returns dictionary value, `nil` if not a dictionary.
+    public var dictionary: [String: PostgreSQLData]? {
+        switch self {
+        case .dictionary(let d): return d
+        default: return nil
+        }
+    }
+
+    /// Returns array value, `nil` if not an array.
+    public var array: [PostgreSQLData]? {
+        switch self {
+        case .array(let a): return a
+        default: return nil
+        }
+    }
 }
 
 /// MARK: Equatable
@@ -82,6 +101,8 @@ extension PostgreSQLData: Equatable {
         case (.float(let a), .float(let b)): return a == b
         case (.double(let a), .double(let b)): return a == b
         case (.point(let a), .point(let b)): return a == b
+        case (.dictionary(let a), .dictionary(let b)): return a == b
+        case (.array(let a), .array(let b)): return a == b
         case (.null, .null): return true
         default: return false
         }
@@ -107,6 +128,8 @@ extension PostgreSQLData: CustomStringConvertible {
         case .double(let val): return "\(val) (double)"
         case .point(let x, let y): return "(\(x), \(y))"
         case .bool(let bool): return bool.description
+        case .dictionary(let d): return d.description
+        case .array(let a): return a.description
         case .null: return "null"
         }
     }
