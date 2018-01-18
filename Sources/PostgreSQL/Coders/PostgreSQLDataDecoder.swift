@@ -4,7 +4,7 @@ public final class PostgreSQLDataDecoder {
     public init() {}
 
     /// Decodes the supplied `Decodable` to `PostgreSQLData`
-    public func decode<D>(from data: PostgreSQLData) throws -> D
+    public func decode<D>(_ type: D.Type = D.self, from data: PostgreSQLData) throws -> D
         where D: Decodable
     {
         let decoder = _PostgreSQLDataDecoder(partialData: .init(data: data), at: [])
@@ -34,7 +34,8 @@ internal final class _PostgreSQLDataDecoder: Decoder {
     func container<Key>(keyedBy type: Key.Type) -> KeyedDecodingContainer<Key>
         where Key: CodingKey
     {
-        fatalError()
+        let container = PostgreSQLDataKeyedDecodingContainer<Key>(partialData: partialData, at: codingPath)
+        return .init(container)
     }
 
     /// See `Decoder.unkeyedContainer`
