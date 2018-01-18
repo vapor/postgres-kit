@@ -74,3 +74,27 @@ extension PostgreSQLClient {
         }
     }
 }
+
+/// MARK: Codable
+
+extension PostgreSQLClient {
+    /// Sends a parameterized PostgreSQL query command, collecting the parsed results.
+    public func parameterizedQuery(
+        _ string: String,
+        encoding parameters: [Encodable]
+    ) throws -> Future<[[String: PostgreSQLData]]> {
+        let parameters = try parameters.map { try PostgreSQLDataEncoder().encode($0) }
+        return try parameterizedQuery(string, parameters)
+    }
+
+    /// Sends a parameterized PostgreSQL query command, returning the parsed results to
+    /// the supplied closure.
+    public func parameterizedQuery(
+        _ string: String,
+        encoding parameters: [Encodable],
+        onRow: @escaping ([String: PostgreSQLData]) -> ()
+    ) throws -> Future<Void> {
+        let parameters = try parameters.map { try PostgreSQLDataEncoder().encode($0) }
+        return try parameterizedQuery(string, parameters, onRow: onRow)
+    }
+}

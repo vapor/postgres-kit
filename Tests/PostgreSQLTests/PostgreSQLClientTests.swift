@@ -210,7 +210,7 @@ class PostgreSQLClientTests: XCTestCase {
         ]).await(on: eventLoop)
         XCTAssertEqual(insertResult.count, 0)
 
-        let parameterizedResult = try! client.parameterizedQuery("select * from kitchen_sink").await(on: eventLoop)
+        let parameterizedResult = try client.parameterizedQuery("select * from kitchen_sink").await(on: eventLoop)
         if parameterizedResult.count == 1 {
             let row = parameterizedResult[0]
             XCTAssertEqual(row["smallint"], .int16(1))
@@ -230,12 +230,29 @@ class PostgreSQLClientTests: XCTestCase {
         }
     }
 
+    func testParameterizedEncodable() throws {
+        let (client, eventLoop) = try PostgreSQLClient.makeTest()
+        _ = try client.query("drop table if exists foo;").await(on: eventLoop)
+        let createResult = try client.query("create table foo (fooid integer);").await(on: eventLoop)
+        XCTAssertEqual(createResult.count, 0)
+        let insertResult = try client.parameterizedQuery("insert into foo values ($1);", encoding: [Int(123)]).await(on: eventLoop)
+        XCTAssertEqual(insertResult.count, 0)
+        let parameterizedResult = try client.parameterizedQuery("select * from foo").await(on: eventLoop)
+        if parameterizedResult.count == 1 {
+            let row = parameterizedResult[0]
+            XCTAssertEqual(row["fooid"], .int32(123))
+        } else {
+            XCTFail("parameterized result count is: \(parameterizedResult.count)")
+        }
+    }
+
     static var allTests = [
         ("testVersion", testVersion),
         ("testSelectTypes", testSelectTypes),
         ("testParse", testParse),
         ("testTypes", testTypes),
         ("testParameterizedTypes", testParameterizedTypes),
+        ("testParameterizedEncodable", testParameterizedEncodable),
     ]
 }
 
