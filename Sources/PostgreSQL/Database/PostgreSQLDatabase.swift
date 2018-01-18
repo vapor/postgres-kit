@@ -33,21 +33,3 @@ extension DatabaseIdentifier {
         return .init("psql")
     }
 }
-
-/// MARK: HACK
-
-import Service
-
-extension DatabaseConnection {
-    /// See `DatabaseConnectable.connect(to:)`
-    public func connect<D>(to database: DatabaseIdentifier<D>?) -> Future<D.Connection> {
-        assert(database == nil)
-        return Future(self as! D.Connection)
-    }
-}
-
-extension ServiceType {
-    public static var serviceSupports: [Any.Type] {
-        return []
-    }
-}
