@@ -123,7 +123,7 @@ internal final class PostgreSQLDataUnkeyedEncodingContainer: UnkeyedEncodingCont
 }
 
 /// Represents an array index.
-struct PostgreSQLDataArrayKey: CodingKey {
+fileprivate struct PostgreSQLDataArrayKey: CodingKey {
     /// See `CodingKey.intValue`
     var intValue: Int?
 

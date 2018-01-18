@@ -39,11 +39,12 @@ struct KitchenSink: Codable, Equatable {
             lhs.uint32 == rhs.uint32 &&
             lhs.uint64 == rhs.uint64 &&
             lhs.float == rhs.float &&
-            lhs.double == rhs.double
+            lhs.double == rhs.double &&
+            lhs.array == rhs.array
     }
 
     static let test = KitchenSink(
-        int8: 1, int16: 2, int32: 3, int64: 4, uint8: 5, uint16: 6, uint32: 7, uint64: 8, float: 9.1, double: 10.2
+        int8: 1, int16: 2, int32: 3, int64: 4, uint8: 5, uint16: 6, uint32: 7, uint64: 8, float: 9.1, double: 10.2, array: [1, 2, 3]
     )
     
     var int8: Int8
@@ -56,6 +57,7 @@ struct KitchenSink: Codable, Equatable {
     var uint64: UInt64
     var float: Float
     var double: Double
+    var array: [Int]
 }
 
 extension PostgreSQLData {
@@ -69,6 +71,7 @@ extension PostgreSQLData {
         "uint32": .int32(7),
         "uint64": .int64(8),
         "float": .float(9.1),
-        "double": .double(10.2)
+        "double": .double(10.2),
+        "array": .array([.int64(1), .int64(2), .int64(3)])
     ])
 }

@@ -43,6 +43,6 @@ internal final class _PostgreSQLDataEncoder: Encoder {
 
     /// See `Encoder.singleValueContainer`
     func singleValueContainer() -> SingleValueEncodingContainer {
-        fatalError()
+        return PostgreSQLDataSingleValueEncodingContainer(partialData: partialData, at: codingPath)
     }
 }
