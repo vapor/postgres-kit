@@ -105,6 +105,16 @@ extension PartialPostgreSQLData {
         default: throw DecodingError.typeMismatch(U.self, .init(codingPath: path, debugDescription: "Integer bit width not supported: \(U.bitWidth)"))
         }
     }
+
+    /// Sets an encodable value at the supplied path.
+    func setEncodable<E>(_ value: E, at path: [CodingKey]) throws where E: Encodable {
+        if let value = value as? PostgreSQLDataCustomConvertible {
+            try set(value.convertToPostgreSQLData(), at: path)
+        } else {
+            let encoder = _PostgreSQLDataEncoder(partialData: self, at: path)
+            try value.encode(to: encoder)
+        }
+    }
 }
 
 /// MARK: Decoding Convenience
@@ -115,6 +125,19 @@ extension PartialPostgreSQLData {
         switch get(at: path) {
         case .some(let w): return w
         case .none: throw DecodingError.valueNotFound(T.self, .init(codingPath: path, debugDescription: ""))
+        }
+    }
+
+    /// Gets a decodable value at the supplied path.
+    func requireDecodable<D>(_ value: D.Type = D.self, at path: [CodingKey]) throws -> D
+        where D: Decodable
+    {
+        if let convertible = D.self as? PostgreSQLDataCustomConvertible.Type {
+            let data = try requireGet(D.self, at: path)
+            return try unsafeBitCast(convertible.convertFromPostgreSQLData(from: data), to: D.self)
+        } else {
+            let decoder = _PostgreSQLDataDecoder(partialData: self, at: path)
+            return try D(from: decoder)
         }
     }
 

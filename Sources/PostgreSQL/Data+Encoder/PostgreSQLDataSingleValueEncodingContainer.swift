@@ -89,8 +89,7 @@ internal final class PostgreSQLDataSingleValueEncodingContainer: SingleValueEnco
 
     /// See `SingleValueEncodingContainer.encode`
     func encode<T>(_ value: T) throws where T : Encodable {
-        let encoder = _PostgreSQLDataEncoder(partialData: partialData, at: codingPath)
-        try value.encode(to: encoder)
+        try partialData.setEncodable(value, at: codingPath)
     }
 
     /// See `SingleValueEncodingContainer.nestedContainer`

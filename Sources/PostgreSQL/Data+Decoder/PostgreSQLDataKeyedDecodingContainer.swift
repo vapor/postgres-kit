@@ -102,9 +102,8 @@ final class PostgreSQLDataKeyedDecodingContainer<K>: KeyedDecodingContainerProto
     }
 
     /// See `KeyedDecodingContainerProtocol.decode`
-    func decode<T>(_ type: T.Type, forKey key: K) throws -> T where T : Decodable {
-        let decoder = _PostgreSQLDataDecoder(partialData: partialData, at: codingPath + [key])
-        return try T(from: decoder)
+    func decode<T>(_ type: T.Type, forKey key: K) throws -> T where T: Decodable {
+        return try partialData.requireDecodable(at: codingPath + [key])
     }
 
     /// See `KeyedDecodingContainerProtocol.nestedContainer`

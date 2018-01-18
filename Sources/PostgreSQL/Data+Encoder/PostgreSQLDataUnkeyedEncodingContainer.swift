@@ -99,8 +99,7 @@ internal final class PostgreSQLDataUnkeyedEncodingContainer: UnkeyedEncodingCont
 
     /// See `UnkeyedEncodingContainer.encode`
     func encode<T>(_ value: T) throws where T : Encodable {
-        let encoder = _PostgreSQLDataEncoder(partialData: partialData, at: codingPath + [index])
-        try value.encode(to: encoder)
+        try partialData.setEncodable(value, at: codingPath + [index])
     }
 
     /// See `UnkeyedEncodingContainer.nestedContainer`

@@ -88,9 +88,8 @@ final class PostgreSQLDataSingleValueDecodingContainer: SingleValueDecodingConta
     }
 
     /// See `SingleValueDecodingContainer.decode`
-    func decode<T>(_ type: T.Type) throws -> T where T : Decodable {
-        let decoder = _PostgreSQLDataDecoder(partialData: partialData, at: codingPath)
-        return try T(from: decoder)
+    func decode<T>(_ type: T.Type) throws -> T where T: Decodable {
+        return try partialData.requireDecodable(at: codingPath)
     }
 
     /// See `SingleValueDecodingContainer.nestedContainer`
