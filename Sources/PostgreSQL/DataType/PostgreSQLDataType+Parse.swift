@@ -97,21 +97,5 @@ extension PostgreSQLDataType {
 
 /// MARK: String Helpers
 
-extension String {
-    /// Parses a Date from this string with the supplied date format.
-    fileprivate func parseDate(format: String) throws -> Date {
-        let formatter = DateFormatter()
-        if contains(".") {
-            formatter.dateFormat = format + ".SSSSSS"
-        } else {
-            formatter.dateFormat = format
-        }
-        formatter.timeZone = TimeZone(secondsFromGMT: 0)
-        guard let date = formatter.date(from: self) else {
-            throw PostgreSQLError(identifier: "date", reason: "Malformed date: \(self)")
-        }
-        return date
-    }
-}
 
 

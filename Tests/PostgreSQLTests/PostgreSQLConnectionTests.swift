@@ -118,7 +118,10 @@ class PostgreSQLConnectionTests: XCTestCase {
             try XCTAssertEqual(row["text"]?.decode(String.self), "11")
             try XCTAssertEqual(row["bytea"]?.decode(Data.self), Data([0x31, 0x32]))
             try XCTAssertEqual(row["boolean"]?.decode(Bool.self), true)
-            // try XCTAssertEqual(row["point"]?.decode(Int16.self), .point(x: 13.5, y: 14)) // FIXME: decode point?
+            try XCTAssertNotNil(row["timestamp"]?.decode(Date.self))
+            try XCTAssertNotNil(row["date"]?.decode(Date.self))
+            try XCTAssertNotNil(row["time"]?.decode(Date.self))
+            try XCTAssertEqual(row["point"]?.decode(String.self), "(13.5,14)")
         } else {
             XCTFail("query result count is: \(queryResult.count)")
         }
