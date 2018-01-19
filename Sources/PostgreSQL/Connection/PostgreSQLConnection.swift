@@ -144,14 +144,14 @@ public final class AsymmetricQueueStream<I, O>: Stream, ConnectionContext {
 
             do {
                 if try context.onInput(input) {
-                    context.promise.complete()
                     currentInput = nil
+                    context.promise.complete()
                 } else {
                     upstream!.request(count: 1)
                 }
             } catch {
-                context.promise.fail(error)
                 currentInput = nil
+                context.promise.fail(error)
             }
         }
     }

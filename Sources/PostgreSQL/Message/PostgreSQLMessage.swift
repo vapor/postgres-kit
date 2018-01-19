@@ -14,7 +14,8 @@ enum PostgreSQLMessage {
     case query(PostgreSQLQuery)
     case rowDescription(PostgreSQLRowDescription)
     case dataRow(PostgreSQLDataRow)
-    case close(PostgreSQLCloseCommand)
+    /// Identifies the message as a command-completed response.
+    case close(PostgreSQLClose)
     case parse(PostgreSQLParseRequest)
     /// Identifies the message as a parameter description.
     case parameterDescription(PostgreSQLParameterDescription)
