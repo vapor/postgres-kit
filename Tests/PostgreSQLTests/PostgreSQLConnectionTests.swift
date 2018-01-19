@@ -249,6 +249,27 @@ class PostgreSQLConnectionTests: XCTestCase {
         }
     }
 
+    func testDictionary() throws {
+        let (client, eventLoop) = try! PostgreSQLConnection.makeTest()
+        _ = try! client.query("drop table if exists foo;").await(on: eventLoop)
+        let createResult = try! client.query("create table foo (id integer, dict jsonb);").await(on: eventLoop)
+        XCTAssertEqual(createResult.count, 0)
+        let insertResult = try! client.query("insert into foo values ($1, $2);", encoding: [
+            Int(123),
+            ["hello": "world"] as [String: String]
+        ]).await(on: eventLoop)
+
+        XCTAssertEqual(insertResult.count, 0)
+        let parameterizedResult = try! client.query("select * from foo").await(on: eventLoop)
+        if parameterizedResult.count == 1 {
+            let row = parameterizedResult[0]
+            XCTAssertEqual(row["id"], .int32(123))
+            XCTAssertEqual(row["dict"]?.dictionary?["hello"], .string("world"))
+        } else {
+            XCTFail("parameterized result count is: \(parameterizedResult.count)")
+        }
+    }
+
     static var allTests = [
         ("testVersion", testVersion),
         ("testSelectTypes", testSelectTypes),
@@ -256,6 +277,7 @@ class PostgreSQLConnectionTests: XCTestCase {
         ("testTypes", testTypes),
         ("testParameterizedTypes", testParameterizedTypes),
         ("testParameterizedEncodable", testParameterizedEncodable),
+        ("testDictionary", testDictionary),
     ]
 }
 

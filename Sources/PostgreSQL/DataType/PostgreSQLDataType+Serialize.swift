@@ -14,7 +14,9 @@ extension PostgreSQLData {
         let serialized: Data?
         switch self {
         case .date(let date): serialized = Data(date.description.utf8)
-        case .string, .null, .int8, .int16, .int32, .int64, .double, .float, .data, .point, .bool, .dictionary, .array, .uuid:
+        case .dictionary(let dict): serialized = try JSONEncoder().encode(dict)
+        case .array(let arr): serialized = try JSONEncoder().encode(arr)
+        case .string, .null, .int8, .int16, .int32, .int64, .double, .float, .data, .point, .bool, .uuid:
             fatalError("Unsupported serialize text: \(self)")
         }
         return serialized

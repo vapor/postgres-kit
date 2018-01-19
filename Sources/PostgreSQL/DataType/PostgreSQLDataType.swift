@@ -15,6 +15,7 @@ public struct PostgreSQLDataType: Codable, Equatable {
     public static let regproc = PostgreSQLDataType(raw: 24)
     public static let text = PostgreSQLDataType(raw: 25)
     public static let oid = PostgreSQLDataType(raw: 26)
+    public static let json = PostgreSQLDataType(raw: 114)
     public static let pg_node_tree = PostgreSQLDataType(raw: 194)
     public static let point = PostgreSQLDataType(raw: 600)
     public static let float4 = PostgreSQLDataType(raw: 700)
@@ -28,6 +29,7 @@ public struct PostgreSQLDataType: Codable, Equatable {
     public static let numeric = PostgreSQLDataType(raw: 1700)
     public static let void = PostgreSQLDataType(raw: 2278)
     public static let uuid = PostgreSQLDataType(raw: 2950)
+    public static let jsonb = PostgreSQLDataType(raw: 3802)
 
     /// See `Equatable.==`
     public static func ==(lhs: PostgreSQLDataType, rhs: PostgreSQLDataType) -> Bool {
@@ -60,8 +62,8 @@ extension PostgreSQLDataType {
         case .date: return .timestamp
         case .point: return .point
         case .uuid: return .uuid
-        case .dictionary: fatalError("Unsupported \(#function) for dictionary")
-        case .array: fatalError("Unsupported \(#function) for array")
+        case .dictionary: return .jsonb
+        case .array: return .jsonb
         }
     }
 }
@@ -99,6 +101,7 @@ extension PostgreSQLDataType {
         case .time: return .text
         case .timestamp: return .text
         case .numeric: return .text
+        case .json, .jsonb: return .text
 
         // If we don't recognize, default to text
         default: return .text

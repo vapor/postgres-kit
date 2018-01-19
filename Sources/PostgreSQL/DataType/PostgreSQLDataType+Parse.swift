@@ -56,6 +56,7 @@ extension PostgreSQLDataType {
             assert(y.popLast()! == ")")
             return .point(x: Double(x)!, y: Double(y)!)
         case .pg_node_tree, ._aclitem: return try .string(data.makeString())
+        case .jsonb, .json: return try JSONDecoder().decode(PostgreSQLData.self, from: data)
         default:
             throw PostgreSQLError(identifier: "dataType", reason: "Unrecognized data type during parse text: \(self)")
         }

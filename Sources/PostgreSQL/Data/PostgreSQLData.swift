@@ -26,6 +26,50 @@ public enum PostgreSQLData {
     case null
 }
 
+extension PostgreSQLData: Codable {
+    /// See `Decodable.init(from:)`
+    public init(from decoder: Decoder) throws {
+        if let dict = try? [String: PostgreSQLData](from: decoder) {
+            self = .dictionary(dict)
+        } else if let arr = try? [PostgreSQLData](from: decoder) {
+            self = .array(arr)
+        } else if let double = try? Double(from: decoder) {
+            self = .double(double)
+        } else if let int = try? Int(from: decoder) {
+            self = .int64(Int64(int))
+        } else if let bool = try? Bool(from: decoder) {
+            self = .bool(bool)
+        } else if let string = try? String(from: decoder) {
+            self = .string(string)
+        } else {
+            throw PostgreSQLError(identifier: "decode", reason: "Cannot decode PostgreSQL data")
+        }
+    }
+
+    /// See `Encodable.encode`
+    public func encode(to encoder: Encoder) throws {
+        switch self {
+        case .string(let value): try value.encode(to: encoder)
+        case .data(let value): try value.encode(to: encoder)
+        case .date(let value): try value.encode(to: encoder)
+        case .bool(let value): try value.encode(to: encoder)
+        case .int8(let value): try value.encode(to: encoder)
+        case .int16(let value): try value.encode(to: encoder)
+        case .int32(let value): try value.encode(to: encoder)
+        case .int64(let value): try value.encode(to: encoder)
+        case .float(let value): try value.encode(to: encoder)
+        case .double(let value): try value.encode(to: encoder)
+        case .uuid(let value): try value.encode(to: encoder)
+        case .array(let value): try value.encode(to: encoder)
+        case .dictionary(let value): try value.encode(to: encoder)
+        case .point: throw PostgreSQLError(identifier: "encode", reason: "Cannot encode point: \(self)")
+        case .null:
+            var single = encoder.singleValueContainer()
+            try single.encodeNil()
+        }
+    }
+}
+
 /// MARK: Polymorphic
 
 extension PostgreSQLData {
