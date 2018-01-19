@@ -4,7 +4,7 @@ extension PostgreSQLConnection {
     /// Sends a parameterized PostgreSQL query command, collecting the parsed results.
     public func query(
         _ string: String,
-        _ parameters: [PostgreSQLData] = []
+        _ parameters: [PostgreSQLDataCustomConvertible] = []
     ) throws -> Future<[[String: PostgreSQLData]]> {
         var rows: [[String: PostgreSQLData]] = []
         return try query(string, parameters) { row in
@@ -18,9 +18,10 @@ extension PostgreSQLConnection {
     /// the supplied closure.
     public func query(
         _ string: String,
-        _ parameters: [PostgreSQLData] = [],
+        _ parameters: [PostgreSQLDataCustomConvertible] = [],
         onRow: @escaping ([String: PostgreSQLData]) -> ()
     ) throws -> Future<Void> {
+        let parameters = try parameters.map { try $0.convertToPostgreSQLData() }
         logger?.log(query: string, parameters: parameters)
         let parse = PostgreSQLParseRequest(
             statementName: "",

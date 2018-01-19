@@ -377,6 +377,16 @@ extension FixedWidthInteger {
     }
 }
 
+extension PostgreSQLData: PostgreSQLDataCustomConvertible {
+    public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> PostgreSQLData {
+        return data
+    }
+
+    public func convertToPostgreSQLData() throws -> PostgreSQLData {
+        return self
+    }
+}
+
 extension Int: PostgreSQLDataCustomConvertible {}
 extension Int8: PostgreSQLDataCustomConvertible {}
 extension Int16: PostgreSQLDataCustomConvertible {}
@@ -388,3 +398,26 @@ extension UInt8: PostgreSQLDataCustomConvertible {}
 extension UInt16: PostgreSQLDataCustomConvertible {}
 extension UInt32: PostgreSQLDataCustomConvertible {}
 extension UInt64: PostgreSQLDataCustomConvertible {}
+
+public protocol PostgreSQLJSONType: PostgreSQLDataCustomConvertible, Codable { }
+
+extension PostgreSQLJSONType {
+    public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> Self {
+        guard let value = data.data else {
+            fatalError()
+        }
+
+        switch data.type {
+        case .jsonb:
+            switch data.format {
+            case .text: return try JSONDecoder().decode(Self.self, from: value)
+            case .binary: fatalError()
+            }
+        default: fatalError()
+        }
+    }
+
+    public func convertToPostgreSQLData() throws -> PostgreSQLData {
+        return try PostgreSQLData(type: .jsonb, format: .text, data: JSONEncoder().encode(self))
+    }
+}

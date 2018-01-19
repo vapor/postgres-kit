@@ -255,37 +255,16 @@ class PostgreSQLConnectionTests: XCTestCase {
 //    }
 //
     func testStruct() throws {
-        struct Hello: PostgreSQLDataCustomConvertible, Codable {
+        struct Hello: PostgreSQLJSONType {
             var message: String
-            
-            static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> Hello {
-                guard let value = data.data else {
-                    fatalError()
-                }
-
-                switch data.type {
-                case .jsonb:
-                    switch data.format {
-                    case .text: return try JSONDecoder().decode(Hello.self, from: value)
-                    case .binary: fatalError()
-                    }
-                default: fatalError()
-                }
-            }
-
-            func convertToPostgreSQLData() throws -> PostgreSQLData {
-                return try PostgreSQLData(type: .jsonb, format: .text, data: JSONEncoder().encode(self))
-            }
         }
-
 
         let (client, eventLoop) = try! PostgreSQLConnection.makeTest()
         _ = try! client.query("drop table if exists foo;").await(on: eventLoop)
         let createResult = try! client.query("create table foo (id integer, dict jsonb);").await(on: eventLoop)
         XCTAssertEqual(createResult.count, 0)
         let insertResult = try! client.query("insert into foo values ($1, $2);", [
-            Int32(1).convertToPostgreSQLData(),
-            Hello(message: "hello, world").convertToPostgreSQLData()
+            Int32(1), Hello(message: "hello, world")
         ]).await(on: eventLoop)
 
         XCTAssertEqual(insertResult.count, 0)
