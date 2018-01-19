@@ -1,5 +1,5 @@
 /// Represents an array index.
-struct PostgreSQLDataArrayKey: CodingKey {
+struct CodableDataArrayKey: CodingKey {
     /// See `CodingKey.intValue`
     var intValue: Int?
 
@@ -16,7 +16,7 @@ struct PostgreSQLDataArrayKey: CodingKey {
         self.init(intValue)
     }
 
-    /// Creates a new `PostgreSQLDataArrayKey` from the supplied index.
+    /// Creates a new `CodableDataArrayKey` from the supplied index.
     init(_ index: Int) {
         self.intValue = index
         self.stringValue = index.description

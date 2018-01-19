@@ -1,5 +1,5 @@
-/// Internal `UnkeyedEncodingContainer` for `PostgreSQLDataEncoder`.
-internal final class PostgreSQLDataUnkeyedEncodingContainer: UnkeyedEncodingContainer {
+/// Internal `UnkeyedEncodingContainer` for `CodableDataEncoder`.
+internal final class CodableDataUnkeyedEncodingContainer: UnkeyedEncodingContainer {
     /// See `UnkeyedEncodingContainer.count`
     var count: Int
 
@@ -7,16 +7,16 @@ internal final class PostgreSQLDataUnkeyedEncodingContainer: UnkeyedEncodingCont
     var codingPath: [CodingKey]
 
     /// Data being encoded.
-    let partialData: PartialPostgreSQLData
+    let partialData: PartialCodableData
 
     /// Creates a coding key for the current index, then increments the count.
     var index: CodingKey {
         defer { count += 1 }
-        return PostgreSQLDataArrayKey(count)
+        return CodableDataArrayKey(count)
     }
 
-    /// Creates a new `PostgreSQLDataKeyedEncodingContainer`
-    init(partialData: PartialPostgreSQLData, at path: [CodingKey]) {
+    /// Creates a new `CodableDataKeyedEncodingContainer`
+    init(partialData: PartialCodableData, at path: [CodingKey]) {
         self.codingPath = path
         self.partialData = partialData
         self.count = 0
@@ -34,7 +34,7 @@ internal final class PostgreSQLDataUnkeyedEncodingContainer: UnkeyedEncodingCont
 
     /// See `UnkeyedEncodingContainer.encode`
     func encode(_ value: Int) throws {
-        try partialData.setFixedWidthInteger(value, at: codingPath + [index])
+        partialData.set(.int(value), at: codingPath + [index])
     }
 
     /// See `UnkeyedEncodingContainer.encode`
@@ -59,27 +59,27 @@ internal final class PostgreSQLDataUnkeyedEncodingContainer: UnkeyedEncodingCont
 
     /// See `UnkeyedEncodingContainer.encode`
     func encode(_ value: UInt) throws {
-        try partialData.setFixedWidthInteger(value, at: codingPath + [index])
+        partialData.set(.uint(value), at: codingPath + [index])
     }
 
     /// See `UnkeyedEncodingContainer.encode`
     func encode(_ value: UInt8) throws {
-        try partialData.setFixedWidthInteger(value, at: codingPath + [index])
+        partialData.set(.uint8(value), at: codingPath + [index])
     }
 
     /// See `UnkeyedEncodingContainer.encode`
     func encode(_ value: UInt16) throws {
-        try partialData.setFixedWidthInteger(value, at: codingPath + [index])
+        partialData.set(.uint16(value), at: codingPath + [index])
     }
 
     /// See `UnkeyedEncodingContainer.encode`
     func encode(_ value: UInt32) throws {
-        try partialData.setFixedWidthInteger(value, at: codingPath + [index])
+        partialData.set(.uint32(value), at: codingPath + [index])
     }
 
     /// See `UnkeyedEncodingContainer.encode`
     func encode(_ value: UInt64) throws {
-        try partialData.setFixedWidthInteger(value, at: codingPath + [index])
+        partialData.set(.uint64(value), at: codingPath + [index])
     }
 
     /// See `UnkeyedEncodingContainer.encode`
@@ -99,24 +99,25 @@ internal final class PostgreSQLDataUnkeyedEncodingContainer: UnkeyedEncodingCont
 
     /// See `UnkeyedEncodingContainer.encode`
     func encode<T>(_ value: T) throws where T : Encodable {
-        try partialData.setEncodable(value, at: codingPath + [index])
+        partialData.set(.encodable(value), at: codingPath + [index])
     }
 
     /// See `UnkeyedEncodingContainer.nestedContainer`
     func nestedContainer<NestedKey>(keyedBy keyType: NestedKey.Type) -> KeyedEncodingContainer<NestedKey>
         where NestedKey: CodingKey
     {
-        let container = PostgreSQLDataKeyedEncodingContainer<NestedKey>(partialData: partialData, at: codingPath + [index])
+        let container = CodableDataKeyedEncodingContainer<NestedKey>(partialData: partialData, at: codingPath + [index])
         return .init(container)
     }
 
     /// See `UnkeyedEncodingContainer.nestedUnkeyedContainer`
     func nestedUnkeyedContainer() -> UnkeyedEncodingContainer {
-        return PostgreSQLDataUnkeyedEncodingContainer(partialData: partialData, at: codingPath + [index])
+        return CodableDataUnkeyedEncodingContainer(partialData: partialData, at: codingPath + [index])
     }
 
     /// See `UnkeyedEncodingContainer.superEncoder`
     func superEncoder() -> Encoder {
-        return _PostgreSQLDataEncoder(partialData: partialData, at: codingPath + [index])
+        return _CodableDataEncoder(partialData: partialData, at: codingPath + [index])
     }
 }
+

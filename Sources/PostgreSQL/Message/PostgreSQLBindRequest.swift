@@ -28,9 +28,4 @@ struct PostgreSQLBindRequest: Encodable {
 struct PostgreSQLBindParameter: Encodable {
     /// The value of the parameter, in the format indicated by the associated format code. n is the above length.
     var data: Data?
-
-    /// Serializes the `PostgreSQLData` to this parameter.
-    static func make(data: PostgreSQLData, format: PostgreSQLFormatCode) throws -> PostgreSQLBindParameter {
-        return try .init(data: data.serialize(format: format))
-    }
 }

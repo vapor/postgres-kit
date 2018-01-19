@@ -1,22 +1,28 @@
-/// Internal `KeyedDecodingContainerProtocol` for `PostgreSQLDataDecoder`
-final class PostgreSQLDataKeyedDecodingContainer<K>: KeyedDecodingContainerProtocol
-    where K: CodingKey 
+/// Internal `KeyedDecodingContainerProtocol` for `CodableDataDecoder`
+final class CodableDataKeyedDecodingContainer<K>: KeyedDecodingContainerProtocol
+    where K: CodingKey
 {
     /// See `KeyedDecodingContainerProtocol.allKeys`
-    var allKeys: [K] {
-        return partialData.data.keys.flatMap { Key(stringValue: $0) }
-    }
+    var allKeys: [K]
 
     /// See `KeyedDecodingContainerProtocol.codingPath`
     var codingPath: [CodingKey]
 
     /// Data being encoded.
-    let partialData: PartialPostgreSQLData
+    let partialData: PartialCodableData
 
-    /// Creates a new internal `PostgreSQLDataKeyedDecodingContainer`.
-    init(partialData: PartialPostgreSQLData, at path: [CodingKey]) {
+    /// Creates a new internal `CodableDataKeyedDecodingContainer`.
+    init(partialData: PartialCodableData, at path: [CodingKey]) {
         self.codingPath = path
         self.partialData = partialData
+        switch partialData.get(at: path) {
+        case .some(let data):
+            switch data {
+            case .dictionary(let value): allKeys = value.keys.flatMap { Key(stringValue: $0) }
+            default: allKeys = []
+            }
+        default: allKeys = []
+        }
     }
 
     /// See `KeyedDecodingContainerProtocol.contains`
@@ -106,22 +112,23 @@ final class PostgreSQLDataKeyedDecodingContainer<K>: KeyedDecodingContainerProto
 
     /// See `KeyedDecodingContainerProtocol.nestedContainer`
     func nestedContainer<NestedKey>(keyedBy type: NestedKey.Type, forKey key: K) throws -> KeyedDecodingContainer<NestedKey> where NestedKey : CodingKey {
-        let container = PostgreSQLDataKeyedDecodingContainer<NestedKey>(partialData: partialData, at: codingPath + [key])
+        let container = CodableDataKeyedDecodingContainer<NestedKey>(partialData: partialData, at: codingPath + [key])
         return .init(container)
     }
 
     /// See `KeyedDecodingContainerProtocol.nestedUnkeyedContainer`
     func nestedUnkeyedContainer(forKey key: K) throws -> UnkeyedDecodingContainer {
-        fatalError("Not yet supported")
+        return CodableDataUnkeyedDecodingContainer(partialData: partialData, at: codingPath + [key])
     }
 
     /// See `KeyedDecodingContainerProtocol.superDecoder`
     func superDecoder() throws -> Decoder {
-        return _PostgreSQLDataDecoder(partialData: partialData, at: codingPath)
+        return _CodableDataDecoder(partialData: partialData, at: codingPath)
     }
 
     /// See `KeyedDecodingContainerProtocol.superDecoder`
     func superDecoder(forKey key: K) throws -> Decoder {
-        return _PostgreSQLDataDecoder(partialData: partialData, at: codingPath + [key])
+        return _CodableDataDecoder(partialData: partialData, at: codingPath + [key])
     }
 }
+

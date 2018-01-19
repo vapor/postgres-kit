@@ -116,7 +116,12 @@ fileprivate final class _PostgreSQLMessageDecoder: Decoder, SingleValueDecodingC
             }
         }
 
-        data = data.advanced(by: MemoryLayout<B>.size)
+        if data.count == MemoryLayout<B>.size {
+            /// FIXME: safely advance elsewhere as well
+            data = Data()
+        } else {
+            data = data.advanced(by: MemoryLayout<B>.size)
+        }
         return int
     }
 

@@ -3,13 +3,13 @@ import Foundation
 /// Supported `PostgreSQLData` data types.
 public struct PostgreSQLData {
     /// The data's type.
-    var type: PostgreSQLDataType
+    public var type: PostgreSQLDataType
 
     /// The data's format.
-    var format: PostgreSQLFormatCode
+    public var format: PostgreSQLFormatCode
 
     /// The actual data.
-    var data: Data?
+    public var data: Data?
 
     public init(type: PostgreSQLDataType, format: PostgreSQLFormatCode = .binary, data: Data? = nil) {
         self.type = type
@@ -19,28 +19,7 @@ public struct PostgreSQLData {
 }
 
 /*
- case string(String)
- case data(Data)
- case date(Date)
 
- case bool(Bool)
-
- case int8(Int8)
- case int16(Int16)
- case int32(Int32)
- case int64(Int64)
-
- case float(Float)
- case double(Double)
-
- case point(x: Double, y: Double)
-
- case uuid(UUID)
-
- case dictionary([String: PostgreSQLData])
- case array([PostgreSQLData])
-
- case null
 */
 
 //extension PostgreSQLData: Codable {
@@ -89,64 +68,64 @@ public struct PostgreSQLData {
 
 /// MARK: Polymorphic
 
-extension PostgreSQLData {
-    /// Returns string value, `nil` if not a string.
-    public var string: String? {
-        switch self {
-        case .string(let s): return s
-        default: return nil
-        }
-    }
-
-    /// Returns int value, `nil` if not an int.
-    public var int: Int? {
-        switch self {
-        case .int8(let i): return Int(i)
-        case .int16(let i): return Int(i)
-        case .int32(let i): return Int(i)
-        case .int64(let i):
-            guard i <= Int64(Int.max) else { return nil }
-            return Int(i)
-        case .string(let s): return Int(s)
-        default: return nil
-        }
-    }
-
-    /// Returns bool value, `nil` if not a bool.
-    public var bool: Bool? {
-        if let int = self.int {
-            switch int {
-            case 1: return true
-            case 0: return false
-            default: return nil
-            }
-        } else if let string = self.string {
-            switch string.lowercased() {
-            case "t", "true": return true
-            case "f", "false": return false
-            default: return nil
-            }
-        } else {
-            return nil
-        }
-    }
-
-    /// Returns dictionary value, `nil` if not a dictionary.
-    public var dictionary: [String: PostgreSQLData]? {
-        switch self {
-        case .dictionary(let d): return d
-        default: return nil
-        }
-    }
-
-    /// Returns array value, `nil` if not an array.
-    public var array: [PostgreSQLData]? {
-        switch self {
-        case .array(let a): return a
-        default: return nil
-        }
-    }
-}
+//extension PostgreSQLData {
+//    /// Returns string value, `nil` if not a string.
+//    public var string: String? {
+//        switch self {
+//        case .string(let s): return s
+//        default: return nil
+//        }
+//    }
+//
+//    /// Returns int value, `nil` if not an int.
+//    public var int: Int? {
+//        switch self {
+//        case .int8(let i): return Int(i)
+//        case .int16(let i): return Int(i)
+//        case .int32(let i): return Int(i)
+//        case .int64(let i):
+//            guard i <= Int64(Int.max) else { return nil }
+//            return Int(i)
+//        case .string(let s): return Int(s)
+//        default: return nil
+//        }
+//    }
+//
+//    /// Returns bool value, `nil` if not a bool.
+//    public var bool: Bool? {
+//        if let int = self.int {
+//            switch int {
+//            case 1: return true
+//            case 0: return false
+//            default: return nil
+//            }
+//        } else if let string = self.string {
+//            switch string.lowercased() {
+//            case "t", "true": return true
+//            case "f", "false": return false
+//            default: return nil
+//            }
+//        } else {
+//            return nil
+//        }
+//    }
+//
+//    /// Returns dictionary value, `nil` if not a dictionary.
+//    public var dictionary: [String: PostgreSQLData]? {
+//        switch self {
+//        case .dictionary(let d): return d
+//        default: return nil
+//        }
+//    }
+//
+//    /// Returns array value, `nil` if not an array.
+//    public var array: [PostgreSQLData]? {
+//        switch self {
+//        case .array(let a): return a
+//        default: return nil
+//        }
+//    }
+//}
 
 /// MARK: Equatable
 

@@ -1,13 +1,13 @@
-/// Internal `SingleValueDecodingContainer` for `PostgreSQLDataDecoder`
-final class PostgreSQLDataSingleValueDecodingContainer: SingleValueDecodingContainer {
+/// Internal `SingleValueDecodingContainer` for `CodableDataDecoder`
+final class CodableDataSingleValueDecodingContainer: SingleValueDecodingContainer {
     /// See `SingleValueDecodingContainer.codingPath`
     var codingPath: [CodingKey]
 
     /// Data being encoded.
-    let partialData: PartialPostgreSQLData
+    let partialData: PartialCodableData
 
-    /// Creates a new internal `PostgreSQLDataSingleValueDecodingContainer`.
-    init(partialData: PartialPostgreSQLData, at path: [CodingKey]) {
+    /// Creates a new internal `CodableDataSingleValueDecodingContainer`.
+    init(partialData: PartialCodableData, at path: [CodingKey]) {
         self.codingPath = path
         self.partialData = partialData
     }
@@ -96,18 +96,18 @@ final class PostgreSQLDataSingleValueDecodingContainer: SingleValueDecodingConta
     func nestedContainer<Key>(keyedBy type: Key.Type) throws -> KeyedDecodingContainer<Key>
         where Key: CodingKey
     {
-        let container = PostgreSQLDataKeyedDecodingContainer<Key>(partialData: partialData, at: codingPath)
+        let container = CodableDataKeyedDecodingContainer<Key>(partialData: partialData, at: codingPath)
         return .init(container)
     }
 
     /// See `SingleValueDecodingContainer.nestedSingleValueContainer`
     func nestedSingleValueContainer() throws -> SingleValueDecodingContainer {
-        return PostgreSQLDataSingleValueDecodingContainer(partialData: partialData, at: codingPath)
+        return CodableDataSingleValueDecodingContainer(partialData: partialData, at: codingPath)
     }
 
     /// See `SingleValueDecodingContainer.superDecoder`
     func superDecoder() throws -> Decoder {
-        return _PostgreSQLDataDecoder(partialData: partialData, at: codingPath)
+        return _CodableDataDecoder(partialData: partialData, at: codingPath)
     }
 }
 

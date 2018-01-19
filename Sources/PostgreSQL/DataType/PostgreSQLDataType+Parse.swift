@@ -1,66 +1,67 @@
 import Foundation
 
 extension PostgreSQLDataType {
-    /// Parses this column to the specified data type and format code.
-    func parse(_ data: Data, format: PostgreSQLFormatCode) throws -> PostgreSQLData {
-        switch format {
-        case .text: return try parseText(from: data)
-        case .binary: return try parseBinary(from: data)
-        }
-    }
+//    /// Parses this column to the specified data type and format code.
+//    func parse(_ data: Data, format: PostgreSQLFormatCode) throws -> PostgreSQLData {
+//        return Postgre
+//        switch format {
+//        case .text: return try parseText(from: data)
+//        case .binary: return try parseBinary(from: data)
+//        }
+//    }
 
-    /// Parses this column to the specified data type assuming binary format.
-    private func parseBinary(from data: Data) throws -> PostgreSQLData {
-        switch self {
-        case .name, .text, .varchar: return try .string(data.makeString())
-        case .int8: return .int64(data.makeFixedWidthInteger())
-        case .oid, .regproc, .int4: return .int32(data.makeFixedWidthInteger())
-        case .int2: return .int16(data.makeFixedWidthInteger())
-        case .bool, .char: return .int8(data.makeFixedWidthInteger())
-        case .bytea: return .data(data)
-        case .void: return .null
-        case .float4: return .float(data.makeFloatingPoint())
-        case .float8: return .double(data.makeFloatingPoint())
-        case .bpchar: return try .string(data.makeString())
-        case .point: return .point(x: data[0..<8].makeFloatingPoint(), y: data[8..<16].makeFloatingPoint())
-        case .uuid: return .uuid(UUID(uuid: data.unsafeCast()))
-        case .timestamp, .date, .time, .numeric, .pg_node_tree, ._aclitem:
-            throw PostgreSQLError(identifier: "dataType", reason: "Unsupported data type during parse binary: \(self)")
-        default:
-            throw PostgreSQLError(identifier: "dataType", reason: "Unrecognized data type during parse binary: \(self)")
-        }
-    }
-
-    /// Parses this column to the specified data type assuming text format.
-    private func parseText(from data: Data) throws -> PostgreSQLData {
-        switch self {
-        case .bool: return try .int8(data.makeString() == "t" ? 1 : 0)
-        case .text, .name, .varchar, .bpchar,.numeric: return try .string(data.makeString())
-        case .int8: return try Int64(data.makeString()).flatMap { .int64($0) } ?? .null
-        case .oid, .regproc, .int4: return try Int32(data.makeString()).flatMap { .int32($0) } ?? .null
-        case .int2: return try Int16(data.makeString()).flatMap { .int16($0) } ?? .null
-        case .char: return .int8(Int8(bitPattern: data[0]))
-        case .float4: return try Float(data.makeString()).flatMap { .float($0) } ?? .null
-        case .float8: return try Double(data.makeString()).flatMap { .double($0) } ?? .null
-        case .bytea: return try .data(Data(hexString: data[2...].makeString()))
-        case .timestamp: return try .date(data.makeString().parseDate(format:  "yyyy-MM-dd HH:mm:ss"))
-        case .date: return try .date(data.makeString().parseDate(format:  "yyyy-MM-dd"))
-        case .time: return try .date(data.makeString().parseDate(format:  "HH:mm:ss"))
-        case .void: return .null
-        case .point:
-            let string = try data.makeString()
-            let parts = string.split(separator: ",")
-            var x = parts[0]
-            var y = parts[1]
-            assert(x.popFirst()! == "(")
-            assert(y.popLast()! == ")")
-            return .point(x: Double(x)!, y: Double(y)!)
-        case .pg_node_tree, ._aclitem: return try .string(data.makeString())
-        case .jsonb, .json: return try JSONDecoder().decode(PostgreSQLData.self, from: data)
-        default:
-            throw PostgreSQLError(identifier: "dataType", reason: "Unrecognized data type during parse text: \(self)")
-        }
-    }
+//    /// Parses this column to the specified data type assuming binary format.
+//    private func parseBinary(from data: Data) throws -> PostgreSQLData {
+//        switch self {
+//        case .name, .text, .varchar: return try .string(data.makeString())
+//        case .int8: return .int64(data.makeFixedWidthInteger())
+//        case .oid, .regproc, .int4: return .int32(data.makeFixedWidthInteger())
+//        case .int2: return .int16(data.makeFixedWidthInteger())
+//        case .bool, .char: return .int8(data.makeFixedWidthInteger())
+//        case .bytea: return .data(data)
+//        case .void: return .null
+//        case .float4: return .float(data.makeFloatingPoint())
+//        case .float8: return .double(data.makeFloatingPoint())
+//        case .bpchar: return try .string(data.makeString())
+//        case .point: return .point(x: data[0..<8].makeFloatingPoint(), y: data[8..<16].makeFloatingPoint())
+//        case .uuid: return .uuid(UUID(uuid: data.unsafeCast()))
+//        case .timestamp, .date, .time, .numeric, .pg_node_tree, ._aclitem:
+//            throw PostgreSQLError(identifier: "dataType", reason: "Unsupported data type during parse binary: \(self)")
+//        default:
+//            throw PostgreSQLError(identifier: "dataType", reason: "Unrecognized data type during parse binary: \(self)")
+//        }
+//    }
+//
+//    /// Parses this column to the specified data type assuming text format.
+//    private func parseText(from data: Data) throws -> PostgreSQLData {
+//        switch self {
+//        case .bool: return try .int8(data.makeString() == "t" ? 1 : 0)
+//        case .text, .name, .varchar, .bpchar,.numeric: return try .string(data.makeString())
+//        case .int8: return try Int64(data.makeString()).flatMap { .int64($0) } ?? .null
+//        case .oid, .regproc, .int4: return try Int32(data.makeString()).flatMap { .int32($0) } ?? .null
+//        case .int2: return try Int16(data.makeString()).flatMap { .int16($0) } ?? .null
+//        case .char: return .int8(Int8(bitPattern: data[0]))
+//        case .float4: return try Float(data.makeString()).flatMap { .float($0) } ?? .null
+//        case .float8: return try Double(data.makeString()).flatMap { .double($0) } ?? .null
+//        case .bytea: return try .data(Data(hexString: data[2...].makeString()))
+//        case .timestamp: return try .date(data.makeString().parseDate(format:  "yyyy-MM-dd HH:mm:ss"))
+//        case .date: return try .date(data.makeString().parseDate(format:  "yyyy-MM-dd"))
+//        case .time: return try .date(data.makeString().parseDate(format:  "HH:mm:ss"))
+//        case .void: return .null
+//        case .point:
+//            let string = try data.makeString()
+//            let parts = string.split(separator: ",")
+//            var x = parts[0]
+//            var y = parts[1]
+//            assert(x.popFirst()! == "(")
+//            assert(y.popLast()! == ")")
+//            return .point(x: Double(x)!, y: Double(y)!)
+//        case .pg_node_tree, ._aclitem: return try .string(data.makeString())
+//        case .jsonb, .json: return try JSONDecoder().decode(PostgreSQLData.self, from: data)
+//        default:
+//            throw PostgreSQLError(identifier: "dataType", reason: "Unrecognized data type during parse text: \(self)")
+//        }
+//    }
 }
 
 

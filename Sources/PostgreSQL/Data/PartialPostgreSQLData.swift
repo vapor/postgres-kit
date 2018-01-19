@@ -178,8 +178,9 @@ extension PartialPostgreSQLData {
         if let value = value as? PostgreSQLDataCustomConvertible {
             try set(value.convertToPostgreSQLData(), at: path)
         } else {
-            let encoder = _PostgreSQLDataEncoder(partialData: self, at: path)
-            try value.encode(to: encoder)
+            fatalError()
+//            let encoder = _PostgreSQLDataEncoder(partialData: self, at: path)
+//            try value.encode(to: encoder)
         }
     }
 
@@ -209,10 +210,11 @@ extension PartialPostgreSQLData {
     {
         if let convertible = D.self as? PostgreSQLDataCustomConvertible.Type {
             let data = try requireGet(D.self, at: path)
-            return try convertible.convertFromPostgreSQLData(from: data) as! D
+            return try convertible.convertFromPostgreSQLData(data) as! D
         } else {
-            let decoder = _PostgreSQLDataDecoder(partialData: self, at: path)
-            return try D(from: decoder)
+            fatalError()
+//            let decoder = _PostgreSQLDataDecoder(partialData: self, at: path)
+//            return try D(from: decoder)
         }
     }
 
@@ -270,18 +272,6 @@ extension PartialPostgreSQLData {
         }
     }
 
-    /// Gets a `String` from the supplied path or throws a decoding error.
-    func decodeString(at path: [CodingKey]) throws -> String {
-        let data = try requireGet(String.self, at: path)
-        guard let value = data.data else {
-            fatalError()
-        }
-        switch data.type {
-        case .text: return String(data: value, encoding: .utf8) !! "Non-utf8"
-        default: throw DecodingError.typeMismatch(String.self, .init(codingPath: path, debugDescription: ""))
-        }
-    }
-
     /// Gets a `Bool` from the supplied path or throws a decoding error.
     func decodeBool(at path: [CodingKey]) throws -> Bool {
         let data = try requireGet(String.self, at: path)
@@ -294,3 +284,107 @@ extension PartialPostgreSQLData {
         }
     }
 }
+
+extension PostgreSQLData {
+    /// Gets a `String` from the supplied path or throws a decoding error.
+    public func decodeString() throws -> String {
+        guard let value = self.data else {
+            throw PostgreSQLError(identifier: "data", reason: "Could not decode String from `null` data.")
+        }
+        switch type {
+        case .text, .name: return String(data: value, encoding: .utf8) !! "Non-utf8"
+        default: throw PostgreSQLError(identifier: "data", reason: "Could not decode String from data type: \(type)")
+        }
+    }
+
+    /// Gets a `String` from the supplied path or throws a decoding error.
+    public func decode<T>(_ type: T.Type) throws -> T where T: PostgreSQLDataCustomConvertible {
+        return try T.convertFromPostgreSQLData(self)
+    }
+}
+
+extension String: PostgreSQLDataCustomConvertible {
+    public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> String {
+        guard let value = data.data else {
+            throw PostgreSQLError(identifier: "data", reason: "Could not decode String from `null` data.")
+        }
+        switch data.format {
+        case .text: return String(data: value, encoding: .utf8) !! "Non-utf8"
+        case .binary:
+            switch data.type {
+            case .text, .name: return String(data: value, encoding: .utf8) !! "Non-utf8"
+            default: throw PostgreSQLError(identifier: "data", reason: "Could not decode String from data type: \(data.type)")
+            }
+        }
+    }
+
+    public func convertToPostgreSQLData() throws -> PostgreSQLData {
+        return PostgreSQLData(type: .text, format: .binary, data: Data(utf8))
+    }
+}
+
+extension FixedWidthInteger {
+    public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> Self {
+        guard let value = data.data else {
+            throw PostgreSQLError(identifier: "data", reason: "Could not decode String from `null` data.")
+        }
+        switch data.format {
+        case .binary:
+            switch data.type {
+            case .char: return try safeCast(value.makeFixedWidthInteger(Int8.self))
+            case .int2: return try safeCast(value.makeFixedWidthInteger(Int16.self))
+            case .int4: return try safeCast(value.makeFixedWidthInteger(Int32.self))
+            case .int8: return try safeCast(value.makeFixedWidthInteger(Int64.self))
+            default: throw DecodingError.typeMismatch(Self.self, .init(codingPath: [], debugDescription: ""))
+            }
+        case .text:
+            guard let converted = try Self(data.decode(String.self)) else {
+                fatalError()
+            }
+            return converted
+        }
+    }
+
+    public func convertToPostgreSQLData() throws -> PostgreSQLData {
+        let type: PostgreSQLDataType
+        switch Self.bitWidth {
+        case 8: type = .char
+        case 16: type = .int2
+        case 32: type = .int4
+        case 64: type = .int8
+        default: throw DecodingError.typeMismatch(Self.self, .init(codingPath: [], debugDescription: "Integer bit width not supported: \(Self.bitWidth)"))
+        }
+        return PostgreSQLData(type: type, format: .binary, data: self.data)
+    }
+
+
+    /// Safely casts one `FixedWidthInteger` to another.
+    private static func safeCast<I, V>(_ value: V, to type: I.Type = I.self) throws -> I where V: FixedWidthInteger, I: FixedWidthInteger {
+        if let existing = value as? I {
+            return existing
+        }
+
+        guard I.bitWidth >= V.bitWidth else {
+            throw DecodingError.typeMismatch(type, .init(codingPath: [], debugDescription: "Bit width too wide: \(I.bitWidth) < \(V.bitWidth)"))
+        }
+        guard value <= I.max else {
+            throw DecodingError.typeMismatch(type, .init(codingPath: [], debugDescription: "Value too large: \(value) > \(I.max)"))
+        }
+        guard value >= I.min else {
+            throw DecodingError.typeMismatch(type, .init(codingPath: [], debugDescription: "Value too small: \(value) < \(I.min)"))
+        }
+        return I(value)
+    }
+}
+
+extension Int: PostgreSQLDataCustomConvertible {}
+extension Int8: PostgreSQLDataCustomConvertible {}
+extension Int16: PostgreSQLDataCustomConvertible {}
+extension Int32: PostgreSQLDataCustomConvertible {}
+extension Int64: PostgreSQLDataCustomConvertible {}
+
+extension UInt: PostgreSQLDataCustomConvertible {}
+extension UInt8: PostgreSQLDataCustomConvertible {}
+extension UInt16: PostgreSQLDataCustomConvertible {}
+extension UInt32: PostgreSQLDataCustomConvertible {}
+extension UInt64: PostgreSQLDataCustomConvertible {}
