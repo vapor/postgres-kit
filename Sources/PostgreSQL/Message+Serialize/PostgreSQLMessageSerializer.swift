@@ -22,23 +22,21 @@ final class PostgreSQLMessageSerializer: TranslatingStream {
     }
 
     /// See `TranslatingStream.translate`
-    func translate(input: PostgreSQLMessage) throws -> Future<TranslatingStreamResult<ByteBuffer>> {
-        return try Future(_translate(input: input))
-    }
-
-    /// Non-future implementation of `TranslatingStream.translate`
-    func _translate(input: PostgreSQLMessage) throws -> TranslatingStreamResult<ByteBuffer> {
+    func translate(input context: inout TranslatingStreamInput<PostgreSQLMessage>) throws -> TranslatingStreamOutput<ByteBuffer> {
         if let excess = self.excess {
             self.excess = nil
             return serialize(data: excess)
         } else {
+            guard let input = context.input else {
+                return .insufficient()
+            }
             let data = try PostgreSQLMessageEncoder().encode(input)
             return serialize(data: data)
         }
     }
 
     /// Serializes data, storing `excess` if it does not fit in the buffer.
-    func serialize(data: Data) -> TranslatingStreamResult<ByteBuffer> {
+    func serialize(data: Data) -> TranslatingStreamOutput<ByteBuffer> {
         let count = data.copyBytes(to: buffer)
         let view = ByteBuffer(start: buffer.baseAddress, count: count)
         if data.count > count {

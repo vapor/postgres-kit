@@ -22,23 +22,24 @@ final class PostgreSQLMessageParser: TranslatingStream {
     }
 
     /// See TranslatingStream.translate
-    func translate(input: ByteBuffer) throws -> Future<TranslatingStreamResult<PostgreSQLMessage>> {
-        let result: TranslatingStreamResult<PostgreSQLMessage>
+    func translate(input context: inout TranslatingStreamInput<ByteBuffer>) throws -> TranslatingStreamOutput<PostgreSQLMessage> {
         if let excess = self.excess {
             self.excess = nil
-            result = try parse(data: excess)
+            return try parse(data: excess)
         } else {
-            result = try parse(data: Data(input))
+            guard let input = context.input else {
+                return .insufficient()
+            }
+            return try parse(data: Data(input))
         }
-        return Future(result)
     }
 
     /// Parses the data, setting `excess` or requesting more data if insufficient.
-    func parse(data: Data) throws -> TranslatingStreamResult<PostgreSQLMessage> {
+    func parse(data: Data) throws -> TranslatingStreamOutput<PostgreSQLMessage> {
         let data = buffered + data
         guard let (message, remaining) = try PostgreSQLMessageDecoder().decode(data) else {
             buffered.append(data)
-            return .insufficient
+            return .insufficient()
         }
 
         buffered = .init()
