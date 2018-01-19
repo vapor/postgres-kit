@@ -15,7 +15,7 @@ extension FixedWidthInteger {
     /// See `PostgreSQLDataCustomConvertible.convertFromPostgreSQLData(_:)`
     public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> Self {
         guard let value = data.data else {
-            throw PostgreSQLError(identifier: "data", reason: "Could not decode String from `null` data.")
+            throw PostgreSQLError(identifier: "fixedWidthInteger", reason: "Could not decode \(Self.self) from `null` data.")
         }
         switch data.format {
         case .binary:
@@ -27,8 +27,9 @@ extension FixedWidthInteger {
             default: throw DecodingError.typeMismatch(Self.self, .init(codingPath: [], debugDescription: ""))
             }
         case .text:
-            guard let converted = try Self(data.decode(String.self)) else {
-                fatalError()
+            let string = try value.makeString()
+            guard let converted = Self(string) else {
+                throw PostgreSQLError(identifier: "fixedWidthInteger", reason: "Could not decode \(Self.self) from text: \(string).")
             }
             return converted
         }

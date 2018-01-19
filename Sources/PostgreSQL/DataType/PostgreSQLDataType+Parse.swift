@@ -114,22 +114,4 @@ extension String {
     }
 }
 
-extension Data {
-    /// Initialize data from a hex string.
-    fileprivate init(hexString: String) {
-        var data = Data()
 
-        var gen = hexString.makeIterator()
-        while let c1 = gen.next(), let c2 = gen.next() {
-            let s = String([c1, c2])
-            guard let d = UInt8(s, radix: 16) else {
-                break
-            }
-
-            data.append(d)
-        }
-
-        self.init(data)
-    }
-
-}

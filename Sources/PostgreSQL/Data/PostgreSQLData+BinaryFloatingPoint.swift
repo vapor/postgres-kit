@@ -54,6 +54,9 @@ extension BinaryFloatingPoint {
     }
 }
 
+extension Double: PostgreSQLDataCustomConvertible { }
+extension Float: PostgreSQLDataCustomConvertible { }
+
 extension Data {
     /// Converts this data to a floating-point number.
     internal func makeFloatingPoint<F>(_ type: F.Type = F.self) -> F where F: FloatingPoint {
