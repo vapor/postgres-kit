@@ -15,7 +15,7 @@ class PostgreSQLConnectionTests: XCTestCase {
         let (client, eventLoop) = try PostgreSQLConnection.makeTest()
         let results = try client.query("select * from pg_type;").await(on: eventLoop)
         if results.count > 350 {
-            let name = try results[128]["typname"]?.decodeString()
+            let name = try results[128]["typname"]?.decode(String.self)
             XCTAssert(name != "")
         } else {
             XCTFail("Results count not large enough: \(results.count)")

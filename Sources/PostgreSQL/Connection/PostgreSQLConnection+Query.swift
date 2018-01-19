@@ -75,28 +75,3 @@ extension PostgreSQLConnection {
         }
     }
 }
-
-/// MARK: Codable
-
-//extension PostgreSQLConnection {
-//    /// Sends a parameterized PostgreSQL query command, collecting the parsed results.
-//    public func query(
-//        _ string: String,
-//        encoding parameters: [Encodable]
-//    ) throws -> Future<[[String: PostgreSQLData]]> {
-//        let parameters = try parameters.map { try PostgreSQLDataEncoder().encode($0) }
-//        return try query(string, parameters)
-//    }
-//
-//    /// Sends a parameterized PostgreSQL query command, returning the parsed results to
-//    /// the supplied closure.
-//    public func query(
-//        _ string: String,
-//        encoding parameters: [Encodable],
-//        onRow: @escaping ([String: PostgreSQLData]) -> ()
-//    ) throws -> Future<Void> {
-//        let parameters = try parameters.map { try PostgreSQLDataEncoder().encode($0) }
-//        return try query(string, parameters, onRow: onRow)
-//    }
-//}
-

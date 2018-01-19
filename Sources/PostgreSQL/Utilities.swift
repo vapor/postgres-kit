@@ -33,3 +33,13 @@ extension Data {
         return byte
     }
 }
+
+
+extension Data {
+    /// Casts data to a supplied type.
+    internal func unsafeCast<T>(to type: T.Type = T.self) -> T {
+        return withUnsafeBytes { (pointer: UnsafePointer<T>) -> T in
+            return pointer.pointee
+        }
+    }
+}

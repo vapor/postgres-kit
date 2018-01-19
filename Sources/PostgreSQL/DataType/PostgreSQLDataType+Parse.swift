@@ -67,33 +67,33 @@ extension PostgreSQLDataType {
 
 
 /// MARK: Data Helpers
-
-extension Data {
-    /// Converts this data to a floating-point number.
-    fileprivate func makeFloatingPoint<F>(_ type: F.Type = F.self) -> F where F: FloatingPoint {
-        return Data(reversed()).unsafeCast()
-    }
-
-    /// Converts this data to a fixed-width integer.
-    fileprivate func makeFixedWidthInteger<I>(_ type: I.Type = I.self) -> I where I: FixedWidthInteger {
-        return unsafeCast(to: I.self).bigEndian
-    }
-
-    fileprivate func unsafeCast<T>(to type: T.Type = T.self) -> T {
-        return withUnsafeBytes { (pointer: UnsafePointer<T>) -> T in
-            return pointer.pointee
-        }
-    }
-
-    /// Convert the row's data into a string, throwing if invalid encoding.
-    fileprivate func makeString(encoding: String.Encoding = .utf8) throws -> String {
-        guard let string = String(data: self, encoding: encoding) else {
-            throw PostgreSQLError(identifier: "utf8String", reason: "Unexpected non-UTF8 string.")
-        }
-
-        return string
-    }
-}
+//
+//extension Data {
+//    /// Converts this data to a floating-point number.
+//    fileprivate func makeFloatingPoint<F>(_ type: F.Type = F.self) -> F where F: FloatingPoint {
+//        return Data(reversed()).unsafeCast()
+//    }
+//
+//    /// Converts this data to a fixed-width integer.
+//    fileprivate func makeFixedWidthInteger<I>(_ type: I.Type = I.self) -> I where I: FixedWidthInteger {
+//        return unsafeCast(to: I.self).bigEndian
+//    }
+//
+//    fileprivate func unsafeCast<T>(to type: T.Type = T.self) -> T {
+//        return withUnsafeBytes { (pointer: UnsafePointer<T>) -> T in
+//            return pointer.pointee
+//        }
+//    }
+//
+//    /// Convert the row's data into a string, throwing if invalid encoding.
+//    fileprivate func makeString(encoding: String.Encoding = .utf8) throws -> String {
+//        guard let string = String(data: self, encoding: encoding) else {
+//            throw PostgreSQLError(identifier: "utf8String", reason: "Unexpected non-UTF8 string.")
+//        }
+//
+//        return string
+//    }
+//}
 
 /// MARK: String Helpers
 
