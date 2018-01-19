@@ -5,6 +5,9 @@ public final class PostgreSQLProvider: Provider {
     /// See `Provider.repositoryName`
     public static let repositoryName = "fluent-postgresql"
 
+    /// Creates a new `PostgreSQLProvider`.
+    public init() {}
+
     /// See `Provider.register`
     public func register(_ services: inout Services) throws {
         try services.register(DatabaseKitProvider())
