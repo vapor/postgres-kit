@@ -25,17 +25,17 @@ public final class PostgreSQLConnection {
 
     /// Sends `PostgreSQLMessage` to the server.
     func send(_ messages: [PostgreSQLMessage], onResponse: @escaping (PostgreSQLMessage) throws -> ()) -> Future<Void> {
+        var error: Error?
         return queueStream.enqueue(messages) { message in
             switch message {
-            case .readyForQuery: return true
-            case .error(let e): throw e
-            case .notice(let n):
-                print(n)
-                return false
-            default:
-                try onResponse(message)
-                return false // request until ready for query
+            case .readyForQuery:
+                if let e = error { throw e }
+                return true
+            case .error(let e): error = e
+            case .notice(let n): print(n)
+            default: try onResponse(message)
             }
+            return false // request until ready for query
         }
     }
 
