@@ -272,8 +272,7 @@ class PostgreSQLConnectionTests: XCTestCase {
         ("testParse", testParse),
         ("testTypes", testTypes),
         ("testParameterizedTypes", testParameterizedTypes),
-        ("testParameterizedEncodable", testParameterizedEncodable),
-        ("testDictionary", testDictionary),
+        ("testStruct", testStruct),
     ]
 }
 
