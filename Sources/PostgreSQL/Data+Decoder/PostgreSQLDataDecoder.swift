@@ -7,7 +7,7 @@ public final class PostgreSQLDataDecoder {
     public func decode<D>(_ type: D.Type = D.self, from data: PostgreSQLData) throws -> D
         where D: Decodable
     {
-        let decoder = _PostgreSQLDataDecoder(partialData: .init(data: data), at: [])
+        let decoder = _PostgreSQLDataDecoder(partialData: .init(data: [:]), at: [])
         return try D(from: decoder)
     }
 }

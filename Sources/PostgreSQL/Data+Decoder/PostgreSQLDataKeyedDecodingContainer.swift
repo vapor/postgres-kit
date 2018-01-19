@@ -3,7 +3,9 @@ final class PostgreSQLDataKeyedDecodingContainer<K>: KeyedDecodingContainerProto
     where K: CodingKey 
 {
     /// See `KeyedDecodingContainerProtocol.allKeys`
-    var allKeys: [K]
+    var allKeys: [K] {
+        return partialData.data.keys.flatMap { Key(stringValue: $0) }
+    }
 
     /// See `KeyedDecodingContainerProtocol.codingPath`
     var codingPath: [CodingKey]
@@ -15,10 +17,6 @@ final class PostgreSQLDataKeyedDecodingContainer<K>: KeyedDecodingContainerProto
     init(partialData: PartialPostgreSQLData, at path: [CodingKey]) {
         self.codingPath = path
         self.partialData = partialData
-        switch partialData.data {
-        case .dictionary(let dict): allKeys = dict.keys.flatMap { Key(stringValue: $0) }
-        default: allKeys = []
-        }
     }
 
     /// See `KeyedDecodingContainerProtocol.contains`
@@ -28,82 +26,82 @@ final class PostgreSQLDataKeyedDecodingContainer<K>: KeyedDecodingContainerProto
 
     /// See `KeyedDecodingContainerProtocol.decodeNil`
     func decodeNil(forKey key: K) throws -> Bool {
-        return partialData.get(at: codingPath + [key]) == nil
+        return partialData.decodeNil(at: codingPath + [key])
     }
 
     /// See `KeyedDecodingContainerProtocol.decode`
     func decode(_ type: Bool.Type, forKey key: K) throws -> Bool {
-        return try partialData.requireBool(at: codingPath + [key])
+        return try partialData.decodeBool(at: codingPath + [key])
     }
 
     /// See `KeyedDecodingContainerProtocol.decode`
     func decode(_ type: Int.Type, forKey key: K) throws -> Int {
-        return try partialData.requireFixedWidthItenger(at: codingPath + [key])
+        return try partialData.decodeFixedWidthInteger(at: codingPath + [key])
     }
 
     /// See `KeyedDecodingContainerProtocol.decode`
     func decode(_ type: Int8.Type, forKey key: K) throws -> Int8 {
-        return try partialData.requireFixedWidthItenger(at: codingPath + [key])
+        return try partialData.decodeFixedWidthInteger(at: codingPath + [key])
     }
 
     /// See `KeyedDecodingContainerProtocol.decode`
     func decode(_ type: Int16.Type, forKey key: K) throws -> Int16 {
-        return try partialData.requireFixedWidthItenger(at: codingPath + [key])
+        return try partialData.decodeFixedWidthInteger(at: codingPath + [key])
     }
 
     /// See `KeyedDecodingContainerProtocol.decode`
     func decode(_ type: Int32.Type, forKey key: K) throws -> Int32 {
-        return try partialData.requireFixedWidthItenger(at: codingPath + [key])
+        return try partialData.decodeFixedWidthInteger(at: codingPath + [key])
     }
 
     /// See `KeyedDecodingContainerProtocol.decode`
     func decode(_ type: Int64.Type, forKey key: K) throws -> Int64 {
-        return try partialData.requireFixedWidthItenger(at: codingPath + [key])
+        return try partialData.decodeFixedWidthInteger(at: codingPath + [key])
     }
 
     /// See `KeyedDecodingContainerProtocol.decode`
     func decode(_ type: UInt.Type, forKey key: K) throws -> UInt {
-        return try partialData.requireFixedWidthItenger(at: codingPath + [key])
+        return try partialData.decodeFixedWidthInteger(at: codingPath + [key])
     }
 
     /// See `KeyedDecodingContainerProtocol.decode`
     func decode(_ type: UInt8.Type, forKey key: K) throws -> UInt8 {
-        return try partialData.requireFixedWidthItenger(at: codingPath + [key])
+        return try partialData.decodeFixedWidthInteger(at: codingPath + [key])
     }
 
     /// See `KeyedDecodingContainerProtocol.decode`
     func decode(_ type: UInt16.Type, forKey key: K) throws -> UInt16 {
-        return try partialData.requireFixedWidthItenger(at: codingPath + [key])
+        return try partialData.decodeFixedWidthInteger(at: codingPath + [key])
     }
 
     /// See `KeyedDecodingContainerProtocol.decode`
     func decode(_ type: UInt32.Type, forKey key: K) throws -> UInt32 {
-        return try partialData.requireFixedWidthItenger(at: codingPath + [key])
+        return try partialData.decodeFixedWidthInteger(at: codingPath + [key])
     }
 
     /// See `KeyedDecodingContainerProtocol.decode`
     func decode(_ type: UInt64.Type, forKey key: K) throws -> UInt64 {
-        return try partialData.requireFixedWidthItenger(at: codingPath + [key])
+        return try partialData.decodeFixedWidthInteger(at: codingPath + [key])
     }
 
     /// See `KeyedDecodingContainerProtocol.decode`
     func decode(_ type: Float.Type, forKey key: K) throws -> Float {
-        return try partialData.requireFloatingPoint(at: codingPath + [key])
+        return try partialData.decodeFloatingPoint(at: codingPath + [key])
     }
 
     /// See `KeyedDecodingContainerProtocol.decode`
     func decode(_ type: Double.Type, forKey key: K) throws -> Double {
-        return try partialData.requireFloatingPoint(at: codingPath + [key])
+        return try partialData.decodeFloatingPoint(at: codingPath + [key])
     }
 
     /// See `KeyedDecodingContainerProtocol.decode`
     func decode(_ type: String.Type, forKey key: K) throws -> String {
-        return try partialData.requireString(at: codingPath + [key])
+        return try partialData.decodeString(at: codingPath + [key])
     }
 
     /// See `KeyedDecodingContainerProtocol.decode`
     func decode<T>(_ type: T.Type, forKey key: K) throws -> T where T: Decodable {
-        return try partialData.requireDecodable(at: codingPath + [key])
+        return try partialData.decode(at: codingPath + [key])
     }
 
     /// See `KeyedDecodingContainerProtocol.nestedContainer`

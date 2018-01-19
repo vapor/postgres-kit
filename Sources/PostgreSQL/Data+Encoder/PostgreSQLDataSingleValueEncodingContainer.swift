@@ -14,7 +14,7 @@ internal final class PostgreSQLDataSingleValueEncodingContainer: SingleValueEnco
 
     /// See `SingleValueEncodingContainer.encodeNil`
     func encodeNil() throws {
-        partialData.set(.null, at: codingPath)
+        partialData.encodeNil(at: codingPath)
     }
 
     /// See `SingleValueEncodingContainer.encode`

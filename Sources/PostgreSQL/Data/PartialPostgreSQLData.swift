@@ -182,6 +182,10 @@ extension PartialPostgreSQLData {
             try value.encode(to: encoder)
         }
     }
+
+    func encodeNil(at path: [CodingKey]) {
+        // implement
+    }
 }
 
 /// MARK: Decoding Convenience
@@ -195,8 +199,12 @@ extension PartialPostgreSQLData {
         }
     }
 
+    func decodeNil(at path: [CodingKey]) -> Bool {
+        return get(at: path) == nil
+    }
+
     /// Gets a decodable value at the supplied path.
-    func requireDecodable<D>(_ value: D.Type = D.self, at path: [CodingKey]) throws -> D
+    func decode<D>(_ value: D.Type = D.self, at path: [CodingKey]) throws -> D
         where D: Decodable
     {
         if let convertible = D.self as? PostgreSQLDataCustomConvertible.Type {
@@ -209,7 +217,7 @@ extension PartialPostgreSQLData {
     }
 
     /// Gets a `Float` from the supplied path or throws a decoding error.
-    func requireFixedWidthInteger<I>(_ type: I.Type = I.self, at path: [CodingKey]) throws -> I
+    func decodeFixedWidthInteger<I>(_ type: I.Type = I.self, at path: [CodingKey]) throws -> I
         where I: FixedWidthInteger
     {
         let data = try requireGet(I.self, at: path)
@@ -244,7 +252,7 @@ extension PartialPostgreSQLData {
     }
 
     /// Gets a `FloatingPoint` from the supplied path or throws a decoding error.
-    func requireFloatingPoint<F>(_ type: F.Type = F.self, at path: [CodingKey]) throws -> F
+    func decodeFloatingPoint<F>(_ type: F.Type = F.self, at path: [CodingKey]) throws -> F
         where F: BinaryFloatingPoint
     {
         let data = try requireGet(F.self, at: path)
@@ -263,7 +271,7 @@ extension PartialPostgreSQLData {
     }
 
     /// Gets a `String` from the supplied path or throws a decoding error.
-    func requireString(at path: [CodingKey]) throws -> String {
+    func decodeString(at path: [CodingKey]) throws -> String {
         let data = try requireGet(String.self, at: path)
         guard let value = data.data else {
             fatalError()
@@ -275,7 +283,7 @@ extension PartialPostgreSQLData {
     }
 
     /// Gets a `Bool` from the supplied path or throws a decoding error.
-    func requireBool(at path: [CodingKey]) throws -> Bool {
+    func decodeBool(at path: [CodingKey]) throws -> Bool {
         let data = try requireGet(String.self, at: path)
         guard let value = data.data else {
             fatalError()
