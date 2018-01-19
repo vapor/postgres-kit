@@ -1,4 +1,5 @@
 import Bits
+import Debugging
 
 /// First message sent from the frontend during startup.
 struct PostgreSQLDiagnosticResponse: Decodable, Error {
@@ -18,6 +19,43 @@ struct PostgreSQLDiagnosticResponse: Decodable, Error {
                 fields[type] = try single.decode(String.self)
             }
         }
+    }
+}
+
+extension PostgreSQLDiagnosticResponse: Debuggable {
+    /// See `Debuggable.readableName`
+    static var readableName: String {
+        return "PostgreSQL Diagnostic"
+    }
+
+    /// See `Debuggable.reason`
+    var reason: String {
+        return (fields[.localizedSeverity] ?? "ERROR") + ": " + (fields[.message] ?? "Unknown")
+    }
+
+    /// See `Debuggable.identifier`
+    var identifier: String {
+        return fields[.routine] ?? fields[.sqlState] ?? "unknown"
+    }
+}
+
+extension PostgreSQLDiagnosticResponse: Helpable {
+    /// See `Helpable.possibleCauses`
+    var possibleCauses: [String] {
+        var strings: [String] = []
+        if let message = fields[.message] {
+            strings.append(message)
+        }
+        return strings
+    }
+
+    /// See `Helpable.suggestedFixes`
+    var suggestedFixes: [String] {
+        var strings: [String] = []
+        if let hint = fields[.hint] {
+            strings.append(hint)
+        }
+        return strings
     }
 }
 

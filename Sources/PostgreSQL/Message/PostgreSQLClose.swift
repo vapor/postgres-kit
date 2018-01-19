@@ -1,7 +1,7 @@
 import Bits
 
 /// Identifies the message as a Close command.
-struct PostgreSQLClose: Decodable {
+struct PostgreSQLCloseResponse: Decodable {
     /// 'S' to close a prepared statement; or 'P' to close a portal.
     var type: PostgreSQLCloseType
 
