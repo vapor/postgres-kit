@@ -4,7 +4,7 @@ extension PostgreSQLConnection {
     /// Sends a parameterized PostgreSQL query command, collecting the parsed results.
     public func query(
         _ string: String,
-        _ parameters: [PostgreSQLData] = []
+        _ parameters: [PostgreSQLDataCustomConvertible] = []
     ) throws -> Future<[[String: PostgreSQLData]]> {
         var rows: [[String: PostgreSQLData]] = []
         return try query(string, parameters) { row in
@@ -18,41 +18,39 @@ extension PostgreSQLConnection {
     /// the supplied closure.
     public func query(
         _ string: String,
-        _ parameters: [PostgreSQLData] = [],
+        _ parameters: [PostgreSQLDataCustomConvertible] = [],
+        resultFormat: PostgreSQLResultFormat = .binary(),
         onRow: @escaping ([String: PostgreSQLData]) -> ()
     ) throws -> Future<Void> {
+        let parameters = try parameters.map { try $0.convertToPostgreSQLData() }
         logger?.log(query: string, parameters: parameters)
         let parse = PostgreSQLParseRequest(
             statementName: "",
             query: string,
-            parameterTypes: parameters.map { .type(forData: $0) }
+            parameterTypes: parameters.map { $0.type }
         )
         let describe = PostgreSQLDescribeRequest(type: .statement, name: "")
         var currentRow: PostgreSQLRowDescription?
-        var currentParameters: PostgreSQLParameterDescription?
+        
         return send([
             .parse(parse), .describe(describe), .sync
         ]) { message in
             switch message {
             case .parseComplete: break
             case .rowDescription(let row): currentRow = row
-            case .parameterDescription(let parameters): currentParameters = parameters
+            case .parameterDescription: break
             case .noData: break
             default: fatalError("Unexpected message during PostgreSQLParseRequest: \(message)")
             }
         }.flatMap(to: Void.self) {
-            let parameterDataTypes = currentParameters?.dataTypes ?? [] // no parameters
-            let resultDataTypes = currentRow?.fields.map { $0.dataType } ?? [] // nil currentRow means no resutls
-
+            let resultFormats = resultFormat.formatCodeFactory(currentRow?.fields.map { $0.dataType } ?? [])
             // cache so we don't compute twice
-            let _parameterFormats = parameterDataTypes.map { $0.preferredFormat }
-            let _resultFormats = resultDataTypes.map { $0.preferredFormat }
-            let bind = try PostgreSQLBindRequest(
+            let bind = PostgreSQLBindRequest(
                 portalName: "",
                 statementName: "",
-                parameterFormatCodes: _parameterFormats,
-                parameters: parameters.enumerated().map { try .make(data: $0.1, format: _parameterFormats[$0.0]) },
-                resultFormatCodes: _resultFormats
+                parameterFormatCodes: parameters.map { $0.format },
+                parameters: parameters.map { .init(data: $0.data) },
+                resultFormatCodes: resultFormats
             )
             let execute = PostgreSQLExecuteRequest(
                 portalName: "",
@@ -65,7 +63,7 @@ extension PostgreSQLConnection {
                 case .bindComplete: break
                 case .dataRow(let data):
                     let row = currentRow !! "Unexpected PostgreSQLDataRow without preceding PostgreSQLRowDescription."
-                    let parsed = try row.parse(data: data, formats: _resultFormats)
+                    let parsed = try row.parse(data: data, formatCodes: resultFormats)
                     onRow(parsed)
                 case .close: break
                 case .noData: break
@@ -73,29 +71,5 @@ extension PostgreSQLConnection {
                 }
             }
         }
-    }
-}
-
-/// MARK: Codable
-
-extension PostgreSQLConnection {
-    /// Sends a parameterized PostgreSQL query command, collecting the parsed results.
-    public func query(
-        _ string: String,
-        encoding parameters: [Encodable]
-    ) throws -> Future<[[String: PostgreSQLData]]> {
-        let parameters = try parameters.map { try PostgreSQLDataEncoder().encode($0) }
-        return try query(string, parameters)
-    }
-
-    /// Sends a parameterized PostgreSQL query command, returning the parsed results to
-    /// the supplied closure.
-    public func query(
-        _ string: String,
-        encoding parameters: [Encodable],
-        onRow: @escaping ([String: PostgreSQLData]) -> ()
-    ) throws -> Future<Void> {
-        let parameters = try parameters.map { try PostgreSQLDataEncoder().encode($0) }
-        return try query(string, parameters, onRow: onRow)
     }
 }

@@ -23,7 +23,7 @@ extension PostgreSQLConnection {
                 currentRow = row
             case .dataRow(let data):
                 let row = currentRow !! "Unexpected PostgreSQLDataRow without preceding PostgreSQLRowDescription."
-                let parsed = try row.parse(data: data, formats: row.fields.map { $0.formatCode })
+                let parsed = try row.parse(data: data, formatCodes: row.fields.map { $0.formatCode })
                 onRow(parsed)
             case .close: break // query over, waiting for `readyForQuery`
             default: fatalError("Unexpected message during PostgreSQLQuery: \(message)")

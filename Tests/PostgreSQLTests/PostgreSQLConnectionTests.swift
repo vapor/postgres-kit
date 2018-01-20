@@ -8,13 +8,18 @@ class PostgreSQLConnectionTests: XCTestCase {
     func testVersion() throws {
         let (client, eventLoop) = try PostgreSQLConnection.makeTest()
         let results = try client.simpleQuery("SELECT version();").await(on: eventLoop)
-        XCTAssert(results[0]["version"]?.string?.contains("10.1") == true)
+        try XCTAssert(results[0]["version"]?.decode(String.self).contains("10.1") == true)
     }
 
     func testSelectTypes() throws {
         let (client, eventLoop) = try PostgreSQLConnection.makeTest()
         let results = try client.query("select * from pg_type;").await(on: eventLoop)
-        XCTAssert(results.count > 350)
+        if results.count > 350 {
+            let name = try results[128]["typname"]?.decode(String.self)
+            XCTAssert(name != "")
+        } else {
+            XCTFail("Results count not large enough: \(results.count)")
+        }
     }
 
     func testParse() throws {
@@ -22,13 +27,10 @@ class PostgreSQLConnectionTests: XCTestCase {
         let query = """
         select * from "pg_type" where "typlen" = $1 or "typlen" = $2
         """
-        let rows = try client.query(query, [
-            .int32(1),
-            .int32(2),
-        ]).await(on: eventLoop)
+        let rows = try client.query(query, [1, 2]).await(on: eventLoop)
 
         for row in rows {
-            XCTAssert(row["typlen"]?.int == 1 || row["typlen"]?.int == 2)
+            try XCTAssert(row["typlen"]?.decode(Int.self) == 1 || row["typlen"]?.decode(Int.self) == 2)
         }
     }
 
@@ -105,18 +107,21 @@ class PostgreSQLConnectionTests: XCTestCase {
         let queryResult = try client.query("select * from kitchen_sink").await(on: eventLoop)
         if queryResult.count == 1 {
             let row = queryResult[0]
-            XCTAssertEqual(row["smallint"], .int16(1))
-            XCTAssertEqual(row["integer"], .int32(2))
-            XCTAssertEqual(row["bigint"], .int64(3))
-            XCTAssertEqual(row["decimal"], .string("4"))
-            XCTAssertEqual(row["real"], .float(6))
-            XCTAssertEqual(row["double"], .double(7))
-            XCTAssertEqual(row["varchar"], .string("9"))
-            XCTAssertEqual(row["char"], .string("10  "))
-            XCTAssertEqual(row["text"], .string("11"))
-            XCTAssertEqual(row["bytea"], .data(Data([0x31, 0x32])))
-            XCTAssertEqual(row["boolean"], .int8(0x01))
-            XCTAssertEqual(row["point"], .point(x: 13.5, y: 14))
+            try XCTAssertEqual(row["smallint"]?.decode(Int16.self), 1)
+            try XCTAssertEqual(row["integer"]?.decode(Int32.self), 2)
+            try XCTAssertEqual(row["bigint"]?.decode(Int64.self), 3)
+            try XCTAssertEqual(row["decimal"]?.decode(String.self), "4")
+            try XCTAssertEqual(row["real"]?.decode(Float.self), 6)
+            try XCTAssertEqual(row["double"]?.decode(Double.self), 7)
+            try XCTAssertEqual(row["varchar"]?.decode(String.self), "9")
+            try XCTAssertEqual(row["char"]?.decode(String.self), "10  ")
+            try XCTAssertEqual(row["text"]?.decode(String.self), "11")
+            try XCTAssertEqual(row["bytea"]?.decode(Data.self), Data([0x31, 0x32]))
+            try XCTAssertEqual(row["boolean"]?.decode(Bool.self), true)
+            try XCTAssertNotNil(row["timestamp"]?.decode(Date.self))
+            try XCTAssertNotNil(row["date"]?.decode(Date.self))
+            try XCTAssertNotNil(row["time"]?.decode(Date.self))
+            try XCTAssertEqual(row["point"]?.decode(PostgreSQLPoint.self), PostgreSQLPoint(x: 13.5, y: 14))
         } else {
             XCTFail("query result count is: \(queryResult.count)")
         }
@@ -190,81 +195,72 @@ class PostgreSQLConnectionTests: XCTestCase {
             -- "bit" bit(16),
         );
         """
-        let uuid = UUID()
-        let insertResult = try client.query(insertQuery, [
-            PostgreSQLData.int16(1), // smallint
-            PostgreSQLData.int32(2), // integer
-            PostgreSQLData.int64(3), // bigint
-            PostgreSQLData.string("3.14159"), // decimal
-            PostgreSQLData.double(5), // numeric
-            PostgreSQLData.float(6), // real
-            PostgreSQLData.double(7), // double
-            PostgreSQLData.string("8"), // varchar
-            PostgreSQLData.string("9"), // char
-            PostgreSQLData.string("10"), // text
-            PostgreSQLData.data(Data([0x31, 0x32])), // bytea
-            PostgreSQLData.date(Date()), // timestamp
-            PostgreSQLData.date(Date()), // date
-            PostgreSQLData.date(Date()), // time
-            PostgreSQLData.bool(true), // boolean
-            PostgreSQLData.point(x: 11.5, y: 12), // point
-            PostgreSQLData.uuid(uuid) // new uuid
-        ]).await(on: eventLoop)
+
+        var params: [PostgreSQLDataCustomConvertible] = []
+        params += Int16(1) // smallint
+        params += Int32(2) // integer
+        params += Int64(3) // bigint
+        params += String("123456789.123456789") // decimal
+        params += Double(5) // numeric
+        params += Float(6) // real
+        params += Double(7) // double
+        params += String("8") // varchar
+        params += String("9") // char
+        params += String("10") // text
+        params += Data([0x31, 0x32]) // bytea
+        params += Date() // timestamp
+        params += Date() // date
+        params += Date() // time
+        params += Bool(true) // boolean
+        params += PostgreSQLPoint(x: 11.4, y: 12) // point
+        params += UUID() // new uuid
+
+        let insertResult = try! client.query(insertQuery, params).await(on: eventLoop)
         XCTAssertEqual(insertResult.count, 0)
 
-        let parameterizedResult = try client.query("select * from kitchen_sink").await(on: eventLoop)
+        let parameterizedResult = try! client.query("select * from kitchen_sink").await(on: eventLoop)
         if parameterizedResult.count == 1 {
             let row = parameterizedResult[0]
-            XCTAssertEqual(row["smallint"], .int16(1))
-            XCTAssertEqual(row["integer"], .int32(2))
-            XCTAssertEqual(row["bigint"], .int64(3))
-            XCTAssertEqual(row["decimal"], .string("3.14159"))
-            XCTAssertEqual(row["real"], .float(6))
-            XCTAssertEqual(row["double"], .double(7))
-            XCTAssertEqual(row["varchar"], .string("8"))
-            XCTAssertEqual(row["char"], .string("9   "))
-            XCTAssertEqual(row["text"], .string("10"))
-            XCTAssertEqual(row["bytea"], .data(Data([0x31, 0x32])))
-            XCTAssertEqual(row["boolean"], .int8(0x01))
-            XCTAssertEqual(row["point"], .point(x: 11.5, y: 12))
-            XCTAssertEqual(row["uuid"], .uuid(uuid))
+            try XCTAssertEqual(row["smallint"]?.decode(Int16.self), 1)
+            try XCTAssertEqual(row["integer"]?.decode(Int32.self), 2)
+            try XCTAssertEqual(row["bigint"]?.decode(Int64.self), 3)
+            try XCTAssertEqual(row["decimal"]?.decode(String.self), "123456789.123456789")
+            try XCTAssertEqual(row["real"]?.decode(Float.self), 6)
+            try XCTAssertEqual(row["double"]?.decode(Double.self), 7)
+            try XCTAssertEqual(row["varchar"]?.decode(String.self), "8")
+            try XCTAssertEqual(row["char"]?.decode(String.self), "9   ")
+            try XCTAssertEqual(row["text"]?.decode(String.self), "10")
+            try XCTAssertEqual(row["bytea"]?.decode(Data.self), Data([0x31, 0x32]))
+            try XCTAssertEqual(row["boolean"]?.decode(Bool.self), true)
+            try XCTAssertNotNil(row["timestamp"]?.decode(Date.self))
+            try XCTAssertNotNil(row["date"]?.decode(Date.self))
+            try XCTAssertNotNil(row["time"]?.decode(Date.self))
+            try XCTAssertEqual(row["point"]?.decode(String.self), "(11.4,12.0)")
+            try XCTAssertNotNil(row["uuid"]?.decode(UUID.self))
         } else {
             XCTFail("parameterized result count is: \(parameterizedResult.count)")
         }
     }
 
-    func testParameterizedEncodable() throws {
-        let (client, eventLoop) = try PostgreSQLConnection.makeTest()
-        _ = try client.query("drop table if exists foo;").await(on: eventLoop)
-        let createResult = try client.query("create table foo (fooid integer);").await(on: eventLoop)
-        XCTAssertEqual(createResult.count, 0)
-        let insertResult = try client.query("insert into foo values ($1);", encoding: [Int(123)]).await(on: eventLoop)
-        XCTAssertEqual(insertResult.count, 0)
-        let parameterizedResult = try client.query("select * from foo").await(on: eventLoop)
-        if parameterizedResult.count == 1 {
-            let row = parameterizedResult[0]
-            XCTAssertEqual(row["fooid"], .int32(123))
-        } else {
-            XCTFail("parameterized result count is: \(parameterizedResult.count)")
+    func testStruct() throws {
+        struct Hello: PostgreSQLJSONCustomConvertible {
+            var message: String
         }
-    }
 
-    func testDictionary() throws {
         let (client, eventLoop) = try! PostgreSQLConnection.makeTest()
         _ = try! client.query("drop table if exists foo;").await(on: eventLoop)
         let createResult = try! client.query("create table foo (id integer, dict jsonb);").await(on: eventLoop)
         XCTAssertEqual(createResult.count, 0)
-        let insertResult = try! client.query("insert into foo values ($1, $2);", encoding: [
-            Int(123),
-            ["hello": "world"] as [String: String]
+        let insertResult = try! client.query("insert into foo values ($1, $2);", [
+            Int32(1), Hello(message: "hello, world")
         ]).await(on: eventLoop)
 
         XCTAssertEqual(insertResult.count, 0)
         let parameterizedResult = try! client.query("select * from foo").await(on: eventLoop)
         if parameterizedResult.count == 1 {
             let row = parameterizedResult[0]
-            XCTAssertEqual(row["id"], .int32(123))
-            XCTAssertEqual(row["dict"]?.dictionary?["hello"], .string("world"))
+            try! XCTAssertEqual(row["id"]?.decode(Int.self), 1)
+            try! XCTAssertEqual(row["dict"]?.decode(Hello.self).message, "hello, world")
         } else {
             XCTFail("parameterized result count is: \(parameterizedResult.count)")
         }
@@ -276,8 +272,7 @@ class PostgreSQLConnectionTests: XCTestCase {
         ("testParse", testParse),
         ("testTypes", testTypes),
         ("testParameterizedTypes", testParameterizedTypes),
-        ("testParameterizedEncodable", testParameterizedEncodable),
-        ("testDictionary", testDictionary),
+        ("testStruct", testStruct),
     ]
 }
 
@@ -289,4 +284,8 @@ extension PostgreSQLConnection {
         _ = try client.authenticate(username: "postgres").await(on: eventLoop)
         return (client, eventLoop)
     }
+}
+
+func +=<T>(lhs: inout [T], rhs: T) {
+    lhs.append(rhs)
 }

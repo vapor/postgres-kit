@@ -46,65 +46,41 @@ public struct PostgreSQLDataType: Codable, Equatable {
 }
 
 extension PostgreSQLDataType {
-    /// Converts the supplied `PostgreSQLData` to the best matching `PostgreSQLDataType`
-    static func type(forData data: PostgreSQLData) -> PostgreSQLDataType {
-        switch data {
-        case .bool: return .bool
-        case .int8: return .char
-        case .int16: return .int2
-        case .int32: return .int4
-        case .int64: return .int8
-        case .null: return .void
-        case .string: return .text
-        case .double: return .float8
-        case .float: return .float4
-        case .data: return .bytea
-        case .date: return .timestamp
-        case .point: return .point
-        case .uuid: return .uuid
-        case .dictionary: return .jsonb
-        case .array: return .jsonb
+    /// The SQL name for this data type, i.e., `"INTEGER"` for `.int4`
+    public var sqlName: String {
+        let string: String
+        switch self {
+        case .bool: string = "BOOLEAN"
+        case .bytea: string = "BYTEA"
+        case .char: string = "CHAR"
+        case .int8: string = "BIGINT"
+        case .int2: string = "SMALLINT"
+        case .int4, .oid, .regproc: string = "INTEGER"
+        case .text, .name: string = "TEXT"
+        case .point: string = "POINT"
+        case .float4: string = "REAL"
+        case .float8: string = "DOUBLE PRECISION"
+        case ._aclitem: string = "_aclitem"
+        case .bpchar: string = "BPCHAR"
+        case .varchar: string = "VARCHAR"
+        case .date: string = "DATE"
+        case .time: string = "TIME"
+        case .timestamp: string = "TIMESTAMP"
+        case .numeric: string = "NUMERIC"
+        case .void: string = "VOID"
+        case .uuid: string = "UUID"
+        case .jsonb: string = "JSONB"
+        case .json: string = "JSON"
+        case .pg_node_tree: string = "pg_node_tree"
+        default: string = "VOID" // FIXME: better error?
         }
+        return string
     }
 }
 
-extension PostgreSQLDataType {
-    /// This type's preferred format.
-    /// Note: Ensure that the types parse and serialize support the preferred type!
-    var preferredFormat: PostgreSQLFormatCode {
-        switch self {
-        // Binary
-        // These data types will use binary format where possible
-        case .bool: return .binary
-        case .bytea: return .binary
-        case .char: return .binary
-        case .name: return .binary
-        case .int8: return .binary
-        case .int2: return .binary
-        case .int4: return .binary
-        case .regproc: return .binary
-        case .text: return .binary
-        case .oid: return .binary
-        case .float4: return .binary
-        case .float8: return .binary
-        case .bpchar: return .binary
-        case .varchar: return .binary
-        case .void: return .binary
-        case .point: return .binary
-        case .uuid: return .binary
-
-        // Text
-        // Converting these to binary supporting may improve performance
-        case ._aclitem: return .text
-        case .pg_node_tree: return .text
-        case .date: return .text
-        case .time: return .text
-        case .timestamp: return .text
-        case .numeric: return .text
-        case .json, .jsonb: return .text
-
-        // If we don't recognize, default to text
-        default: return .text
-        }
+extension PostgreSQLDataType: CustomStringConvertible {
+    /// See `CustomStringConvertible.description`
+    public var description: String {
+        return sqlName
     }
 }

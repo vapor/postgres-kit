@@ -30,7 +30,6 @@ struct PostgreSQLDataRowColumn: Decodable {
 
     /// Parses this column to the specified data type and format code.
     func parse(dataType: PostgreSQLDataType, format: PostgreSQLFormatCode) throws -> PostgreSQLData {
-        guard let value = self.value else { return .null }
-        return try dataType.parse(value, format: format)
+        return PostgreSQLData(type: dataType, format: format, data: value)
     }
 }

@@ -21,10 +21,17 @@ struct PostgreSQLRowDescription: Decodable {
 
 extension PostgreSQLRowDescription {
     /// Parses a `PostgreSQLDataRow` using the metadata from this row description.
-    public func parse(data: PostgreSQLDataRow, formats: [PostgreSQLFormatCode]) throws -> [String: PostgreSQLData] {
+    /// Important to pass formatCodes in since the format codes in the field are likely not correct (if from a describe request)
+    public func parse(data: PostgreSQLDataRow, formatCodes: [PostgreSQLFormatCode]) throws -> [String: PostgreSQLData] {
         return try .init(uniqueKeysWithValues: fields.enumerated().map { (i, field) in
+            let formatCode: PostgreSQLFormatCode
+            switch formatCodes.count {
+            case 0: formatCode = .text
+            case 1: formatCode = formatCodes[0]
+            default: formatCode = formatCodes[i]
+            }
             let key = field.name
-            let value = try data.columns[i].parse(dataType: field.dataType, format: formats[i])
+            let value = try data.columns[i].parse(dataType: field.dataType, format: formatCode)
             return (key, value)
         })
     }
