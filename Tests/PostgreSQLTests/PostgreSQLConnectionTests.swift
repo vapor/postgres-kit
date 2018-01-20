@@ -243,7 +243,7 @@ class PostgreSQLConnectionTests: XCTestCase {
     }
 
     func testStruct() throws {
-        struct Hello: PostgreSQLJSONType {
+        struct Hello: PostgreSQLJSONCustomConvertible {
             var message: String
         }
 
