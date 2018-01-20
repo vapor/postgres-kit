@@ -1,9 +1,6 @@
 import Foundation
 
 extension Data: PostgreSQLDataCustomConvertible {
-    /// See `PostgreSQLDataCustomConvertible.preferredDataType`
-    public static var preferredDataType: PostgreSQLDataType? { return .bytea }
-
     /// See `PostgreSQLDataCustomConvertible.convertFromPostgreSQLData(_:)`
     public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> Data {
         guard let value = data.data else {

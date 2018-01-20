@@ -1,9 +1,6 @@
 import Foundation
 
 extension Bool: PostgreSQLDataCustomConvertible {
-    /// See `PostgreSQLDataCustomConvertible.preferredDataType`
-    public static var preferredDataType: PostgreSQLDataType? { return .bool }
-
     /// See `PostgreSQLDataCustomConvertible.convertFromPostgreSQLData(_:)`
     public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> Bool {
         guard let value = data.data else {

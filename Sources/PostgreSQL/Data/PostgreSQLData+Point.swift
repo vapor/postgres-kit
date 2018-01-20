@@ -30,9 +30,6 @@ extension PostgreSQLPoint: Equatable {
 }
 
 extension PostgreSQLPoint: PostgreSQLDataCustomConvertible {
-    /// See `PostgreSQLDataCustomConvertible.preferredDataType`
-    public static var preferredDataType: PostgreSQLDataType? { return .point }
-
     /// See `PostgreSQLDataCustomConvertible.convertFromPostgreSQLData(_:)`
     public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> PostgreSQLPoint {
         guard let value = data.data else {

@@ -4,9 +4,6 @@ import Foundation
 extension OptionalType {
     /// FIXME: conditional conformance
 
-    /// See `PostgreSQLDataCustomConvertible.preferredDataType`
-    public static var preferredDataType: PostgreSQLDataType? { return .bool }
-
     /// See `PostgreSQLDataCustomConvertible.convertFromPostgreSQLData(_:)`
     public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> Self {
         guard let convertible = WrappedType.self as? PostgreSQLDataCustomConvertible.Type else {

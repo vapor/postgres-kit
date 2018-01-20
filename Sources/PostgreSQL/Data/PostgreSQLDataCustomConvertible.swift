@@ -1,10 +1,5 @@
 /// Capable of being converted to/from `PostgreSQLData`
 public protocol PostgreSQLDataCustomConvertible {
-    /// The data type this model prefers to parse in `convertFromPostgreSQLData`.
-    /// Note: the type may be different still.
-    /// If `nil`, this type has no preffered data type.
-    static var preferredDataType: PostgreSQLDataType? { get }
-
     /// Creates a `Self` from the supplied `PostgreSQLData`
     static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> Self
 
@@ -20,9 +15,6 @@ extension PostgreSQLData {
 }
 
 extension PostgreSQLData: PostgreSQLDataCustomConvertible {
-    /// See `PostgreSQLDataCustomConvertible.preferredDataType`
-    public static var preferredDataType: PostgreSQLDataType? { return nil }
-
     /// See `PostgreSQLDataCustomConvertible.convertFromPostgreSQLData(_:)`
     public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> PostgreSQLData {
         return data

@@ -1,17 +1,6 @@
 import Foundation
 
 extension FixedWidthInteger {
-    /// See `PostgreSQLDataCustomConvertible.preferredDataType`
-    public static var preferredDataType: PostgreSQLDataType? {
-        switch bitWidth {
-        case 8: return .char
-        case 16: return .int2
-        case 32: return .int4
-        case 64: return .int8
-        default: return nil
-        }
-    }
-
     /// See `PostgreSQLDataCustomConvertible.convertFromPostgreSQLData(_:)`
     public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> Self {
         guard let value = data.data else {

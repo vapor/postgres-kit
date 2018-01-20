@@ -1,15 +1,6 @@
 import Foundation
 
 extension BinaryFloatingPoint {
-    /// See `PostgreSQLDataCustomConvertible.preferredDataType`
-    public static var preferredDataType: PostgreSQLDataType? {
-        switch exponentBitCount + significandBitCount + 1 {
-        case 32: return .float4
-        case 64: return .float8
-        default: return nil
-        }
-    }
-
     /// Return's this floating point's bit width.
     static var bitWidth: Int {
         return exponentBitCount + significandBitCount + 1

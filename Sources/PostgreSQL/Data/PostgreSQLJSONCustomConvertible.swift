@@ -2,12 +2,9 @@ import COperatingSystem
 import Foundation
 
 /// Representable by a `JSONB` column on the PostgreSQL database.
-public protocol PostgreSQLJSONType: PostgreSQLDataCustomConvertible, Codable { }
+public protocol PostgreSQLJSONCustomConvertible: PostgreSQLDataCustomConvertible, Codable { }
 
-extension PostgreSQLJSONType {
-    /// See `PostgreSQLDataCustomConvertible.preferredDataType`
-    public static var preferredDataType: PostgreSQLDataType? { return .jsonb }
-
+extension PostgreSQLJSONCustomConvertible {
     /// See `PostgreSQLDataCustomConvertible.convertFromPostgreSQLData(_:)`
     public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> Self {
         guard let value = data.data else {
