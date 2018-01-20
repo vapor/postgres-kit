@@ -18,7 +18,9 @@ extension PostgreSQLJSONType {
         case .jsonb:
             switch data.format {
             case .text: return try JSONDecoder().decode(Self.self, from: value)
-            case .binary: fatalError()
+            case .binary:
+                assert(value[0] == 0x01)
+                return try JSONDecoder().decode(Self.self, from: value[1...])
             }
         default: fatalError()
         }

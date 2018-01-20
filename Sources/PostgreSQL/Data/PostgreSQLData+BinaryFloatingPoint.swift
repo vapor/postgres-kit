@@ -18,22 +18,23 @@ extension BinaryFloatingPoint {
     /// See `PostgreSQLDataCustomConvertible.convertFromPostgreSQLData(_:)`
     public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> Self {
         guard let value = data.data else {
-            throw PostgreSQLError(identifier: "data", reason: "Could not decode String from `null` data.")
+            throw PostgreSQLError(identifier: "binaryFloatingPoint", reason: "Could not decode \(Self.self) from `null` data.")
         }
         switch data.format {
         case .binary:
             switch data.type {
             case .float4: return Self.init(value.makeFloatingPoint(Float.self))
             case .float8: return Self.init(value.makeFloatingPoint(Double.self))
-            case .char: return Self.init(value.makeFixedWidthInteger(Int8.self))
-            case .int2: return Self.init(value.makeFixedWidthInteger(Int16.self))
-            case .int4: return Self.init(value.makeFixedWidthInteger(Int32.self))
-            case .int8: return Self.init(value.makeFixedWidthInteger(Int64.self))
+            case .char: return try Self.init(value.makeFixedWidthInteger(Int8.self))
+            case .int2: return try Self.init(value.makeFixedWidthInteger(Int16.self))
+            case .int4: return try Self.init(value.makeFixedWidthInteger(Int32.self))
+            case .int8: return try Self.init(value.makeFixedWidthInteger(Int64.self))
             default: throw DecodingError.typeMismatch(Self.self, .init(codingPath: [], debugDescription: ""))
             }
         case .text:
-            guard let converted = try Double(data.decode(String.self)) else {
-                fatalError()
+            let string = try data.decode(String.self)
+            guard let converted = Double(string) else {
+                throw PostgreSQLError(identifier: "binaryFloatingPoint", reason: "Could not decode \(Self.self) from string: \(string).")
             }
             return Self(converted)
         }

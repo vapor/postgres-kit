@@ -121,7 +121,7 @@ class PostgreSQLConnectionTests: XCTestCase {
             try XCTAssertNotNil(row["timestamp"]?.decode(Date.self))
             try XCTAssertNotNil(row["date"]?.decode(Date.self))
             try XCTAssertNotNil(row["time"]?.decode(Date.self))
-            try XCTAssertEqual(row["point"]?.decode(String.self), "(13.5,14)")
+            try XCTAssertEqual(row["point"]?.decode(PostgreSQLPoint.self), PostgreSQLPoint(x: 13.5, y: 14))
         } else {
             XCTFail("query result count is: \(queryResult.count)")
         }
@@ -200,7 +200,7 @@ class PostgreSQLConnectionTests: XCTestCase {
         params += Int16(1) // smallint
         params += Int32(2) // integer
         params += Int64(3) // bigint
-        params += String("3.14159") // decimal
+        params += String("123456789.123456789") // decimal
         params += Double(5) // numeric
         params += Float(6) // real
         params += Double(7) // double
@@ -224,7 +224,7 @@ class PostgreSQLConnectionTests: XCTestCase {
             try XCTAssertEqual(row["smallint"]?.decode(Int16.self), 1)
             try XCTAssertEqual(row["integer"]?.decode(Int32.self), 2)
             try XCTAssertEqual(row["bigint"]?.decode(Int64.self), 3)
-            try XCTAssertEqual(row["decimal"]?.decode(String.self), "3.14159")
+            try XCTAssertEqual(row["decimal"]?.decode(String.self), "123456789.123456789")
             try XCTAssertEqual(row["real"]?.decode(Float.self), 6)
             try XCTAssertEqual(row["double"]?.decode(Double.self), 7)
             try XCTAssertEqual(row["varchar"]?.decode(String.self), "8")
@@ -235,7 +235,7 @@ class PostgreSQLConnectionTests: XCTestCase {
             try XCTAssertNotNil(row["timestamp"]?.decode(Date.self))
             try XCTAssertNotNil(row["date"]?.decode(Date.self))
             try XCTAssertNotNil(row["time"]?.decode(Date.self))
-            try XCTAssertEqual(row["point"]?.decode(String.self), "(11.4,12)")
+            try XCTAssertEqual(row["point"]?.decode(String.self), "(11.4,12.0)")
             try XCTAssertNotNil(row["uuid"]?.decode(UUID.self))
         } else {
             XCTFail("parameterized result count is: \(parameterizedResult.count)")

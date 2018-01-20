@@ -17,7 +17,18 @@ extension Date: PostgreSQLDataCustomConvertible {
             case .time: return try value.makeString().parseDate(format:  "HH:mm:ss")
             default: throw PostgreSQLError(identifier: "date", reason: "Could not parse Date from text data type: \(data.type).")
             }
-        case .binary: throw PostgreSQLError(identifier: "date", reason: "Could not parse Date from binary data type: \(data.type).")
+        case .binary:
+            switch data.type {
+            case .timestamp, .time:
+                let microseconds = try value.makeFixedWidthInteger(Int64.self)
+                let seconds = microseconds / _microsecondsPerSecond
+                return Date(timeInterval: Double(seconds), since: _psqlDateStart)
+            case .date:
+                let days = try value.makeFixedWidthInteger(Int32.self)
+                let seconds = days * _secondsInDay
+                return Date(timeInterval: Double(seconds), since: _psqlDateStart)
+            default: throw PostgreSQLError(identifier: "date", reason: "Could not parse Date from binary data type: \(data.type).")
+            }
         }
     }
 
@@ -26,6 +37,10 @@ extension Date: PostgreSQLDataCustomConvertible {
         return PostgreSQLData(type: .timestamp, format: .text, data: Data(description.utf8))
     }
 }
+
+private let _microsecondsPerSecond: Int64 = 1_000_000
+private let _secondsInDay: Int32 = 24 * 60 * 60
+private let _psqlDateStart = Date(timeIntervalSince1970: 946_684_800) // values are stored as seconds before or after midnight 2000-01-01
 
 extension String {
     /// Parses a Date from this string with the supplied date format.

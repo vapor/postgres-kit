@@ -77,3 +77,10 @@ extension PostgreSQLDataType {
         return string
     }
 }
+
+extension PostgreSQLDataType: CustomStringConvertible {
+    /// See `CustomStringConvertible.description`
+    public var description: String {
+        return sqlName
+    }
+}

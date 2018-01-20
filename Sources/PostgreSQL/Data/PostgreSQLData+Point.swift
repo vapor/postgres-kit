@@ -15,6 +15,20 @@ public struct PostgreSQLPoint {
     }
 }
 
+extension PostgreSQLPoint: CustomStringConvertible {
+    /// See `CustomStringConvertible.description`
+    public var description: String {
+        return "(\(x),\(y))"
+    }
+}
+
+extension PostgreSQLPoint: Equatable {
+    /// See `Equatable.==`
+    public static func ==(lhs: PostgreSQLPoint, rhs: PostgreSQLPoint) -> Bool {
+        return lhs.x == rhs.x && lhs.y == rhs.y
+    }
+}
+
 extension PostgreSQLPoint: PostgreSQLDataCustomConvertible {
     /// See `PostgreSQLDataCustomConvertible.preferredDataType`
     public static var preferredDataType: PostgreSQLDataType? { return .point }

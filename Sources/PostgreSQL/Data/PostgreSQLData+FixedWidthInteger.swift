@@ -82,7 +82,10 @@ extension UInt64: PostgreSQLDataCustomConvertible {}
 
 extension Data {
     /// Converts this data to a fixed-width integer.
-    internal func makeFixedWidthInteger<I>(_ type: I.Type = I.self) -> I where I: FixedWidthInteger {
+    internal func makeFixedWidthInteger<I>(_ type: I.Type = I.self) throws -> I where I: FixedWidthInteger {
+        guard count >= (I.bitWidth / 8) else {
+            throw PostgreSQLError(identifier: "fixedWidthData", reason: "Not enough bytes to decode \(I.self): \(count)/\(I.bitWidth / 8)")
+        }
         return unsafeCast(to: I.self).bigEndian
     }
 }

@@ -19,6 +19,7 @@ extension PostgreSQLConnection {
     public func query(
         _ string: String,
         _ parameters: [PostgreSQLDataCustomConvertible] = [],
+        resultFormat: PostgreSQLResultFormat = .binary(),
         onRow: @escaping ([String: PostgreSQLData]) -> ()
     ) throws -> Future<Void> {
         let parameters = try parameters.map { try $0.convertToPostgreSQLData() }
@@ -30,7 +31,6 @@ extension PostgreSQLConnection {
         )
         let describe = PostgreSQLDescribeRequest(type: .statement, name: "")
         var currentRow: PostgreSQLRowDescription?
-        var currentParameters: PostgreSQLParameterDescription?
         
         return send([
             .parse(parse), .describe(describe), .sync
@@ -38,21 +38,19 @@ extension PostgreSQLConnection {
             switch message {
             case .parseComplete: break
             case .rowDescription(let row): currentRow = row
-            case .parameterDescription(let parameters): currentParameters = parameters
+            case .parameterDescription: break
             case .noData: break
             default: fatalError("Unexpected message during PostgreSQLParseRequest: \(message)")
             }
         }.flatMap(to: Void.self) {
-//            let parameterDataTypes = currentParameters?.dataTypes ?? [] // no parameters
-//            let resultDataTypes = currentRow?.fields.map { $0.dataType } ?? [] // nil currentRow means no resutls
-
+            let resultFormats = resultFormat.formatCodeFactory(currentRow?.fields.map { $0.dataType } ?? [])
             // cache so we don't compute twice
             let bind = PostgreSQLBindRequest(
                 portalName: "",
                 statementName: "",
                 parameterFormatCodes: parameters.map { $0.format },
                 parameters: parameters.map { .init(data: $0.data) },
-                resultFormatCodes: [.text]
+                resultFormatCodes: resultFormats
             )
             let execute = PostgreSQLExecuteRequest(
                 portalName: "",
@@ -65,7 +63,7 @@ extension PostgreSQLConnection {
                 case .bindComplete: break
                 case .dataRow(let data):
                     let row = currentRow !! "Unexpected PostgreSQLDataRow without preceding PostgreSQLRowDescription."
-                    let parsed = try row.parse(data: data)
+                    let parsed = try row.parse(data: data, formatCodes: resultFormats)
                     onRow(parsed)
                 case .close: break
                 case .noData: break
