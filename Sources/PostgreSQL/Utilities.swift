@@ -49,7 +49,7 @@ extension Data {
 
     /// Casts data to a supplied type.
     internal mutating func extract<T>(_ type: T.Type = T.self) -> T {
-        assert(MemoryLayout<T>.size <= count, "Insufficient data to decode: \(T.self)")
+        assert(MemoryLayout<T>.size <= count, "Insufficient data to exctract: \(T.self)")
         defer { skip(sizeOf: T.self) }
         return withUnsafeBytes { (pointer: UnsafePointer<T>) -> T in
             return pointer.pointee
@@ -66,5 +66,5 @@ extension Data {
         }
     }
 
-    
+
 }

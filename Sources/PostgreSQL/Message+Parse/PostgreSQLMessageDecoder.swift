@@ -105,24 +105,7 @@ fileprivate final class _PostgreSQLMessageDecoder: Decoder, SingleValueDecodingC
 
     /// Decodes a fixed width integer.
     func decode<B>(fixedWidthInteger type: B.Type) throws -> B where B: FixedWidthInteger {
-        guard data.count >= MemoryLayout<B>.size else {
-            fatalError("Unexpected end of data while decoding \(B.self).")
-        }
-
-
-        let int: B = data.withUnsafeBytes { (pointer: UnsafePointer<UInt8>) -> B in
-            return pointer.withMemoryRebound(to: B.self, capacity: 1) { (pointer: UnsafePointer<B>) -> B in
-                return pointer.pointee.bigEndian
-            }
-        }
-
-        if data.count == MemoryLayout<B>.size {
-            /// FIXME: safely advance elsewhere as well
-            data = Data()
-        } else {
-            data = data.advanced(by: MemoryLayout<B>.size)
-        }
-        return int
+        return data.extract(B.self).bigEndian
     }
 
     /// See SingleValueDecodingContainer.decode
