@@ -29,7 +29,14 @@ extension BinaryFloatingPoint {
             case .int2: return try Self.init(value.makeFixedWidthInteger(Int16.self))
             case .int4: return try Self.init(value.makeFixedWidthInteger(Int32.self))
             case .int8: return try Self.init(value.makeFixedWidthInteger(Int64.self))
-            default: throw DecodingError.typeMismatch(Self.self, .init(codingPath: [], debugDescription: ""))
+            case .timestamp, .date, .time:
+                let date = try Date.convertFromPostgreSQLData(data)
+                return Self(date.timeIntervalSinceReferenceDate)
+            default:
+                throw PostgreSQLError(
+                    identifier: "binaryFloatingPoint",
+                    reason: "Could not decode \(Self.self) from binary data type: \(data.type)."
+                )
             }
         case .text:
             let string = try data.decode(String.self)

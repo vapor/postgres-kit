@@ -25,6 +25,8 @@ extension String: PostgreSQLDataCustomConvertible {
             case .point:
                 let point = try PostgreSQLPoint.convertFromPostgreSQLData(data)
                 return point.description
+            case .uuid:
+                return try UUID.convertFromPostgreSQLData(data).uuidString
             case .numeric:
                 /// create mutable value since we will be using `.extract` which advances the buffer's view
                 var value = value
