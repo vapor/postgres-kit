@@ -85,6 +85,7 @@ extension String: PostgreSQLDataCustomConvertible {
 }
 
 /// Represents the meta information preceeding a numeric value.
+/// Note: all values must be accessed adding `.bigEndian`
 struct PostgreSQLNumericMetadata {
     /// The number of digits after this metadata
     var ndigits: Int16
