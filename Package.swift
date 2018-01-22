@@ -21,6 +21,9 @@ let package = Package(
 
         // Service container and configuration system.
         .package(url: "https://github.com/vapor/service.git", .branch("beta")),
+
+        // Pure Swift (POSIX) TCP and UDP non-blocking socket layer, with event-driven Server and Client.
+        .package(url: "https://github.com/vapor/sockets.git", .branch("beta")),
     ],
     targets: [
         .target(name: "PostgreSQL", dependencies: ["Async", "Bits", "DatabaseKit", "Service", "TCP"]),
