@@ -6,6 +6,25 @@ extension BinaryFloatingPoint {
         return exponentBitCount + significandBitCount + 1
     }
 
+    /// See `PostgreSQLDataCustomConvertible.postgreSQLDataType`
+    public static var postgreSQLDataType: PostgreSQLDataType {
+        switch Self.bitWidth {
+        case 32: return .float4
+        case 64: return .float8
+        default: fatalError("Unsupported floating point bit width: \(Self.bitWidth)")
+        }
+    }
+
+
+    /// See `PostgreSQLDataCustomConvertible.postgreSQLDataArrayType`
+    public static var postgreSQLDataArrayType: PostgreSQLDataType {
+        switch Self.bitWidth {
+        case 32: return ._float4
+        case 64: return ._float8
+        default: fatalError("Unsupported floating point bit width: \(Self.bitWidth)")
+        }
+    }
+
     /// See `PostgreSQLDataCustomConvertible.convertFromPostgreSQLData(_:)`
     public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> Self {
         guard let value = data.data else {
@@ -40,16 +59,7 @@ extension BinaryFloatingPoint {
 
     /// See `PostgreSQLDataCustomConvertible.convertToPostgreSQLData()`
     public func convertToPostgreSQLData() throws -> PostgreSQLData {
-        let type: PostgreSQLDataType
-        switch Self.bitWidth {
-        case 32: type = .float4
-        case 64: type = .float8
-        default: throw PostgreSQLError(
-            identifier: "floatingPointBitWidth",
-            reason: "Unsupported floating point bit width: \(Self.bitWidth)"
-            )
-        }
-        return PostgreSQLData(type: type, format: .binary, data: data)
+        return PostgreSQLData(type: Self.postgreSQLDataType, format: .binary, data: data)
     }
 }
 
