@@ -1,6 +1,13 @@
 import Foundation
 
 extension UUID: PostgreSQLDataCustomConvertible {
+    /// See `PostgreSQLDataCustomConvertible.postgreSQLDataType`
+    public static var postgreSQLDataType: PostgreSQLDataType { return .uuid }
+
+
+    /// See `PostgreSQLDataCustomConvertible.postgreSQLDataArrayType`
+    public static var postgreSQLDataArrayType: PostgreSQLDataType { return ._uuid }
+
     /// See `PostgreSQLDataCustomConvertible.convertFromPostgreSQLData(_:)`
     public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> UUID {
         guard let value = data.data else {

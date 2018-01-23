@@ -5,6 +5,12 @@ import Foundation
 public protocol PostgreSQLJSONCustomConvertible: PostgreSQLDataCustomConvertible, Codable { }
 
 extension PostgreSQLJSONCustomConvertible {
+    /// See `PostgreSQLDataCustomConvertible.postgreSQLDataType`
+    public static var postgreSQLDataType: PostgreSQLDataType { return .jsonb }
+
+    /// See `PostgreSQLDataCustomConvertible.postgreSQLDataArrayType`
+    public static var postgreSQLDataArrayType: PostgreSQLDataType { return ._jsonb }
+
     /// See `PostgreSQLDataCustomConvertible.convertFromPostgreSQLData(_:)`
     public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> Self {
         guard let value = data.data else {
@@ -28,3 +34,5 @@ extension PostgreSQLJSONCustomConvertible {
         return try PostgreSQLData(type: .jsonb, format: .text, data: JSONEncoder().encode(self))
     }
 }
+
+extension Dictionary: PostgreSQLJSONCustomConvertible { }

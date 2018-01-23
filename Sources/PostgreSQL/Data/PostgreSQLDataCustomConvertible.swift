@@ -1,5 +1,11 @@
 /// Capable of being converted to/from `PostgreSQLData`
 public protocol PostgreSQLDataCustomConvertible {
+    /// This type's preferred data type.
+    static var postgreSQLDataType: PostgreSQLDataType { get }
+
+    /// This type's preferred array type.
+    static var postgreSQLDataArrayType: PostgreSQLDataType { get }
+
     /// Creates a `Self` from the supplied `PostgreSQLData`
     static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> Self
 
@@ -15,6 +21,12 @@ extension PostgreSQLData {
 }
 
 extension PostgreSQLData: PostgreSQLDataCustomConvertible {
+    /// See `PostgreSQLDataCustomConvertible.postgreSQLDataType`
+    public static var postgreSQLDataType: PostgreSQLDataType { return .bytea }
+
+    /// See `PostgreSQLDataCustomConvertible.postgreSQLDataArrayType`
+    public static var postgreSQLDataArrayType: PostgreSQLDataType { return ._bytea }
+
     /// See `PostgreSQLDataCustomConvertible.convertFromPostgreSQLData(_:)`
     public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> PostgreSQLData {
         return data

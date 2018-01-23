@@ -26,5 +26,22 @@ extension OptionalType {
     }
 }
 
-extension Optional: PostgreSQLDataCustomConvertible { }
+extension Optional: PostgreSQLDataCustomConvertible {
+    /// See `PostgreSQLDataCustomConvertible.postgreSQLDataType`
+    public static var postgreSQLDataType: PostgreSQLDataType {
+        guard let wrapped = Wrapped.self as? PostgreSQLDataCustomConvertible.Type else {
+            fatalError("Optional wrapped type `\(Wrapped.self)` does not conform to `PostgreSQLDataCustomConvertible`")
+        }
+        return wrapped.postgreSQLDataType
+    }
+
+
+    /// See `PostgreSQLDataCustomConvertible.postgreSQLDataArrayType`
+    public static var postgreSQLDataArrayType: PostgreSQLDataType {
+        guard let wrapped = Wrapped.self as? PostgreSQLDataCustomConvertible.Type else {
+            fatalError("Optional wrapped type `\(Wrapped.self)` does not conform to `PostgreSQLDataCustomConvertible`")
+        }
+        return wrapped.postgreSQLDataArrayType
+    }
+}
 

@@ -55,6 +55,15 @@ extension Data {
             return pointer.pointee
         }
     }
+
+    internal mutating func extract(count: Int) -> Data {
+        assert(self.count >= count, "Insufficient data to extract bytes.")
+        defer { skip(count) }
+        return withUnsafeBytes({ (pointer: UnsafePointer<UInt8>) -> Data in
+            let buffer = UnsafeBufferPointer(start: pointer, count: count)
+            return Data(buffer)
+        })
+    }
 }
 
 

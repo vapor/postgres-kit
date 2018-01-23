@@ -3,10 +3,10 @@ import Foundation
 /// A 2-dimenstional (double[2]) point.
 public struct PostgreSQLPoint {
     /// The point's x coordinate.
-    var x: Double
+    public var x: Double
 
     /// The point's y coordinate.
-    var y: Double
+    public var y: Double
 
     /// Create a new `Point`
     public init(x: Double, y: Double) {
@@ -30,6 +30,12 @@ extension PostgreSQLPoint: Equatable {
 }
 
 extension PostgreSQLPoint: PostgreSQLDataCustomConvertible {
+    /// See `PostgreSQLDataCustomConvertible.postgreSQLDataType`
+    public static var postgreSQLDataType: PostgreSQLDataType { return .point }
+
+    /// See `PostgreSQLDataCustomConvertible.postgreSQLDataArrayType`
+    public static var postgreSQLDataArrayType: PostgreSQLDataType { return ._point }
+
     /// See `PostgreSQLDataCustomConvertible.convertFromPostgreSQLData(_:)`
     public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> PostgreSQLPoint {
         guard let value = data.data else {

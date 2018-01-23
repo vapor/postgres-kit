@@ -147,7 +147,8 @@ class PostgreSQLConnectionTests: XCTestCase {
             "time" time,
             "boolean" boolean,
             "point" point,
-            "uuid" uuid
+            "uuid" uuid,
+            "array" point[]
             -- "line" line,
             -- "lseg" lseg,
             -- "box" box,
@@ -182,7 +183,8 @@ class PostgreSQLConnectionTests: XCTestCase {
             $14, -- "time" time
             $15, -- "boolean" boolean
             $16, -- "point" point
-            $17 -- "uuid" uuid
+            $17, -- "uuid" uuid
+            '{"(1,2)","(3,4)"}' -- "array" point[]
             -- "line" line,
             -- "lseg" lseg,
             -- "box" box,
@@ -214,6 +216,7 @@ class PostgreSQLConnectionTests: XCTestCase {
         params += Bool(true) // boolean
         params += PostgreSQLPoint(x: 11.4, y: 12) // point
         params += UUID() // new uuid
+        // params.append([1,2,3] as [Int]) // new array
 
         let insertResult = try! client.query(insertQuery, params).await(on: eventLoop)
         XCTAssertEqual(insertResult.count, 0)
@@ -237,6 +240,7 @@ class PostgreSQLConnectionTests: XCTestCase {
             try XCTAssertNotNil(row["time"]?.decode(Date.self))
             try XCTAssertEqual(row["point"]?.decode(String.self), "(11.4,12.0)")
             try XCTAssertNotNil(row["uuid"]?.decode(UUID.self))
+            try XCTAssertEqual(row["array"]?.decode([PostgreSQLPoint].self).first?.x, 1.0)
         } else {
             XCTFail("parameterized result count is: \(parameterizedResult.count)")
         }

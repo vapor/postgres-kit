@@ -1,6 +1,28 @@
 import Foundation
 
 extension FixedWidthInteger {
+    /// See `PostgreSQLDataCustomConvertible.postgreSQLDataType`
+    public static var postgreSQLDataType: PostgreSQLDataType {
+        switch Self.bitWidth {
+        case 8: return .char
+        case 16: return .int2
+        case 32: return .int4
+        case 64: return .int8
+        default: fatalError("Integer bit width not supported: \(Self.bitWidth)")
+        }
+    }
+
+    /// See `PostgreSQLDataCustomConvertible.postgreSQLDataArrayType`
+    public static var postgreSQLDataArrayType: PostgreSQLDataType {
+        switch Self.bitWidth {
+        case 8: return ._char
+        case 16: return ._int2
+        case 32: return ._int4
+        case 64: return ._int8
+        default: fatalError("Integer bit width not supported: \(Self.bitWidth)")
+        }
+    }
+
     /// See `PostgreSQLDataCustomConvertible.convertFromPostgreSQLData(_:)`
     public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> Self {
         guard let value = data.data else {
@@ -26,15 +48,7 @@ extension FixedWidthInteger {
 
     /// See `PostgreSQLDataCustomConvertible.convertToPostgreSQLData()`
     public func convertToPostgreSQLData() throws -> PostgreSQLData {
-        let type: PostgreSQLDataType
-        switch Self.bitWidth {
-        case 8: type = .char
-        case 16: type = .int2
-        case 32: type = .int4
-        case 64: type = .int8
-        default: throw DecodingError.typeMismatch(Self.self, .init(codingPath: [], debugDescription: "Integer bit width not supported: \(Self.bitWidth)"))
-        }
-        return PostgreSQLData(type: type, format: .binary, data: self.data)
+        return PostgreSQLData(type: Self.postgreSQLDataType, format: .binary, data: self.data)
     }
 
 
