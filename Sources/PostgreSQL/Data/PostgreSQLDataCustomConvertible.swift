@@ -22,10 +22,10 @@ extension PostgreSQLData {
 
 extension PostgreSQLData: PostgreSQLDataCustomConvertible {
     /// See `PostgreSQLDataCustomConvertible.postgreSQLDataType`
-    public static var postgreSQLDataType: PostgreSQLDataType { return .bytea }
+    public static var postgreSQLDataType: PostgreSQLDataType { return .void }
 
     /// See `PostgreSQLDataCustomConvertible.postgreSQLDataArrayType`
-    public static var postgreSQLDataArrayType: PostgreSQLDataType { return ._bytea }
+    public static var postgreSQLDataArrayType: PostgreSQLDataType { return .void }
 
     /// See `PostgreSQLDataCustomConvertible.convertFromPostgreSQLData(_:)`
     public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> PostgreSQLData {

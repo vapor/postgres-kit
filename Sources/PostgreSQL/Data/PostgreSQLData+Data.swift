@@ -5,7 +5,7 @@ extension Data: PostgreSQLDataCustomConvertible {
     public static var postgreSQLDataType: PostgreSQLDataType { return .bytea }
 
     /// See `PostgreSQLDataCustomConvertible.postgreSQLDataArrayType`
-    public static var postgreSQLDataArrayType: PostgreSQLDataType { return .bytea }
+    public static var postgreSQLDataArrayType: PostgreSQLDataType { return ._bytea }
     
     /// See `PostgreSQLDataCustomConvertible.convertFromPostgreSQLData(_:)`
     public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> Data {

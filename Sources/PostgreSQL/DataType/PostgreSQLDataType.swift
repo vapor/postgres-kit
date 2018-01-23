@@ -2,47 +2,47 @@ import Foundation
 
 /// The data type's raw object ID.
 /// Use `select * from pg_type where oid = <idhere>;` to lookup more information.
-public struct PostgreSQLDataType: Codable, Equatable {
+public struct PostgreSQLDataType: Codable, Equatable, ExpressibleByIntegerLiteral {
     /// Recognized types
-    public static let bool = PostgreSQLDataType(raw: 16, sql: "BOOLEAN")
-    public static let bytea = PostgreSQLDataType(raw: 17, sql: "BYTEA")
-    public static let char = PostgreSQLDataType(raw: 18, sql: "CHAR")
-    public static let name = PostgreSQLDataType(raw: 19, sql: "NAME")
-    public static let int8 = PostgreSQLDataType(raw: 20, sql: "BIGINT")
-    public static let int2 = PostgreSQLDataType(raw: 21, sql: "SMALLINT")
-    public static let int4 = PostgreSQLDataType(raw: 23, sql: "INTEGER")
-    public static let regproc = PostgreSQLDataType(raw: 24, sql: "REGPROC")
-    public static let text = PostgreSQLDataType(raw: 25, sql: "TEXT")
-    public static let oid = PostgreSQLDataType(raw: 26, sql: "OID")
-    public static let json = PostgreSQLDataType(raw: 114, sql: "JSON")
-    public static let pg_node_tree = PostgreSQLDataType(raw: 194, sql: "PGNODETREE")
-    public static let point = PostgreSQLDataType(raw: 600, sql: "POINT")
-    public static let float4 = PostgreSQLDataType(raw: 700, sql: "REAL")
-    public static let float8 = PostgreSQLDataType(raw: 701, sql: "DOUBLE PRECISION")
-    public static let _bool = PostgreSQLDataType(raw: 1000, sql: "BOOLEAN[]")
-    public static let _bytea = PostgreSQLDataType(raw: 1001, sql: "BYTEA[]")
-    public static let _char = PostgreSQLDataType(raw: 1002, sql: "CHAR[]")
-    public static let _name = PostgreSQLDataType(raw: 1003, sql: "NAME[]")
-    public static let _int2 = PostgreSQLDataType(raw: 1005, sql: "SMALLINT[]")
-    public static let _int4 = PostgreSQLDataType(raw: 1007, sql: "INTEGER[]")
-    public static let _text = PostgreSQLDataType(raw: 1009, sql: "TEXT[]")
-    public static let _int8 = PostgreSQLDataType(raw: 1016, sql: "BIGINT[]")
-    public static let _point = PostgreSQLDataType(raw: 1017, sql: "POINT[]")
-    public static let _float4 = PostgreSQLDataType(raw: 1021, sql: "REAL[]")
-    public static let _float8 = PostgreSQLDataType(raw: 1022, sql: "DOUBLE PRECISION[]")
-    public static let _aclitem = PostgreSQLDataType(raw: 1034, sql: "ACLITEM[]")
-    public static let bpchar = PostgreSQLDataType(raw: 1042, sql: "BPCHAR")
-    public static let varchar = PostgreSQLDataType(raw: 1043, sql: "VARCHAR")
-    public static let date = PostgreSQLDataType(raw: 1082, sql: "DATE")
-    public static let time = PostgreSQLDataType(raw: 1083, sql: "TIME")
-    public static let timestamp = PostgreSQLDataType(raw: 1114, sql: "TIMESTAMP")
-    public static let _timestamp = PostgreSQLDataType(raw: 1115, sql: "TIMESTAMP[]")
-    public static let numeric = PostgreSQLDataType(raw: 1700, sql: "NUMERIC")
-    public static let void = PostgreSQLDataType(raw: 2278, sql: "VOID")
-    public static let uuid = PostgreSQLDataType(raw: 2950, sql: "UUID")
-    public static let _uuid = PostgreSQLDataType(raw: 2951, sql: "UUID[]")
-    public static let jsonb = PostgreSQLDataType(raw: 3802, sql: "JSONB")
-    public static let _jsonb = PostgreSQLDataType(raw: 3807, sql: "JSONB[]")
+    public static let bool = PostgreSQLDataType(16)
+    public static let bytea = PostgreSQLDataType(17)
+    public static let char = PostgreSQLDataType(18)
+    public static let name = PostgreSQLDataType(19)
+    public static let int8 = PostgreSQLDataType(20)
+    public static let int2 = PostgreSQLDataType(21)
+    public static let int4 = PostgreSQLDataType(23)
+    public static let regproc = PostgreSQLDataType(24)
+    public static let text = PostgreSQLDataType(25)
+    public static let oid = PostgreSQLDataType(26)
+    public static let json = PostgreSQLDataType(114)
+    public static let pg_node_tree = PostgreSQLDataType(194)
+    public static let point = PostgreSQLDataType(600)
+    public static let float4 = PostgreSQLDataType(700)
+    public static let float8 = PostgreSQLDataType(701)
+    public static let _bool = PostgreSQLDataType(1000)
+    public static let _bytea = PostgreSQLDataType(1001)
+    public static let _char = PostgreSQLDataType(1002)
+    public static let _name = PostgreSQLDataType(1003)
+    public static let _int2 = PostgreSQLDataType(1005)
+    public static let _int4 = PostgreSQLDataType(1007)
+    public static let _text = PostgreSQLDataType(1009)
+    public static let _int8 = PostgreSQLDataType(1016)
+    public static let _point = PostgreSQLDataType(1017)
+    public static let _float4 = PostgreSQLDataType(1021)
+    public static let _float8 = PostgreSQLDataType(1022)
+    public static let _aclitem = PostgreSQLDataType(1034)
+    public static let bpchar = PostgreSQLDataType(1042)
+    public static let varchar = PostgreSQLDataType(1043)
+    public static let date = PostgreSQLDataType(1082)
+    public static let time = PostgreSQLDataType(1083)
+    public static let timestamp = PostgreSQLDataType(1114)
+    public static let _timestamp = PostgreSQLDataType(1115)
+    public static let numeric = PostgreSQLDataType(1700)
+    public static let void = PostgreSQLDataType(2278)
+    public static let uuid = PostgreSQLDataType(2950)
+    public static let _uuid = PostgreSQLDataType(2951)
+    public static let jsonb = PostgreSQLDataType(3802)
+    public static let _jsonb = PostgreSQLDataType(3807)
 
     /// See `Equatable.==`
     public static func ==(lhs: PostgreSQLDataType, rhs: PostgreSQLDataType) -> Bool {
@@ -52,32 +52,69 @@ public struct PostgreSQLDataType: Codable, Equatable {
     /// The raw data type code recognized by PostgreSQL.
     public var raw: Int32
 
-    /// The associated SQL string
-    public let sql: String?
-
-    /// See `Decodable.init(from:)`
-    public init(from decoder: Decoder) throws {
-        let single = try decoder.singleValueContainer()
-        raw = try single.decode(Int32.self)
-        sql = nil
-    }
-
-    /// See `Encodable.encode(to:)`
-    public func encode(to encoder: Encoder) throws {
-        var single = encoder.singleValueContainer()
-        try single.encode(raw)
+    /// See `ExpressibleByIntegerLiteral.init(integerLiteral:)`
+    public init(integerLiteral value: Int32) {
+        self.init(value)
     }
 
     /// Creates a new `PostgreSQLDataType`
-    public init(raw: Int32, sql: String) {
+    public init(_ raw: Int32) {
         self.raw = raw
-        self.sql = sql
+    }
+}
+
+extension PostgreSQLDataType {
+    /// Returns the known SQL name, if one exists.
+    /// Note: This only supports a limited subset of all PSQL types and is meant for convenience only.
+    public var knownSQLName: String? {
+        switch self {
+        case .bool: return "BOOLEAN"
+        case .bytea: return "BYTEA"
+        case .char: return "CHAR"
+        case .name: return "NAME"
+        case .int8: return "BIGINT"
+        case .int2: return "SMALLINT"
+        case .int4: return "INTEGER"
+        case .regproc: return "REGPROC"
+        case .text: return "TEXT"
+        case .oid: return "OID"
+        case .json: return "JSON"
+        case .pg_node_tree: return "PGNODETREE"
+        case .point: return "POINT"
+        case .float4: return "REAL"
+        case .float8: return "DOUBLE PRECISION"
+        case ._bool: return "BOOLEAN[]"
+        case ._bytea: return "BYTEA[]"
+        case ._char: return "CHAR[]"
+        case ._name: return "NAME[]"
+        case ._int2: return "SMALLINT[]"
+        case ._int4: return "INTEGER[]"
+        case ._text: return "TEXT[]"
+        case ._int8: return "BIGINT[]"
+        case ._point: return "POINT[]"
+        case ._float4: return "REAL[]"
+        case ._float8: return "DOUBLE PRECISION[]"
+        case ._aclitem: return "ACLITEM[]"
+        case .bpchar: return "BPCHAR"
+        case .varchar: return "VARCHAR"
+        case .date: return "DATE"
+        case .time: return "TIME"
+        case .timestamp: return "TIMESTAMP"
+        case ._timestamp: return "TIMESTAMP[]"
+        case .numeric: return "NUMERIC"
+        case .void: return "VOID"
+        case .uuid: return "UUID"
+        case ._uuid: return "UUID[]"
+        case .jsonb: return "JSONB"
+        case ._jsonb: return "JSONB[]"
+        default: return nil
+        }
     }
 }
 
 extension PostgreSQLDataType: CustomStringConvertible {
     /// See `CustomStringConvertible.description`
     public var description: String {
-        return sql ?? "UNKNOWN"
+        return knownSQLName ?? "UNKNOWN \(raw)"
     }
 }

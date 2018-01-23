@@ -53,7 +53,7 @@ extension FixedWidthInteger {
 
 
     /// Safely casts one `FixedWidthInteger` to another.
-    private static func safeCast<I, V>(_ value: V, to type: I.Type = I.self) throws -> I where V: FixedWidthInteger, I: FixedWidthInteger {
+    internal static func safeCast<I, V>(_ value: V, to type: I.Type = I.self) throws -> I where V: FixedWidthInteger, I: FixedWidthInteger {
         if let existing = value as? I {
             return existing
         }

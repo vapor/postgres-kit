@@ -96,7 +96,7 @@ fileprivate struct PostgreSQLArrayMetadata {
 
     /// Converts the raw array elemetn type to DataType
     var type: PostgreSQLDataType {
-        return .init(raw: _type.bigEndian, sql: "UNKNOWN")
+        return .init(_type.bigEndian)
     }
 
     /// The length of the array
