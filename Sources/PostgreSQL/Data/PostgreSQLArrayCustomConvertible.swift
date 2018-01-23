@@ -13,12 +13,27 @@ public protocol PostgreSQLArrayCustomConvertible: PostgreSQLDataCustomConvertibl
 }
 
 extension PostgreSQLArrayCustomConvertible {
+
+    /// See `PostgreSQLDataCustomConvertible.postgreSQLDataType`
+    public static var postgreSQLDataType: PostgreSQLDataType {
+        guard let wrapped = PostgreSQLArrayElement.self as? PostgreSQLDataCustomConvertible.Type else {
+            /// FIXME: conditional conformance
+            fatalError("Array element type `\(PostgreSQLArrayElement.self)` does not conform to `PostgreSQLDataCustomConvertible`")
+        }
+        return wrapped.postgreSQLDataArrayType
+    }
+
+    /// See `PostgreSQLDataCustomConvertible.postgreSQLDataArrayType`
+    public static var postgreSQLDataArrayType: PostgreSQLDataType {
+        /// FIXME: conditional conformance
+        fatalError("Multi-dimensional array not yet supported. Conform \(Self.self) to `PostgreSQLArrayCustomConvertible` manually.")
+    }
+
     /// See `PostgreSQLDataCustomConvertible.convertFromPostgreSQLData(_:)`
     public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> Self {
         guard var value = data.data else {
             throw PostgreSQLError(identifier: "nullArray", reason: "Unable to decode PostgreSQL array from `null` data.")
         }
-
 
         /// Extract and convert each element.
         var array: [PostgreSQLArrayElement] = []
@@ -120,24 +135,6 @@ extension PostgreSQLArrayMetadata: CustomStringConvertible {
 extension Array: PostgreSQLArrayCustomConvertible {
     /// See `PostgreSQLArrayCustomConvertible.PostgreSQLArrayElement`
     public typealias PostgreSQLArrayElement = Element
-
-    /// See `PostgreSQLDataCustomConvertible.postgreSQLDataType`
-    public static var postgreSQLDataType: PostgreSQLDataType {
-        guard let wrapped = Element.self as? PostgreSQLDataCustomConvertible.Type else {
-            /// FIXME: conditional conformance
-            fatalError("Array element type `\(Element.self)` does not conform to `PostgreSQLDataCustomConvertible`")
-        }
-        return wrapped.postgreSQLDataType
-    }
-
-    /// See `PostgreSQLDataCustomConvertible.postgreSQLDataArrayType`
-    public static var postgreSQLDataArrayType: PostgreSQLDataType {
-        guard let wrapped = Element.self as? PostgreSQLDataCustomConvertible.Type else {
-            /// FIXME: conditional conformance
-            fatalError("Array element type `\(Element.self)` does not conform to `PostgreSQLDataCustomConvertible`")
-        }
-        return wrapped.postgreSQLDataArrayType
-    }
 
     /// See `PostgreSQLArrayCustomConvertible.convertFromPostgreSQLArray(_:)`
     public static func convertFromPostgreSQLArray(_ data: [Element]) -> Array<Element> {
