@@ -4,12 +4,6 @@ import Foundation
 
 /// Byte-stream parser for `PostgreSQLMessage`
 final class PostgreSQLMessageParser: TranslatingStream {
-    /// See `TranslatingStream.Input`
-    typealias Input = ByteBuffer
-
-    /// See `TranslatingStream.Output`
-    typealias Output = PostgreSQLMessage
-
     /// Data being worked on currently.
     var buffered: Data
 

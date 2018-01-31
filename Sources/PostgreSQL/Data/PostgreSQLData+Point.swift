@@ -1,7 +1,7 @@
 import Foundation
 
 /// A 2-dimenstional (double[2]) point.
-public struct PostgreSQLPoint {
+public struct PostgreSQLPoint: Codable {
     /// The point's x coordinate.
     public var x: Double
 

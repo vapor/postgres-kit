@@ -35,4 +35,4 @@ extension PostgreSQLJSONCustomConvertible {
     }
 }
 
-extension Dictionary: PostgreSQLJSONCustomConvertible { }
+extension Dictionary: PostgreSQLJSONCustomConvertible where Key: Codable, Value: Codable { }
