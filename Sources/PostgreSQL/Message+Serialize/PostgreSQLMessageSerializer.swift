@@ -49,6 +49,6 @@ final class PostgreSQLMessageSerializer: TranslatingStream {
 
     /// Called when `PostgreSQLMessageSerializer` deinitializes.
     deinit {
-        buffer.baseAddress?.deallocate(capacity: buffer.count)
+        buffer.baseAddress?.deallocate()
     }
 }

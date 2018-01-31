@@ -31,8 +31,9 @@ extension UUID: PostgreSQLDataCustomConvertible {
     /// See `PostgreSQLDataCustomConvertible.convertToPostgreSQLData()`
     public func convertToPostgreSQLData() throws -> PostgreSQLData {
         var uuid = self.uuid
+        let size = MemoryLayout.size(ofValue: uuid)
         return PostgreSQLData(type: .uuid, format: .binary, data: withUnsafePointer(to: &uuid) {
-            Data(bytes: $0, count: MemoryLayout.size(ofValue: uuid))
+            Data(bytes: $0, count: size)
         })
     }
 }

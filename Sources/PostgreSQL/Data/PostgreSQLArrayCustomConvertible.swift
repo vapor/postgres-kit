@@ -3,7 +3,7 @@ import Foundation
 /// Representable by a `T[]` column on the PostgreSQL database.
 public protocol PostgreSQLArrayCustomConvertible: PostgreSQLDataCustomConvertible, Codable {
     /// The associated array element type
-    associatedtype PostgreSQLArrayElement // :PostgreSQLDataCustomConvertible
+    associatedtype PostgreSQLArrayElement: PostgreSQLDataCustomConvertible
 
     /// Convert an array of elements to self.
     static func convertFromPostgreSQLArray(_ data: [PostgreSQLArrayElement]) -> Self
@@ -13,21 +13,16 @@ public protocol PostgreSQLArrayCustomConvertible: PostgreSQLDataCustomConvertibl
 }
 
 extension PostgreSQLArrayCustomConvertible {
-
     /// See `PostgreSQLDataCustomConvertible.postgreSQLDataType`
     public static var postgreSQLDataType: PostgreSQLDataType {
-        guard let wrapped = PostgreSQLArrayElement.self as? PostgreSQLDataCustomConvertible.Type else {
-            /// FIXME: conditional conformance
-            fatalError("Array element type `\(PostgreSQLArrayElement.self)` does not conform to `PostgreSQLDataCustomConvertible`")
-        }
-        return wrapped.postgreSQLDataArrayType
+        return PostgreSQLArrayElement.postgreSQLDataArrayType
     }
 
-    /// See `PostgreSQLDataCustomConvertible.postgreSQLDataArrayType`
-    public static var postgreSQLDataArrayType: PostgreSQLDataType {
-        /// FIXME: conditional conformance
-        fatalError("Multi-dimensional array not yet supported. Conform \(Self.self) to `PostgreSQLArrayCustomConvertible` manually.")
-    }
+//    /// See `PostgreSQLDataCustomConvertible.postgreSQLDataArrayType`
+//    public static var postgreSQLDataArrayType: PostgreSQLDataType {
+//        /// FIXME: conditional conformance
+//        fatalError("Multi-dimensional array not yet supported. Conform \(Self.self) to `PostgreSQLArrayCustomConvertible` manually.")
+//    }
 
     /// See `PostgreSQLDataCustomConvertible.convertFromPostgreSQLData(_:)`
     public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> Self {
@@ -42,20 +37,12 @@ extension PostgreSQLArrayCustomConvertible {
         if hasData == 1 {
             /// grab the array metadata from the beginning of the data
             let metadata = value.extract(PostgreSQLArrayMetadata.self)
-            guard let type = PostgreSQLArrayElement.self as? PostgreSQLDataCustomConvertible.Type else {
-                /// FIXME: conditional conformance
-                throw PostgreSQLError(
-                    identifier: "arrayElement",
-                    reason: "`\(Self.self)` element `\(PostgreSQLArrayElement.self)` does not conform to `PostgreSQLDataCustomConvertible`"
-                )
-            }
-
             for _ in 0..<metadata.count {
                 let count = Int(value.extract(Int32.self).bigEndian)
                 let subValue = value.extract(count: count)
                 let psqlData = PostgreSQLData(type: metadata.type, format: data.format, data: subValue)
-                let element = try type.convertFromPostgreSQLData(psqlData)
-                array.append(element as! PostgreSQLArrayElement)
+                let element = try PostgreSQLArrayElement.convertFromPostgreSQLData(psqlData)
+                array.append(element)
             }
         } else {
             array = []
@@ -67,18 +54,13 @@ extension PostgreSQLArrayCustomConvertible {
     /// See `PostgreSQLDataCustomConvertible.convertToPostgreSQLData()`
     public func convertToPostgreSQLData() throws -> PostgreSQLData {
         let elements = try convertToPostgreSQLArray().map {
-            try ($0 as! PostgreSQLDataCustomConvertible).convertToPostgreSQLData()
-        }
-
-        guard let type = PostgreSQLArrayElement.self as? PostgreSQLDataCustomConvertible.Type else {
-            /// FIXME: conditional conformance
-            fatalError("PostgreSQLArrayCustomConvertible element type `\(PostgreSQLArrayElement.self)` does not conform to `PostgreSQLDataCustomConvertible`")
+            try $0.convertToPostgreSQLData()
         }
 
         var data = Data()
         data += Int32(1).data // non-null
         data += Int32(0).data // b
-        data += type.postgreSQLDataType.raw.data // type
+        data += PostgreSQLArrayElement.postgreSQLDataType.raw.data // type
         data += Int32(elements.count).data // length
         data += Int32(1).data // dimensions
 
@@ -91,8 +73,7 @@ extension PostgreSQLArrayCustomConvertible {
             }
         }
 
-
-        return PostgreSQLData(type: type.postgreSQLDataArrayType, format: .binary, data: data)
+        return PostgreSQLData(type: PostgreSQLArrayElement.postgreSQLDataArrayType, format: .binary, data: data)
     }
 }
 
@@ -132,7 +113,12 @@ extension PostgreSQLArrayMetadata: CustomStringConvertible {
     }
 }
 
-extension Array: PostgreSQLArrayCustomConvertible {
+extension Array: PostgreSQLArrayCustomConvertible where Element: Codable, Element: PostgreSQLDataCustomConvertible {
+    /// See `PostgreSQLArrayCustomConvertible.postgreSQLDataArrayType`
+    public static var postgreSQLDataArrayType: PostgreSQLDataType {
+        return Element.postgreSQLDataArrayType
+    }
+
     /// See `PostgreSQLArrayCustomConvertible.PostgreSQLArrayElement`
     public typealias PostgreSQLArrayElement = Element
 
