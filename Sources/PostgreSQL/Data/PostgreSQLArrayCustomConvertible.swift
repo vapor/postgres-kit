@@ -18,12 +18,6 @@ extension PostgreSQLArrayCustomConvertible {
         return PostgreSQLArrayElement.postgreSQLDataArrayType
     }
 
-//    /// See `PostgreSQLDataCustomConvertible.postgreSQLDataArrayType`
-//    public static var postgreSQLDataArrayType: PostgreSQLDataType {
-//        /// FIXME: conditional conformance
-//        fatalError("Multi-dimensional array not yet supported. Conform \(Self.self) to `PostgreSQLArrayCustomConvertible` manually.")
-//    }
-
     /// See `PostgreSQLDataCustomConvertible.convertFromPostgreSQLData(_:)`
     public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> Self {
         guard var value = data.data else {
