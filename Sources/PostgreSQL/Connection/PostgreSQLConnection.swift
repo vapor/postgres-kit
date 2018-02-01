@@ -41,11 +41,49 @@ public final class PostgreSQLConnection {
 
     /// Sends `PostgreSQLMessage` to the server.
     func send(_ message: [PostgreSQLMessage]) -> Future<[PostgreSQLMessage]> {
+        print(message)
         var responses: [PostgreSQLMessage] = []
         return send(message) { response in
+            print(response)
             responses.append(response)
         }.map(to: [PostgreSQLMessage].self) {
             return responses
+        }
+    }
+
+    /// Authenticates the `PostgreSQLClient` using a username with no password.
+    public func authenticate(username: String, database: String? = nil) -> Future<Void> {
+        let startup = PostgreSQLStartupMessage.versionThree(parameters: [
+            "user": username,
+            "database": database ?? username
+        ])
+        var authRequest: PostgreSQLAuthenticationRequest?
+        return queueStream.enqueue([.startupMessage(startup)]) { message in
+            switch message {
+            case .authenticationRequest(let a):
+                authRequest = a
+                return true
+            default: throw PostgreSQLError(identifier: "auth", reason: "Unsupported message encountered during auth: \(message).")
+            }
+        }.flatMap(to: Void.self) {
+            guard let auth = authRequest else {
+                throw PostgreSQLError(identifier: "authRequest", reason: "No authorization request / status sent.")
+            }
+
+            switch auth {
+            case .ok: return .done
+            case .plaintext: throw PostgreSQLError(identifier: "plaintext", reason: "Plaintext password not supported. Use MD5.")
+            case .md5(let salt):
+                /// FIXME: hash password
+                let password = PostgreSQLPasswordMessage(password: "123")
+                return self.queueStream.enqueue([.password(password)]) { message in
+                    switch message {
+                    case .error(let error):
+                        throw error
+                    default: return true
+                    }
+                }
+            }
         }
     }
 

@@ -7,15 +7,25 @@ enum PostgreSQLMessage {
     case error(PostgreSQLDiagnosticResponse)
     /// Identifies the message as a notice.
     case notice(PostgreSQLDiagnosticResponse)
+    /// One of the various authentication request message formats.
     case authenticationRequest(PostgreSQLAuthenticationRequest)
+    /// Identifies the message as a password response.
+    case password(PostgreSQLPasswordMessage)
+    /// Identifies the message as a run-time parameter status report.
     case parameterStatus(PostgreSQLParameterStatus)
+    /// Identifies the message as cancellation key data. The frontend must save these values if it wishes to be able to issue CancelRequest messages later.
     case backendKeyData(PostgreSQLBackendKeyData)
+    /// Identifies the message type. ReadyForQuery is sent whenever the backend is ready for a new query cycle.
     case readyForQuery(PostgreSQLReadyForQuery)
+    /// Identifies the message as a simple query.
     case query(PostgreSQLQuery)
+    /// Identifies the message as a row description.
     case rowDescription(PostgreSQLRowDescription)
+    /// Identifies the message as a data row.
     case dataRow(PostgreSQLDataRow)
     /// Identifies the message as a command-completed response.
     case close(PostgreSQLCloseResponse)
+    /// Identifies the message as a Parse command.
     case parse(PostgreSQLParseRequest)
     /// Identifies the message as a parameter description.
     case parameterDescription(PostgreSQLParameterDescription)

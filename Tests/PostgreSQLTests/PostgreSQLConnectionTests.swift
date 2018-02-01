@@ -6,7 +6,7 @@ import TCP
 
 class PostgreSQLConnectionTests: XCTestCase {
     func testVersion() throws {
-        let (client, eventLoop) = try PostgreSQLConnection.makeTest()
+        let (client, eventLoop) = try! PostgreSQLConnection.makeTest()
         let results = try client.simpleQuery("SELECT version();").await(on: eventLoop)
         try XCTAssert(results[0]["version"]?.decode(String.self).contains("10.1") == true)
     }
@@ -285,7 +285,7 @@ extension PostgreSQLConnection {
     static func makeTest() throws -> (PostgreSQLConnection, EventLoop) {
         let eventLoop = try DefaultEventLoop(label: "codes.vapor.postgresql.client.test")
         let client = try PostgreSQLConnection.connect(on: eventLoop)
-        _ = try client.authenticate(username: "postgres").await(on: eventLoop)
+        _ = try client.authenticate(username: "secure", database: "tanner").await(on: eventLoop)
         return (client, eventLoop)
     }
 }
