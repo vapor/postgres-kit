@@ -12,6 +12,9 @@ let package = Package(
         
         // Core extensions, type-aliases, and functions that facilitate common tasks.
         .package(url: "https://github.com/vapor/core.git", .branch("beta")),
+        
+        // Cryptography modules (formerly CryptoKitten)
+        .package(url: "https://github.com/vapor/crypto.git", .branch("beta")),
 
         // Core services for creating database integrations.
         .package(url: "https://github.com/vapor/database-kit.git", .branch("beta")),
@@ -26,7 +29,7 @@ let package = Package(
         .package(url: "https://github.com/vapor/sockets.git", .branch("beta")),
     ],
     targets: [
-        .target(name: "PostgreSQL", dependencies: ["Async", "Bits", "DatabaseKit", "Service", "TCP"]),
+        .target(name: "PostgreSQL", dependencies: ["Async", "Bits", "Crypto", "DatabaseKit", "Service", "TCP"]),
         .testTarget(name: "PostgreSQLTests", dependencies: ["PostgreSQL"]),
     ]
 )
