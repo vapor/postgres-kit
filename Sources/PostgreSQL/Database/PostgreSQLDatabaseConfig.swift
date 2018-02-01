@@ -13,13 +13,20 @@ public struct PostgreSQLDatabaseConfig {
 
     /// Username to authenticate.
     public let username: String
+    
+    /// Optional database name to use during authentication.
+    /// Defaults to the username.
+    public let database: String?
+    
+    /// Optional password to use for authentication.
     public let password: String?
     
     /// Creates a new `PostgreSQLDatabaseConfig`.
-    public init(hostname: String, port: UInt16, username: String, password: String? = nil) {
+    public init(hostname: String, port: UInt16, username: String, database: String? = nil, password: String? = nil) {
         self.hostname = hostname
         self.port = port
         self.username = username
+        self.database = database
         self.password = password
     }
 }
