@@ -18,7 +18,11 @@ public final class PostgreSQLDatabase: Database {
         do {
             let client = try PostgreSQLConnection.connect(hostname: config.hostname, port: config.port, on: worker)
             client.logger = logger
-            return client.authenticate(username: config.username).transform(to: client)
+            return client.authenticate(
+                username: config.username, 
+                database: config.database,
+                password: config.password
+            ).transform(to: client)
         } catch {
             return Future(error: error)
         }
