@@ -42,10 +42,8 @@ public final class PostgreSQLConnection {
 
     /// Sends `PostgreSQLMessage` to the server.
     func send(_ message: [PostgreSQLMessage]) -> Future<[PostgreSQLMessage]> {
-        print(message)
         var responses: [PostgreSQLMessage] = []
         return send(message) { response in
-            print(response)
             responses.append(response)
         }.map(to: [PostgreSQLMessage].self) {
             return responses
