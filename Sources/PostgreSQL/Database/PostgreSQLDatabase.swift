@@ -16,7 +16,9 @@ public final class PostgreSQLDatabase: Database {
     /// See `Database.makeConnection()`
     public func makeConnection(using connectionConfig: PostgreSQLConnectionConfig, on worker: Worker) -> Future<PostgreSQLConnection> {
         do {
-            let client = try PostgreSQLConnection.connect(hostname: config.hostname, port: config.port, on: worker)
+            let client = try PostgreSQLConnection.connect(hostname: config.hostname, port: config.port, on: worker) { _, error in
+                print("[PostgreSQL] \(error)")
+            }
             client.logger = logger
             return client.authenticate(
                 username: config.username, 

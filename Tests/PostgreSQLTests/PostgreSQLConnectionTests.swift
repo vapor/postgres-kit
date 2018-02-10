@@ -284,7 +284,9 @@ extension PostgreSQLConnection {
     /// Creates a test event loop and psql client.
     static func makeTest() throws -> (PostgreSQLConnection, EventLoop) {
         let eventLoop = try DefaultEventLoop(label: "codes.vapor.postgresql.client.test")
-        let client = try PostgreSQLConnection.connect(on: eventLoop)
+        let client = try PostgreSQLConnection.connect(on: eventLoop) { _, error in
+            XCTFail("\(error)")
+        }
         _ = try client.authenticate(username: "postgres").await(on: eventLoop)
         return (client, eventLoop)
     }

@@ -6,11 +6,13 @@ extension PostgreSQLConnection {
     public static func connect(
         hostname: String = "localhost",
         port: UInt16 = 5432,
-        on worker: Worker
+        on worker: Worker,
+        onError: @escaping TCPSocketSink.ErrorHandler
     ) throws -> PostgreSQLConnection {
         let socket = try TCPSocket(isNonBlocking: true)
         let client = try TCPClient(socket: socket)
         try client.connect(hostname: hostname, port: port)
-        return PostgreSQLConnection(stream: socket.stream(on: worker), on: worker)
+        let stream = socket.stream(on: worker, onError: onError)
+        return PostgreSQLConnection(stream: stream, on: worker)
     }
 }
