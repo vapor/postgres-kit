@@ -128,11 +128,3 @@ public final class PostgreSQLConnection {
         queueStream.close()
     }
 }
-
-infix operator !!
-internal func !!<T>(lhs: Optional<T>, rhs: String) -> T {
-    switch lhs {
-    case .none: fatalError(rhs)
-    case .some(let w): return w
-    }
-}

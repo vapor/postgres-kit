@@ -34,7 +34,7 @@ final class PostgreSQLMessageEncoder {
         case .password(let password):
             identifier = .p
             try password.encode(to: encoder)
-        default: fatalError("Unsupported encodable type: \(type(of: message))")
+        default: throw PostgreSQLError(identifier: "messageEncoder", reason: "Unsupported encodable type: \(type(of: message))")
         }
         encoder.updateSize()
         if let prefix = identifier {
@@ -146,15 +146,15 @@ internal final class _PostgreSQLMessageEncoder: Encoder, SingleValueEncodingCont
 
     // Unsupported
 
-    func encode(_ value: Int) throws { fatalError("Unsupported type: \(type(of: value))") }
-    func encode(_ value: UInt) throws { fatalError("Unsupported type: \(type(of: value))") }
-    func encode(_ value: UInt16) throws { fatalError("Unsupported type: \(type(of: value))") }
-    func encode(_ value: UInt32) throws { fatalError("Unsupported type: \(type(of: value))") }
-    func encode(_ value: UInt64) throws { fatalError("Unsupported type: \(type(of: value))") }
-    func encode(_ value: Float) throws { fatalError("Unsupported type: \(type(of: value))") }
-    func encode(_ value: Double) throws { fatalError("Unsupported type: \(type(of: value))") }
-    func encode(_ value: Bool) throws { fatalError("Unsupported type: \(type(of: value))") }
-    func encodeNil() throws { fatalError("Unsupported type: nil") }
+    func encode(_ value: Int) throws { throw PostgreSQLError(identifier: "encoder", reason: "Unsupported type: \(type(of: value))") }
+    func encode(_ value: UInt) throws { throw PostgreSQLError(identifier: "encoder", reason: "Unsupported type: \(type(of: value))") }
+    func encode(_ value: UInt16) throws { throw PostgreSQLError(identifier: "encoder", reason: "Unsupported type: \(type(of: value))") }
+    func encode(_ value: UInt32) throws { throw PostgreSQLError(identifier: "encoder", reason: "Unsupported type: \(type(of: value))") }
+    func encode(_ value: UInt64) throws { throw PostgreSQLError(identifier: "encoder", reason: "Unsupported type: \(type(of: value))") }
+    func encode(_ value: Float) throws { throw PostgreSQLError(identifier: "encoder", reason: "Unsupported type: \(type(of: value))") }
+    func encode(_ value: Double) throws { throw PostgreSQLError(identifier: "encoder", reason: "Unsupported type: \(type(of: value))") }
+    func encode(_ value: Bool) throws { throw PostgreSQLError(identifier: "encoder", reason: "Unsupported type: \(type(of: value))") }
+    func encodeNil() throws { throw PostgreSQLError(identifier: "encoder", reason: "Unsupported type: nil") }
 }
 
 fileprivate final class _PostgreSQLMessageKeyedEncoder<K>: KeyedEncodingContainerProtocol where K: CodingKey {
