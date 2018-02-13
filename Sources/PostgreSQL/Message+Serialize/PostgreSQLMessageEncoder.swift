@@ -34,7 +34,7 @@ final class PostgreSQLMessageEncoder {
         case .password(let password):
             identifier = .p
             try password.encode(to: encoder)
-        default: throw PostgreSQLError(identifier: "messageEncoder", reason: "Unsupported encodable type: \(type(of: message))")
+        default: throw PostgreSQLError(identifier: "encoder", reason: "Unsupported encodable type: \(type(of: message))")
         }
         encoder.updateSize()
         if let prefix = identifier {
