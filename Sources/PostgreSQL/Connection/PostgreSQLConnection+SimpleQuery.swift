@@ -22,11 +22,11 @@ extension PostgreSQLConnection {
             case .rowDescription(let row):
                 currentRow = row
             case .dataRow(let data):
-                let row = currentRow !! "Unexpected PostgreSQLDataRow without preceding PostgreSQLRowDescription."
+                guard let row = currentRow else { throw PostgreSQLError(identifier: "simpleQuery", reason: "Unexpected PostgreSQLDataRow without preceding PostgreSQLRowDescription.") }
                 let parsed = try row.parse(data: data, formatCodes: row.fields.map { $0.formatCode })
                 onRow(parsed)
             case .close: break // query over, waiting for `readyForQuery`
-            default: fatalError("Unexpected message during PostgreSQLQuery: \(message)")
+            default: throw PostgreSQLError(identifier: "simpleQuery", reason: "Unexpected message during PostgreSQLQuery: \(message)")
             }
         }
     }
