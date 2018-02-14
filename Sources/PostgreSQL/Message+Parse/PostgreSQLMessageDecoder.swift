@@ -35,7 +35,12 @@ final class PostgreSQLMessageDecoder {
         case .t: message = try .parameterDescription(decoder.decode())
         default:
             let string = String(bytes: [type], encoding: .ascii) ?? "n/a"
-            throw PostgreSQLError(identifier: "decoder", reason: "Unrecognized message type: \(string) (\(type)", possibleCauses: ["Connected to non-postgresql database"], suggestedFixes: ["Connect to postgresql database"])
+            throw PostgreSQLError(
+                identifier: "decoder",
+                reason: "Unrecognized message type: \(string) (\(type)",
+                possibleCauses: ["Connected to non-PostgreSQL database"],
+                suggestedFixes: ["Connect to PostgreSQL database"]
+            )
         }
         return (message, decoder.data.count)
     }
