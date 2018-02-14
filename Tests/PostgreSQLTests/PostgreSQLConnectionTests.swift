@@ -8,7 +8,7 @@ class PostgreSQLConnectionTests: XCTestCase {
     func testVersion() throws {
         let (client, eventLoop) = try PostgreSQLConnection.makeTest()
         let results = try client.simpleQuery("SELECT version();").await(on: eventLoop)
-        try XCTAssert(results[0]["version"]?.decode(String.self).contains("10.1") == true)
+        try XCTAssert(results[0]["version"]?.decode(String.self).contains("10.") == true)
     }
 
     func testSelectTypes() throws {
@@ -281,7 +281,7 @@ class PostgreSQLConnectionTests: XCTestCase {
         ]).await(on: eventLoop)
         XCTAssertEqual(insertResult.count, 0)
         let parameterizedResult = try! client.query("select * from nulltest").await(on: eventLoop)
-        print(parameterizedResult)
+        XCTAssertEqual(parameterizedResult.count, 1)
     }
 
     static var allTests = [
