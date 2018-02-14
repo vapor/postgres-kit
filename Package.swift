@@ -20,13 +20,13 @@ let package = Package(
         .package(url: "https://github.com/vapor/database-kit.git", .exact("1.0.0-beta.1")),
 
         // Non-blocking networking for Swift (HTTP and WebSockets).
-        .package(url: "https://github.com/vapor/engine.git", .exact("3.0.0-beta.1")),
+        .package(url: "https://github.com/vapor/engine.git", .exact("3.0.0-beta.2")),
 
         // Service container and configuration system.
         .package(url: "https://github.com/vapor/service.git", .exact("1.0.0-beta.1")),
 
         // Pure Swift (POSIX) TCP and UDP non-blocking socket layer, with event-driven Server and Client.
-        .package(url: "https://github.com/vapor/sockets.git", .exact("3.0.0-beta.1")),
+        .package(url: "https://github.com/vapor/sockets.git", .exact("3.0.0-beta.2")),
     ],
     targets: [
         .target(name: "PostgreSQL", dependencies: ["Async", "Bits", "Crypto", "DatabaseKit", "Service", "TCP"]),
