@@ -270,6 +270,20 @@ class PostgreSQLConnectionTests: XCTestCase {
         }
     }
 
+    func testNull() throws {
+        let (client, eventLoop) = try PostgreSQLConnection.makeTest()
+        _ = try client.query("drop table if exists nulltest;").await(on: eventLoop)
+        let createResult = try client.query("create table nulltest (i integer not null, d timestamp);").await(on: eventLoop)
+        XCTAssertEqual(createResult.count, 0)
+        let insertResult = try! client.query("insert into nulltest  (i, d) VALUES ($1, $2)", [
+            PostgreSQLData(type: .int2, format: .binary, data: Data([0x00, 0x01])),
+            PostgreSQLData(type: .timestamp, format: .binary, data: nil),
+        ]).await(on: eventLoop)
+        XCTAssertEqual(insertResult.count, 0)
+        let parameterizedResult = try! client.query("select * from nulltest").await(on: eventLoop)
+        print(parameterizedResult)
+    }
+
     static var allTests = [
         ("testVersion", testVersion),
         ("testSelectTypes", testSelectTypes),
@@ -277,6 +291,7 @@ class PostgreSQLConnectionTests: XCTestCase {
         ("testTypes", testTypes),
         ("testParameterizedTypes", testParameterizedTypes),
         ("testStruct", testStruct),
+        ("testNull", testNull),
     ]
 }
 

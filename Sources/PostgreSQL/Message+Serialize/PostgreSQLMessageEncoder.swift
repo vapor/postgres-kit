@@ -188,6 +188,22 @@ fileprivate final class _PostgreSQLMessageKeyedEncoder<K>: KeyedEncodingContaine
     func nestedUnkeyedContainer(forKey key: K) -> UnkeyedEncodingContainer { return encoder.unkeyedContainer() }
     func superEncoder() -> Encoder { return encoder }
     func superEncoder(forKey key: K) -> Encoder { return encoder }
+
+    func encodeIfPresent<T>(_ value: T?, forKey key: K) throws where T : Encodable {
+        if T.self == Data.self {
+            if let data = value {
+                try encoder.encode(data)
+            } else {
+                try encoder.encode(Int32(-1)) // indicate nil data
+            }
+        } else {
+            if let value = value {
+                try encoder.encode(value)
+            } else {
+                try encoder.encodeNil()
+            }
+        }
+    }
 }
 
 /// MARK: Unkeyed
