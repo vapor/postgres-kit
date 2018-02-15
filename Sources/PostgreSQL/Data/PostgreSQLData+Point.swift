@@ -49,8 +49,10 @@ extension PostgreSQLPoint: PostgreSQLDataCustomConvertible {
                 let parts = string.split(separator: ",")
                 var x = parts[0]
                 var y = parts[1]
-                assert(x.popFirst()! == "(")
-                assert(y.popLast()! == ")")
+                assert(x.first! == "(")
+                assert(y.last! == ")")
+                x.removeFirst()
+                y.removeLast()
                 return .init(x: Double(x)!, y: Double(y)!)
             case .binary:
                 let x = value[0..<8]
