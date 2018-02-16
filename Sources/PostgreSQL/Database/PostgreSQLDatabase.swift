@@ -14,7 +14,7 @@ public final class PostgreSQLDatabase: Database {
     }
 
     /// See `Database.makeConnection()`
-    public func makeConnection(using connectionConfig: PostgreSQLConnectionConfig, on worker: Worker) -> Future<PostgreSQLConnection> {
+    public func makeConnection(on worker: Worker) -> Future<PostgreSQLConnection> {
         do {
             let client = try PostgreSQLConnection.connect(hostname: config.hostname, port: config.port, on: worker) { _, error in
                 print("[PostgreSQL] \(error)")
@@ -32,10 +32,7 @@ public final class PostgreSQLDatabase: Database {
 }
 
 /// A connection created by a `PostgreSQLDatabase`.
-extension PostgreSQLConnection: DatabaseConnection {
-    /// See `DatabaseConnection.Config`
-    public typealias Config = PostgreSQLConnectionConfig
-}
+extension PostgreSQLConnection: DatabaseConnection { }
 
 extension DatabaseIdentifier {
     /// Default identifier for `PostgreSQLDatabase`.
