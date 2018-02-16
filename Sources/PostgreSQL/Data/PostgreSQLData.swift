@@ -21,7 +21,7 @@ public struct PostgreSQLData {
 extension PostgreSQLData: CustomStringConvertible {
     /// See `CustomStringConvertible.description`
     public var description: String {
-        return "\(type) (\(format)) \(data?.hexDebug ?? "nil")"
+        return "\(type) (\(format)) \(data?.hexDebug ?? "null")"
     }
 }
 

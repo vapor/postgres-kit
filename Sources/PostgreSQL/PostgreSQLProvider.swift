@@ -11,7 +11,6 @@ public final class PostgreSQLProvider: Provider {
     /// See `Provider.register`
     public func register(_ services: inout Services) throws {
         try services.register(DatabaseKitProvider())
-        services.register(PostgreSQLConnectionConfig.self)
         services.register(PostgreSQLDatabaseConfig.self)
         services.register(PostgreSQLDatabase.self)
         var databases = DatabaseConfig()
@@ -24,13 +23,6 @@ public final class PostgreSQLProvider: Provider {
 }
 
 /// MARK: Services
-
-extension PostgreSQLConnectionConfig: ServiceType {
-    /// See `ServiceType.makeService(for:)`
-    public static func makeService(for worker: Container) throws -> PostgreSQLConnectionConfig {
-        return .default()
-    }
-}
 
 extension PostgreSQLDatabaseConfig: ServiceType {
     /// See `ServiceType.makeService(for:)`
