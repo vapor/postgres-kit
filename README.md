@@ -21,4 +21,4 @@
 
 <hr>
 
-See [vapor-community/postgresql](https://github.com/vapor-community/postgresql/) for libpq-based version
+<small>See [vapor-community/postgresql](https://github.com/vapor-community/postgresql/) for `libpq` based version</small>
