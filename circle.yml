@@ -1,0 +1,29 @@
+version: 2
+
+jobs:
+  macos:
+    macos:
+      xcode: "9.2"
+    steps:
+      - checkout
+      - run: swift build
+      - run: swift test
+  linux:
+    docker:
+      - image: norionomura/swift:swift-4.1-branch
+      - image: circleci/postgres:latest
+        environment:
+          POSTGRES_USER: postgres
+          POSTGRES_DB: postgres
+          POSTGRES_PASSWORD: ""
+    steps:
+      - checkout
+      - run: swift build
+      - run: swift test
+workflows:
+  version: 2
+  tests:
+    jobs:
+      - linux
+      # - macos
+      
