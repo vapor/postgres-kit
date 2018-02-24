@@ -18,3 +18,7 @@
         <img src="http://img.shields.io/badge/swift-4.1-brightgreen.svg" alt="Swift 4.1">
     </a>
 </p>
+
+<hr>
+
+See [vapor-community/postgresql](https://github.com/vapor-community/postgresql/) for libpq-based version
