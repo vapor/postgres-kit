@@ -28,7 +28,7 @@ extension BinaryFloatingPoint {
     /// See `PostgreSQLDataCustomConvertible.convertFromPostgreSQLData(_:)`
     public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> Self {
         guard let value = data.data else {
-            throw PostgreSQLError(identifier: "binaryFloatingPoint", reason: "Could not decode \(Self.self) from `null` data.")
+            throw PostgreSQLError(identifier: "binaryFloatingPoint", reason: "Could not decode \(Self.self) from `null` data.", source: .capture())
         }
         switch data.format {
         case .binary:
@@ -45,13 +45,14 @@ extension BinaryFloatingPoint {
             default:
                 throw PostgreSQLError(
                     identifier: "binaryFloatingPoint",
-                    reason: "Could not decode \(Self.self) from binary data type: \(data.type)."
+                    reason: "Could not decode \(Self.self) from binary data type: \(data.type).",
+                    source: .capture()
                 )
             }
         case .text:
             let string = try data.decode(String.self)
             guard let converted = Double(string) else {
-                throw PostgreSQLError(identifier: "binaryFloatingPoint", reason: "Could not decode \(Self.self) from string: \(string).")
+                throw PostgreSQLError(identifier: "binaryFloatingPoint", reason: "Could not decode \(Self.self) from string: \(string).", source: .capture())
             }
             return Self(converted)
         }

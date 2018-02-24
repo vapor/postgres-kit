@@ -14,7 +14,7 @@ extension PostgreSQLJSONCustomConvertible {
     /// See `PostgreSQLDataCustomConvertible.convertFromPostgreSQLData(_:)`
     public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> Self {
         guard let value = data.data else {
-            throw PostgreSQLError(identifier: "data", reason: "Unable to decode PostgreSQL JSON from `null` data.")
+            throw PostgreSQLError(identifier: "data", reason: "Unable to decode PostgreSQL JSON from `null` data.", source: .capture())
         }
 
         switch data.type {
@@ -25,7 +25,7 @@ extension PostgreSQLJSONCustomConvertible {
                 assert(value[0] == 0x01)
                 return try JSONDecoder().decode(Self.self, from: value[1...])
             }
-        default: throw PostgreSQLError(identifier: "json", reason: "Could not decode \(Self.self) from data type: \(data.type).")
+        default: throw PostgreSQLError(identifier: "json", reason: "Could not decode \(Self.self) from data type: \(data.type).", source: .capture())
         }
     }
 

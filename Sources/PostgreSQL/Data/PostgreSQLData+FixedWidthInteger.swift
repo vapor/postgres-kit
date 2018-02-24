@@ -26,7 +26,7 @@ extension FixedWidthInteger {
     /// See `PostgreSQLDataCustomConvertible.convertFromPostgreSQLData(_:)`
     public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> Self {
         guard let value = data.data else {
-            throw PostgreSQLError(identifier: "fixedWidthInteger", reason: "Could not decode \(Self.self) from `null` data.")
+            throw PostgreSQLError(identifier: "fixedWidthInteger", reason: "Could not decode \(Self.self) from `null` data.", source: .capture())
         }
         switch data.format {
         case .binary:
@@ -40,7 +40,7 @@ extension FixedWidthInteger {
         case .text:
             let string = try value.makeString()
             guard let converted = Self(string) else {
-                throw PostgreSQLError(identifier: "fixedWidthInteger", reason: "Could not decode \(Self.self) from text: \(string).")
+                throw PostgreSQLError(identifier: "fixedWidthInteger", reason: "Could not decode \(Self.self) from text: \(string).", source: .capture())
             }
             return converted
         }
@@ -87,7 +87,7 @@ extension Data {
     /// Converts this data to a fixed-width integer.
     internal func makeFixedWidthInteger<I>(_ type: I.Type = I.self) throws -> I where I: FixedWidthInteger {
         guard count >= (I.bitWidth / 8) else {
-            throw PostgreSQLError(identifier: "fixedWidthData", reason: "Not enough bytes to decode \(I.self): \(count)/\(I.bitWidth / 8)")
+            throw PostgreSQLError(identifier: "fixedWidthData", reason: "Not enough bytes to decode \(I.self): \(count)/\(I.bitWidth / 8)", source: .capture())
         }
         return unsafeCast(to: I.self).bigEndian
     }

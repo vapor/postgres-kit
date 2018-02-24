@@ -10,19 +10,19 @@ extension String: PostgreSQLDataCustomConvertible {
     /// See `PostgreSQLDataCustomConvertible.convertFromPostgreSQLData(_:)`
     public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> String {
         guard let value = data.data else {
-            throw PostgreSQLError(identifier: "string", reason: "Could not decode String from `null` data.")
+            throw PostgreSQLError(identifier: "string", reason: "Could not decode String from `null` data.", source: .capture())
         }
         switch data.format {
         case .text:
             guard let string = String(data: value, encoding: .utf8) else {
-                throw PostgreSQLError(identifier: "string", reason: "Non-UTF8 string: \(value.hexDebug).")
+                throw PostgreSQLError(identifier: "string", reason: "Non-UTF8 string: \(value.hexDebug).", source: .capture())
             }
             return string
         case .binary:
             switch data.type {
             case .text, .name, .varchar, .bpchar:
                 guard let string = String(data: value, encoding: .utf8) else {
-                    throw PostgreSQLError(identifier: "string", reason: "Non-UTF8 string: \(value.hexDebug).")
+                    throw PostgreSQLError(identifier: "string", reason: "Non-UTF8 string: \(value.hexDebug).", source: .capture())
                 }
                 return string
             case .point:
@@ -78,7 +78,7 @@ extension String: PostgreSQLDataCustomConvertible {
                 } else {
                     return numeric
                 }
-            default: throw PostgreSQLError(identifier: "string", reason: "Could not decode String from binary data type: \(data.type)")
+            default: throw PostgreSQLError(identifier: "string", reason: "Could not decode String from binary data type: \(data.type)", source: .capture())
             }
         }
     }
@@ -106,7 +106,7 @@ extension Data {
     /// Convert the row's data into a string, throwing if invalid encoding.
     internal func makeString(encoding: String.Encoding = .utf8) throws -> String {
         guard let string = String(data: self, encoding: encoding) else {
-            throw PostgreSQLError(identifier: "utf8String", reason: "Unexpected non-UTF8 string: \(hexDebug).")
+            throw PostgreSQLError(identifier: "utf8String", reason: "Unexpected non-UTF8 string: \(hexDebug).", source: .capture())
         }
 
         return string

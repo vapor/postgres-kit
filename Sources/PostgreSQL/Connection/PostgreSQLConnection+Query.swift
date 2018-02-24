@@ -40,7 +40,7 @@ extension PostgreSQLConnection {
             case .rowDescription(let row): currentRow = row
             case .parameterDescription: break
             case .noData: break
-            default: throw PostgreSQLError(identifier: "query", reason: "Unexpected message during PostgreSQLParseRequest: \(message)")
+            default: throw PostgreSQLError(identifier: "query", reason: "Unexpected message during PostgreSQLParseRequest: \(message)", source: .capture())
             }
         }.flatMap(to: Void.self) {
             let resultFormats = resultFormat.formatCodeFactory(currentRow?.fields.map { $0.dataType } ?? [])
@@ -62,12 +62,14 @@ extension PostgreSQLConnection {
                 switch message {
                 case .bindComplete: break
                 case .dataRow(let data):
-                    guard let row = currentRow else { throw PostgreSQLError(identifier: "query", reason: "Unexpected PostgreSQLDataRow without preceding PostgreSQLRowDescription.")}
+                    guard let row = currentRow else {
+                        throw PostgreSQLError(identifier: "query", reason: "Unexpected PostgreSQLDataRow without preceding PostgreSQLRowDescription.", source: .capture())
+                    }
                     let parsed = try row.parse(data: data, formatCodes: resultFormats)
                     onRow(parsed)
                 case .close: break
                 case .noData: break
-                default: throw PostgreSQLError(identifier: "query", reason: "Unexpected message during PostgreSQLParseRequest: \(message)")
+                default: throw PostgreSQLError(identifier: "query", reason: "Unexpected message during PostgreSQLParseRequest: \(message)", source: .capture())
                 }
             }
         }

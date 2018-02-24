@@ -21,7 +21,7 @@ extension PostgreSQLArrayCustomConvertible {
     /// See `PostgreSQLDataCustomConvertible.convertFromPostgreSQLData(_:)`
     public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> Self {
         guard var value = data.data else {
-            throw PostgreSQLError(identifier: "nullArray", reason: "Unable to decode PostgreSQL array from `null` data.")
+            throw PostgreSQLError(identifier: "nullArray", reason: "Unable to decode PostgreSQL array from `null` data.", source: .capture())
         }
 
         /// Extract and convert each element.

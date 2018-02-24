@@ -10,7 +10,7 @@ extension Date: PostgreSQLDataCustomConvertible {
     /// See `PostgreSQLDataCustomConvertible.convertFromPostgreSQLData(_:)`
     public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> Date {
         guard let value = data.data else {
-            throw PostgreSQLError(identifier: "data", reason: "Could not decode String from `null` data.")
+            throw PostgreSQLError(identifier: "data", reason: "Could not decode String from `null` data.", source: .capture())
         }
         switch data.format {
         case .text:
@@ -18,7 +18,7 @@ extension Date: PostgreSQLDataCustomConvertible {
             case .timestamp: return try value.makeString().parseDate(format:  "yyyy-MM-dd HH:mm:ss")
             case .date: return try value.makeString().parseDate(format:  "yyyy-MM-dd")
             case .time: return try value.makeString().parseDate(format:  "HH:mm:ss")
-            default: throw PostgreSQLError(identifier: "date", reason: "Could not parse Date from text data type: \(data.type).")
+            default: throw PostgreSQLError(identifier: "date", reason: "Could not parse Date from text data type: \(data.type).", source: .capture())
             }
         case .binary:
             switch data.type {
@@ -30,7 +30,7 @@ extension Date: PostgreSQLDataCustomConvertible {
                 let days = try value.makeFixedWidthInteger(Int32.self)
                 let seconds = days * _secondsInDay
                 return Date(timeInterval: Double(seconds), since: _psqlDateStart)
-            default: throw PostgreSQLError(identifier: "date", reason: "Could not parse Date from binary data type: \(data.type).")
+            default: throw PostgreSQLError(identifier: "date", reason: "Could not parse Date from binary data type: \(data.type).", source: .capture())
             }
         }
     }
@@ -56,7 +56,7 @@ extension String {
         }
         formatter.timeZone = TimeZone(secondsFromGMT: 0)
         guard let date = formatter.date(from: self) else {
-            throw PostgreSQLError(identifier: "date", reason: "Malformed date: \(self)")
+            throw PostgreSQLError(identifier: "date", reason: "Malformed date: \(self)", source: .capture())
         }
         return date
     }

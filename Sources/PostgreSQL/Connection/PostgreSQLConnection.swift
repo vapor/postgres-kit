@@ -62,36 +62,36 @@ public final class PostgreSQLConnection {
             case .authenticationRequest(let a):
                 authRequest = a
                 return true
-            default: throw PostgreSQLError(identifier: "auth", reason: "Unsupported message encountered during auth: \(message).")
+            default: throw PostgreSQLError(identifier: "auth", reason: "Unsupported message encountered during auth: \(message).", source: .capture())
             }
         }.flatMap(to: Void.self) {
             guard let auth = authRequest else {
-                throw PostgreSQLError(identifier: "authRequest", reason: "No authorization request / status sent.")
+                throw PostgreSQLError(identifier: "authRequest", reason: "No authorization request / status sent.", source: .capture())
             }
 
             let input: [PostgreSQLMessage]
             switch auth {
             case .ok:
                 guard password == nil else {
-                    throw PostgreSQLError(identifier: "trust", reason: "No password is required")
+                    throw PostgreSQLError(identifier: "trust", reason: "No password is required", source: .capture())
                 }
                 input = []
             case .plaintext:
                 guard let password = password else {
-                    throw PostgreSQLError(identifier: "password", reason: "Password is required")
+                    throw PostgreSQLError(identifier: "password", reason: "Password is required", source: .capture())
                 }
                 let passwordMessage = PostgreSQLPasswordMessage(password: password)
                 input = [.password(passwordMessage)]
             case .md5(let salt):
                 guard let password = password else {
-                    throw PostgreSQLError(identifier: "password", reason: "Password is required")
+                    throw PostgreSQLError(identifier: "password", reason: "Password is required", source: .capture())
                 }
                 guard let passwordData = password.data(using: .utf8) else {
-                    throw PostgreSQLError(identifier: "passwordUTF8", reason: "Could not convert password to UTF-8 encoded Data.")
+                    throw PostgreSQLError(identifier: "passwordUTF8", reason: "Could not convert password to UTF-8 encoded Data.", source: .capture())
                 }
 
                 guard let usernameData = username.data(using: .utf8) else {
-                    throw PostgreSQLError(identifier: "usernameUTF8", reason: "Could not convert username to UTF-8 encoded Data.")
+                    throw PostgreSQLError(identifier: "usernameUTF8", reason: "Could not convert username to UTF-8 encoded Data.", source: .capture())
                 }
 
                 let hasher = MD5()
@@ -100,7 +100,7 @@ public final class PostgreSQLConnection {
                 hasher.update(sequence: &passwordUsernameData)
                 hasher.finalize()
                 guard let pwdhash = hasher.hash.hexString.data(using: .utf8) else {
-                    throw PostgreSQLError(identifier: "hashUTF8", reason: "Could not convert password hash to UTF-8 encoded Data.")
+                    throw PostgreSQLError(identifier: "hashUTF8", reason: "Could not convert password hash to UTF-8 encoded Data.", source: .capture())
                 }
                 hasher.reset()
                 // hash = ′ md 5′ + md 5(pwdhash + salt ).hexdigest ()
@@ -117,7 +117,7 @@ public final class PostgreSQLConnection {
                 case .readyForQuery: return true
                 case .authenticationRequest: return false
                 case .parameterStatus, .backendKeyData: return false
-                default: throw PostgreSQLError(identifier: "authenticationMessage", reason: "Unexpected authentication message: \(message)")
+                default: throw PostgreSQLError(identifier: "authenticationMessage", reason: "Unexpected authentication message: \(message)", source: .capture())
                 }
             }
         }

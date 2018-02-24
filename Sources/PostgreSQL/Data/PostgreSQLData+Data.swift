@@ -10,7 +10,7 @@ extension Data: PostgreSQLDataCustomConvertible {
     /// See `PostgreSQLDataCustomConvertible.convertFromPostgreSQLData(_:)`
     public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> Data {
         guard let value = data.data else {
-            throw PostgreSQLError(identifier: "data", reason: "Could not decode Data from `null` data.")
+            throw PostgreSQLError(identifier: "data", reason: "Could not decode Data from `null` data.", source: .capture())
         }
 
         switch data.type {
@@ -19,7 +19,7 @@ extension Data: PostgreSQLDataCustomConvertible {
             case .text: return try Data(hexString: value[2...].makeString())
             case .binary: return value
             }
-        default: throw PostgreSQLError(identifier: "data", reason: "Could not decode Data from data type: \(data.type)")
+        default: throw PostgreSQLError(identifier: "data", reason: "Could not decode Data from data type: \(data.type)", source: .capture())
         }
     }
 

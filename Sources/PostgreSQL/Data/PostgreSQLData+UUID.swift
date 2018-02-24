@@ -11,7 +11,7 @@ extension UUID: PostgreSQLDataCustomConvertible {
     /// See `PostgreSQLDataCustomConvertible.convertFromPostgreSQLData(_:)`
     public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> UUID {
         guard let value = data.data else {
-            throw PostgreSQLError(identifier: "data", reason: "Could not decode UUID from `null` data.")
+            throw PostgreSQLError(identifier: "data", reason: "Could not decode UUID from `null` data.", source: .capture())
         }
         switch data.type {
         case .uuid:
@@ -19,12 +19,12 @@ extension UUID: PostgreSQLDataCustomConvertible {
             case .text:
                 let string = try value.makeString()
                 guard let uuid = UUID(uuidString: string) else {
-                    throw PostgreSQLError(identifier: "uuid", reason: "Could not decode UUID from string: \(string)")
+                    throw PostgreSQLError(identifier: "uuid", reason: "Could not decode UUID from string: \(string)", source: .capture())
                 }
                 return uuid
             case .binary: return UUID(uuid: value.unsafeCast())
             }
-        default: throw PostgreSQLError(identifier: "uuid", reason: "Could not decode UUID from data type: \(data.type)")
+        default: throw PostgreSQLError(identifier: "uuid", reason: "Could not decode UUID from data type: \(data.type)", source: .capture())
         }
     }
 

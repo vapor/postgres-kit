@@ -37,9 +37,7 @@ extension PostgreSQLDiagnosticResponse: Debuggable {
     var identifier: String {
         return fields[.routine] ?? fields[.sqlState] ?? "unknown"
     }
-}
-
-extension PostgreSQLDiagnosticResponse: Helpable {
+    
     /// See `Helpable.possibleCauses`
     var possibleCauses: [String] {
         var strings: [String] = []

@@ -7,23 +7,23 @@ let package = Package(
         .library(name: "PostgreSQL", targets: ["PostgreSQL"]),
     ],
     dependencies: [
-        // Swift Promises, Futures, and Streams.
-        .package(url: "https://github.com/vapor/async.git", "1.0.0-beta.1"..<"1.0.0-beta.2"),
+        // ⏱ Promises and reactive-streams in Swift built for high-performance and scalability.
+        .package(url: "https://github.com/vapor/async.git", from: "1.0.0-rc"),
         
-        // Core extensions, type-aliases, and functions that facilitate common tasks.
-        .package(url: "https://github.com/vapor/core.git", "3.0.0-beta.1"..<"3.0.0-beta.2"),
+        // 🌎 Utility package containing tools for byte manipulation, Codable, OS APIs, and debugging.
+        .package(url: "https://github.com/vapor/core.git", from: "3.0.0-rc"),
         
-        // Cryptography modules (formerly CryptoKitten)
-        .package(url: "https://github.com/vapor/crypto.git", "3.0.0-beta.1"..<"3.0.0-beta.2"),
+        // 🔑 Hashing (BCrypt, SHA, HMAC, etc), encryption, and randomness.
+        .package(url: "https://github.com/vapor/crypto.git", from: "3.0.0-rc"),
 
-        // Core services for creating database integrations.
-        .package(url: "https://github.com/vapor/database-kit.git", "1.0.0-beta.3"..<"1.0.0-beta.5"),
+        // 🗄 Core services for creating database integrations.
+        .package(url: "https://github.com/vapor/database-kit.git", from: "1.0.0-rc"),
 
-        // Service container and configuration system.
-        .package(url: "https://github.com/vapor/service.git", "1.0.0-beta.1"..<"1.0.0-beta.2"),
+        // 📦 Dependency injection / inversion of control framework.
+        .package(url: "https://github.com/vapor/service.git", from: "1.0.0-rc"),
 
-        // Pure Swift (POSIX) TCP and UDP non-blocking socket layer, with event-driven Server and Client.
-        .package(url: "https://github.com/vapor/sockets.git", "3.0.0-beta.2"..<"3.0.0-beta.3"),
+        // 🔌 Non-blocking TCP socket layer, with event-driven server and client.
+        .package(url: "https://github.com/vapor/sockets.git", from: "3.0.0-rc"),
     ],
     targets: [
         .target(name: "PostgreSQL", dependencies: ["Async", "Bits", "Crypto", "DatabaseKit", "Service", "TCP"]),

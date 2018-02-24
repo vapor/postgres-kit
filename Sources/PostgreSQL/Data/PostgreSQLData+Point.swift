@@ -39,7 +39,7 @@ extension PostgreSQLPoint: PostgreSQLDataCustomConvertible {
     /// See `PostgreSQLDataCustomConvertible.convertFromPostgreSQLData(_:)`
     public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> PostgreSQLPoint {
         guard let value = data.data else {
-            throw PostgreSQLError(identifier: "data", reason: "Could not decode Point from `null` data.")
+            throw PostgreSQLError(identifier: "data", reason: "Could not decode Point from `null` data.", source: .capture())
         }
         switch data.type {
         case .point:
@@ -57,7 +57,7 @@ extension PostgreSQLPoint: PostgreSQLDataCustomConvertible {
                 let y = value[8..<16]
                 return .init(x: x.makeFloatingPoint(), y: y.makeFloatingPoint())
             }
-        default: throw PostgreSQLError(identifier: "point", reason: "Could not decode Point from data type: \(data.type)")
+        default: throw PostgreSQLError(identifier: "point", reason: "Could not decode Point from data type: \(data.type)", source: .capture())
         }
     }
 
