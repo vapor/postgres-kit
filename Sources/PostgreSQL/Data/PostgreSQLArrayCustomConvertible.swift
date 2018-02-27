@@ -1,9 +1,9 @@
 import Foundation
 
 /// Representable by a `T[]` column on the PostgreSQL database.
-public protocol PostgreSQLArrayCustomConvertible: PostgreSQLDataCustomConvertible, Codable {
+public protocol PostgreSQLArrayCustomConvertible: PostgreSQLDataCustomConvertible {
     /// The associated array element type
-    associatedtype PostgreSQLArrayElement: PostgreSQLDataCustomConvertible
+    associatedtype PostgreSQLArrayElement // : PostgreSQLDataCustomConvertible
 
     /// Convert an array of elements to self.
     static func convertFromPostgreSQLArray(_ data: [PostgreSQLArrayElement]) -> Self
@@ -13,11 +13,6 @@ public protocol PostgreSQLArrayCustomConvertible: PostgreSQLDataCustomConvertibl
 }
 
 extension PostgreSQLArrayCustomConvertible {
-    /// See `PostgreSQLDataCustomConvertible.postgreSQLDataType`
-    public static var postgreSQLDataType: PostgreSQLDataType {
-        return PostgreSQLArrayElement.postgreSQLDataArrayType
-    }
-
     /// See `PostgreSQLDataCustomConvertible.convertFromPostgreSQLData(_:)`
     public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> Self {
         guard var value = data.data else {
@@ -35,8 +30,8 @@ extension PostgreSQLArrayCustomConvertible {
                 let count = Int(value.extract(Int32.self).bigEndian)
                 let subValue = value.extract(count: count)
                 let psqlData = PostgreSQLData(type: metadata.type, format: data.format, data: subValue)
-                let element = try PostgreSQLArrayElement.convertFromPostgreSQLData(psqlData)
-                array.append(element)
+                let element = try requirePostgreSQLDataCustomConvertible(PostgreSQLArrayElement.self).convertFromPostgreSQLData(psqlData)
+                array.append(element as! PostgreSQLArrayElement)
             }
         } else {
             array = []
@@ -48,13 +43,13 @@ extension PostgreSQLArrayCustomConvertible {
     /// See `PostgreSQLDataCustomConvertible.convertToPostgreSQLData()`
     public func convertToPostgreSQLData() throws -> PostgreSQLData {
         let elements = try convertToPostgreSQLArray().map {
-            try $0.convertToPostgreSQLData()
+            try requirePostgreSQLDataCustomConvertible($0).convertToPostgreSQLData()
         }
 
         var data = Data()
         data += Int32(1).data // non-null
         data += Int32(0).data // b
-        data += PostgreSQLArrayElement.postgreSQLDataType.raw.data // type
+        data += requirePostgreSQLDataCustomConvertible(PostgreSQLArrayElement.self).postgreSQLDataType.raw.data // type
         data += Int32(elements.count).data // length
         data += Int32(1).data // dimensions
 
@@ -67,7 +62,7 @@ extension PostgreSQLArrayCustomConvertible {
             }
         }
 
-        return PostgreSQLData(type: PostgreSQLArrayElement.postgreSQLDataArrayType, format: .binary, data: data)
+        return PostgreSQLData(type: requirePostgreSQLDataCustomConvertible(PostgreSQLArrayElement.self).postgreSQLDataArrayType, format: .binary, data: data)
     }
 }
 
@@ -107,10 +102,15 @@ extension PostgreSQLArrayMetadata: CustomStringConvertible {
     }
 }
 
-extension Array: PostgreSQLArrayCustomConvertible where Element: Codable, Element: PostgreSQLDataCustomConvertible {
+extension Array: PostgreSQLArrayCustomConvertible {
     /// See `PostgreSQLArrayCustomConvertible.postgreSQLDataArrayType`
     public static var postgreSQLDataArrayType: PostgreSQLDataType {
-        return Element.postgreSQLDataArrayType
+        fatalError("Multi-dimensional arrays are not yet supported.")
+    }
+
+    /// See `PostgreSQLDataCustomConvertible.postgreSQLDataType`
+    public static var postgreSQLDataType: PostgreSQLDataType {
+        return requirePostgreSQLDataCustomConvertible(Element.self).postgreSQLDataArrayType
     }
 
     /// See `PostgreSQLArrayCustomConvertible.PostgreSQLArrayElement`
@@ -125,4 +125,18 @@ extension Array: PostgreSQLArrayCustomConvertible where Element: Codable, Elemen
     public func convertToPostgreSQLArray() -> [Element] {
         return self
     }
+}
+
+func requirePostgreSQLDataCustomConvertible<T>(_ type: T.Type) -> PostgreSQLDataCustomConvertible.Type {
+    guard let custom = T.self as? PostgreSQLDataCustomConvertible.Type else {
+        fatalError("`\(T.self)` does not conform to `PostgreSQLDataCustomConvertible`")
+    }
+    return custom
+}
+
+func requirePostgreSQLDataCustomConvertible<T>(_ type: T) -> PostgreSQLDataCustomConvertible {
+    guard let custom = type as? PostgreSQLDataCustomConvertible else {
+        fatalError("`\(T.self)` does not conform to `PostgreSQLDataCustomConvertible`")
+    }
+    return custom
 }

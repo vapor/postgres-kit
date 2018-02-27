@@ -247,7 +247,7 @@ class PostgreSQLConnectionTests: XCTestCase {
     }
 
     func testStruct() throws {
-        struct Hello: PostgreSQLJSONCustomConvertible {
+        struct Hello: PostgreSQLJSONCustomConvertible, Codable {
             var message: String
         }
 
