@@ -211,7 +211,3 @@ fileprivate final class _PostgreSQLMessageUnkeyedEncoder: UnkeyedEncodingContain
         encoder.data.replaceSubrange(countOffset..<countOffset + 2, with: data)
     }
 }
-
-
-
-
