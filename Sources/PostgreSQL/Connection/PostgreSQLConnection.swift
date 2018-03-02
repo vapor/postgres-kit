@@ -5,32 +5,24 @@ import NIO
 /// A PostgreSQL frontend client.
 public final class PostgreSQLConnection {
     /// Handles enqueued redis commands and responses.
-    private let queueStream: QueueStream<PostgreSQLMessage, PostgreSQLMessage>
+    private let queue: QueueHandler<PostgreSQLMessage, PostgreSQLMessage>
+
+    /// The channel
+    private let channel: Channel
 
     /// If non-nil, will log queries.
     public var logger: PostgreSQLLogger?
 
     /// Creates a new Redis client on the provided data source and sink.
-    init<Stream>(stream: Stream, on worker: Worker) where Stream: ByteStream {
-        
-
-        let queueStream = QueueStream<PostgreSQLMessage, PostgreSQLMessage>()
-
-        let serializerStream = PostgreSQLMessageSerializer().stream(on: worker)
-        let parserStream = PostgreSQLMessageParser().stream(on: worker)
-
-        stream.stream(to: parserStream)
-            .stream(to: queueStream)
-            .stream(to: serializerStream)
-            .output(to: stream)
-
-        self.queueStream = queueStream
+    init(queue: QueueHandler<PostgreSQLMessage, PostgreSQLMessage>, channel: Channel) {
+        self.queue = queue
+        self.channel = channel
     }
 
     /// Sends `PostgreSQLMessage` to the server.
     func send(_ messages: [PostgreSQLMessage], onResponse: @escaping (PostgreSQLMessage) throws -> ()) -> Future<Void> {
         var error: Error?
-        return queueStream.enqueue(messages) { message in
+        return queue.enqueue(messages) { message in
             switch message {
             case .readyForQuery:
                 if let e = error { throw e }
@@ -60,7 +52,7 @@ public final class PostgreSQLConnection {
             "database": database ?? username
         ])
         var authRequest: PostgreSQLAuthenticationRequest?
-        return queueStream.enqueue([.startupMessage(startup)]) { message in
+        return queue.enqueue([.startupMessage(startup)]) { message in
             switch message {
             case .authenticationRequest(let a):
                 authRequest = a
@@ -114,7 +106,7 @@ public final class PostgreSQLConnection {
                 input = [.password(passwordMessage)]
             }
 
-            return self.queueStream.enqueue(input) { message in
+            return self.queue.enqueue(input) { message in
                 switch message {
                 case .error(let error): throw error
                 case .readyForQuery: return true
@@ -128,6 +120,6 @@ public final class PostgreSQLConnection {
 
     /// Closes this client.
     public func close() {
-        queueStream.close()
+        channel.close(promise: nil)
     }
 }

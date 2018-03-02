@@ -1,5 +1,36 @@
 import Bits
 import Foundation
+import NIO
+import Debugging
+
+extension ByteBuffer {
+    public mutating func requireReadInteger<I>(source: SourceLocation) throws -> I where I: FixedWidthInteger {
+        guard let i: I = readInteger() else {
+            throw PostgreSQLError(identifier: "readInteger", reason: "Could not read \(I.self)", source:source)
+        }
+        return i
+    }
+
+    public func peekInteger<I>(skipping: Int = 0) -> I? where I: FixedWidthInteger {
+        return getInteger(at: readerIndex + skipping)
+    }
+
+    public mutating func requireReadNullTerminatedString(source: SourceLocation) throws -> String {
+        var bytes: [UInt8] = []
+        parse: while true {
+            let byte: Byte = try requireReadInteger(source: source)
+            switch byte {
+            case 0: break parse // found null terminator
+            default: bytes.append(byte)
+            }
+        }
+        let data = Data(bytes: bytes)
+        guard let string = String(data: data, encoding: .utf8) else {
+            throw PostgreSQLError(identifier: "readString", reason: "Could not decode String using UTF8", source: source)
+        }
+        return string
+    }
+}
 
 extension Data {
     public var hexDebug: String {
