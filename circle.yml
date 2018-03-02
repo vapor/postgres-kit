@@ -17,9 +17,12 @@ jobs:
           POSTGRES_DB: postgres
           POSTGRES_PASSWORD: ""
     steps:
+      - run: apt-get update
+      - run: apt-get install -yq libssl-dev pkg-config
       - checkout
       - run: swift build
       - run: swift test
+      - run: swift build -c release
 workflows:
   version: 2
   tests:
