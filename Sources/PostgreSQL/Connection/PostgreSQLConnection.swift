@@ -1,5 +1,6 @@
 import Async
 import Crypto
+import NIO
 
 /// A PostgreSQL frontend client.
 public final class PostgreSQLConnection {
@@ -11,6 +12,8 @@ public final class PostgreSQLConnection {
 
     /// Creates a new Redis client on the provided data source and sink.
     init<Stream>(stream: Stream, on worker: Worker) where Stream: ByteStream {
+        
+
         let queueStream = QueueStream<PostgreSQLMessage, PostgreSQLMessage>()
 
         let serializerStream = PostgreSQLMessageSerializer().stream(on: worker)
