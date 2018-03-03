@@ -84,7 +84,12 @@ final class _PostgreSQLMessageDecoder: Decoder, SingleValueDecodingContainer {
     /// See SingleValueDecodingContainer.decodeNil
     func decodeNil() -> Bool {
         VERBOSE("_PostgreSQLMessageDecoder.decodeNil()")
-        return data.getInteger(at: data.readerIndex) == Int32(-1)
+        if data.getInteger(at: data.readerIndex) == Int32(-1) {
+            data.moveReaderIndex(forwardBy: MemoryLayout<Int32>.size)
+            return true
+        } else {
+            return false
+        }
     }
 
     /// See Decoder.container

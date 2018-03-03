@@ -20,7 +20,7 @@ extension PostgreSQLConnection {
         _ string: String,
         _ parameters: [PostgreSQLDataCustomConvertible] = [],
         resultFormat: PostgreSQLResultFormat = .binary(),
-        onRow: @escaping ([String: PostgreSQLData]) -> ()
+        onRow: @escaping ([String: PostgreSQLData]) throws -> ()
     ) throws -> Future<Void> {
         let parameters = try parameters.map { try $0.convertToPostgreSQLData() }
         logger?.log(query: string, parameters: parameters)
@@ -66,7 +66,7 @@ extension PostgreSQLConnection {
                         throw PostgreSQLError(identifier: "query", reason: "Unexpected PostgreSQLDataRow without preceding PostgreSQLRowDescription.", source: .capture())
                     }
                     let parsed = try row.parse(data: data, formatCodes: resultFormats)
-                    onRow(parsed)
+                    try onRow(parsed)
                 case .close: break
                 case .noData: break
                 default: throw PostgreSQLError(identifier: "query", reason: "Unexpected message during PostgreSQLParseRequest: \(message)", source: .capture())

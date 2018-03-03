@@ -4,6 +4,10 @@ import NIO
 
 /// A PostgreSQL frontend client.
 public final class PostgreSQLConnection {
+    public var eventLoop: EventLoop {
+        return channel.eventLoop
+    }
+
     /// Handles enqueued redis commands and responses.
     private let queue: QueueHandler<PostgreSQLMessage, PostgreSQLMessage>
 
