@@ -29,25 +29,25 @@ final class _PostgreSQLMessageDecoder: Decoder, SingleValueDecodingContainer {
     /// See SingleValueDecodingContainer.decode
     func decode(_ type: UInt8.Type) throws -> UInt8 {
         VERBOSE("_PostgreSQLMessageDecoder.decode(_: \(type))")
-        return try data.requireReadInteger(source: .capture())
+        return try data.requireReadInteger(or: PostgreSQLError(identifier: "decodeUInt8", reason: "Could not decode UInt8", source: .capture()))
     }
 
     /// See SingleValueDecodingContainer.decode
     func decode(_ type: Int16.Type) throws -> Int16 {
         VERBOSE("_PostgreSQLMessageDecoder.decode(_: \(type))")
-        return try data.requireReadInteger(source: .capture())
+        return try data.requireReadInteger(or: PostgreSQLError(identifier: "decodeInt16", reason: "Could not decode Int16", source: .capture()))
     }
 
     /// See SingleValueDecodingContainer.decode
     func decode(_ type: Int32.Type) throws -> Int32 {
         VERBOSE("_PostgreSQLMessageDecoder.decode(_: \(type))")
-        return try data.requireReadInteger(source: .capture())
+        return try data.requireReadInteger(or: PostgreSQLError(identifier: "decodeInt32", reason: "Could not decode Int32", source: .capture()))
     }
 
     /// See SingleValueDecodingContainer.decode
     func decode(_ type: String.Type) throws -> String {
         VERBOSE("_PostgreSQLMessageDecoder.decode(_: \(type))")
-        return try data.requireReadNullTerminatedString(source: .capture())
+        return try data.requireReadNullTerminatedString(or: PostgreSQLError(identifier: "decodeString", reason: "Could not decode String", source: .capture()))
     }
 
     /// See SingleValueDecodingContainer.decode

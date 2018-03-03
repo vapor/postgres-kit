@@ -57,16 +57,4 @@ final class PostgreSQLMessageEncoder: MessageToByteEncoder {
         VERBOSE("    [bytes=\(data.hexDebug)]")
         VERBOSE("    [out=\(data.debugDescription)]")
     }
-
-    /// Encodes the data into a `ByteBuffer` and writes it.
-    public func write(ctx: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
-        do {
-            let data = self.unwrapOutboundIn(data)
-            var buffer: ByteBuffer = try allocateOutBuffer(ctx: ctx, data: data)
-            try encode(ctx: ctx, data: data, out: &buffer)
-            ctx.writeAndFlush(self.wrapOutboundOut(buffer), promise: promise)
-        } catch let err {
-            promise?.fail(error: err)
-        }
-    }
 }

@@ -9,7 +9,7 @@ extension PostgreSQLConnection {
         on worker: Worker,
         onError: @escaping (Error) -> ()
     ) throws -> Future<PostgreSQLConnection> {
-        let handler = QueueHandler<PostgreSQLMessage, PostgreSQLMessage>(on: worker)
+        let handler = QueueHandler<PostgreSQLMessage, PostgreSQLMessage>(on: worker, onError: onError)
         let bootstrap = ClientBootstrap(group: worker.eventLoop)
             // Enable SO_REUSEADDR.
             .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
