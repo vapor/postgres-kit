@@ -298,7 +298,7 @@ extension PostgreSQLConnection {
     /// Creates a test event loop and psql client.
     static func makeTest() throws -> PostgreSQLConnection {
         let group = MultiThreadedEventLoopGroup(numThreads: 1)
-        let client = try PostgreSQLConnection.connect(on: wrap(group.next())) { error in
+        let client = try PostgreSQLConnection.connect(on: group) { error in
             XCTFail("\(error)")
         }.wait()
         _ = try client.authenticate(username: "postgres").wait()

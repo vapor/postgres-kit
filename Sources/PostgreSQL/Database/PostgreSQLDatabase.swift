@@ -32,7 +32,7 @@ public final class PostgreSQLDatabase: Database {
 }
 
 /// A connection created by a `PostgreSQLDatabase`.
-extension PostgreSQLConnection: DatabaseConnection { }
+extension PostgreSQLConnection: DatabaseConnection, BasicWorker { }
 
 extension DatabaseIdentifier {
     /// Default identifier for `PostgreSQLDatabase`.
