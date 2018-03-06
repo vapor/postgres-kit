@@ -1,6 +1,6 @@
-import Async
 import Foundation
 import XCTest
+import NIO
 import PostgreSQL
 
 class PostgreSQLConnectionTests: XCTestCase {

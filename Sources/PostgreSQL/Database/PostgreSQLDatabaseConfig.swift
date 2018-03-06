@@ -1,3 +1,4 @@
+import Foundation
 /// Config options for a `PostgreSQLConnection`
 public struct PostgreSQLDatabaseConfig {
     /// Creates a `PostgreSQLDatabaseConfig` with default settings.
@@ -28,5 +29,26 @@ public struct PostgreSQLDatabaseConfig {
         self.username = username
         self.database = database
         self.password = password
+    }
+
+    public init(connectionString: String) throws {
+        guard let url = URL(string: connectionString),
+            let hostname = url.host,
+            let port = url.port,
+            let username = url.user,
+            let database = URL(string: connectionString)?.path,
+            database.count > 0
+             else {
+                throw PostgreSQLError(identifier: "Bad Connection String",
+                                 reason: "Host could not be parsed",
+                                 possibleCauses: ["Foundation URL is unable to parse the provided connection string"],
+                                 suggestedFixes: ["Check the connection string being passed"],
+                                 source: .capture())
+        }
+        self.hostname = hostname
+        self.port = port
+        self.username = username
+        self.database = database
+        self.password = url.password
     }
 }
