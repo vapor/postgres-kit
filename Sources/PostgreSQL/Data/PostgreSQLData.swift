@@ -8,6 +8,11 @@ public struct PostgreSQLData {
     /// The data's format.
     public var format: PostgreSQLFormatCode
 
+    /// If `true`, this data is null.
+    public var isNull: Bool {
+        return data == nil
+    }
+
     /// The actual data.
     public var data: Data?
 
