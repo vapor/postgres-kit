@@ -77,6 +77,11 @@ final class PostgreSQLMessageDecoder: ByteToMessageDecoder {
         return .continue
     }
 
+    /// Temporary
+    func channelInactive(ctx: ChannelHandlerContext) {
+        ctx.fireChannelInactive()
+    }
+
     /// Called once this `ByteToMessageDecoder` is removed from the `ChannelPipeline`.
     ///
     /// - parameters:
