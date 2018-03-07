@@ -4,12 +4,12 @@ extension PostgreSQLConnection {
     /// Sends a parameterized PostgreSQL query command, collecting the parsed results.
     public func query(
         _ string: String,
-        _ parameters: [PostgreSQLDataCustomConvertible] = []
-    ) throws -> Future<[[String: PostgreSQLData]]> {
-        var rows: [[String: PostgreSQLData]] = []
+        _ parameters: [PostgreSQLDataConvertible] = []
+    ) throws -> Future<[[PostgreSQLColumn: PostgreSQLData]]> {
+        var rows: [[PostgreSQLColumn: PostgreSQLData]] = []
         return try query(string, parameters) { row in
             rows.append(row)
-        }.map(to: [[String: PostgreSQLData]].self) {
+        }.map(to: [[PostgreSQLColumn: PostgreSQLData]].self) {
             return rows
         }
     }
@@ -18,12 +18,11 @@ extension PostgreSQLConnection {
     /// the supplied closure.
     public func query(
         _ string: String,
-        _ parameters: [PostgreSQLDataCustomConvertible] = [],
+        _ parameters: [PostgreSQLDataConvertible] = [],
         resultFormat: PostgreSQLResultFormat = .binary(),
-        onRow: @escaping ([String: PostgreSQLData]) throws -> ()
+        onRow: @escaping ([PostgreSQLColumn: PostgreSQLData]) throws -> ()
     ) throws -> Future<Void> {
         let parameters = try parameters.map { try $0.convertToPostgreSQLData() }
-        logger?.log(query: string, parameters: parameters)
         let parse = PostgreSQLParseRequest(
             statementName: "",
             query: string,
@@ -65,7 +64,11 @@ extension PostgreSQLConnection {
                     guard let row = currentRow else {
                         throw PostgreSQLError(identifier: "query", reason: "Unexpected PostgreSQLDataRow without preceding PostgreSQLRowDescription.", source: .capture())
                     }
-                    let parsed = try row.parse(data: data, formatCodes: resultFormats)
+                    let parsed = try row.parse(
+                        data: data,
+                        formatCodes: resultFormats,
+                        tableNameCache: self.tableNameCache
+                    )
                     try onRow(parsed)
                 case .close: break
                 case .noData: break

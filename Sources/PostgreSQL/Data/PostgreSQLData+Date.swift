@@ -1,6 +1,6 @@
 import Foundation
 
-extension Date: PostgreSQLDataCustomConvertible {
+extension Date: PostgreSQLDataConvertible {
     /// See `PostgreSQLDataCustomConvertible.postgreSQLDataType`
     public static var postgreSQLDataType: PostgreSQLDataType { return .timestamp }
 

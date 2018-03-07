@@ -2,18 +2,18 @@ import Async
 
 extension PostgreSQLConnection {
     /// Sends a simple PostgreSQL query command, collecting the parsed results.
-    public func simpleQuery(_ string: String) -> Future<[[String: PostgreSQLData]]> {
-        var rows: [[String: PostgreSQLData]] = []
+    public func simpleQuery(_ string: String) -> Future<[[PostgreSQLColumn: PostgreSQLData]]> {
+        var rows: [[PostgreSQLColumn: PostgreSQLData]] = []
         return simpleQuery(string) { row in
             rows.append(row)
-        }.map(to: [[String: PostgreSQLData]].self) {
+        }.map(to: [[PostgreSQLColumn: PostgreSQLData]].self) {
             return rows
         }
     }
 
     /// Sends a simple PostgreSQL query command, returning the parsed results to
     /// the supplied closure.
-    public func simpleQuery(_ string: String, onRow: @escaping ([String: PostgreSQLData]) -> ()) -> Future<Void> {
+    public func simpleQuery(_ string: String, onRow: @escaping ([PostgreSQLColumn: PostgreSQLData]) -> ()) -> Future<Void> {
         logger?.log(query: string, parameters: [])
         var currentRow: PostgreSQLRowDescription?
         let query = PostgreSQLQuery(query: string)
@@ -25,7 +25,11 @@ extension PostgreSQLConnection {
                 guard let row = currentRow else {
                     throw PostgreSQLError(identifier: "simpleQuery", reason: "Unexpected PostgreSQLDataRow without preceding PostgreSQLRowDescription.", source: .capture())
                 }
-                let parsed = try row.parse(data: data, formatCodes: row.fields.map { $0.formatCode })
+                let parsed = try row.parse(
+                    data: data,
+                    formatCodes: row.fields.map { $0.formatCode },
+                    tableNameCache: self.tableNameCache
+                )
                 onRow(parsed)
             case .close: break // query over, waiting for `readyForQuery`
             default: throw PostgreSQLError(identifier: "simpleQuery", reason: "Unexpected message during PostgreSQLQuery: \(message)", source: .capture())

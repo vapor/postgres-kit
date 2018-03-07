@@ -29,7 +29,7 @@ extension PostgreSQLPoint: Equatable {
     }
 }
 
-extension PostgreSQLPoint: PostgreSQLDataCustomConvertible {
+extension PostgreSQLPoint: PostgreSQLDataConvertible {
     /// See `PostgreSQLDataCustomConvertible.postgreSQLDataType`
     public static var postgreSQLDataType: PostgreSQLDataType { return .point }
 

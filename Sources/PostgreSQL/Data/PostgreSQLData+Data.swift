@@ -1,6 +1,6 @@
 import Foundation
 
-extension Data: PostgreSQLDataCustomConvertible {
+extension Data: PostgreSQLDataConvertible {
     /// See `PostgreSQLDataCustomConvertible.postgreSQLDataType`
     public static var postgreSQLDataType: PostgreSQLDataType { return .bytea }
 
