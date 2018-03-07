@@ -17,6 +17,9 @@ public final class PostgreSQLConnection {
     /// If non-nil, will log queries.
     public var logger: PostgreSQLLogger?
 
+    /// Caches oid -> table name data.
+    internal var tableNameCache: PostgreSQLTableNameCache?
+
     /// Creates a new Redis client on the provided data source and sink.
     init(queue: QueueHandler<PostgreSQLMessage, PostgreSQLMessage>, channel: Channel) {
         self.queue = queue

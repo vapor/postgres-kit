@@ -18,7 +18,7 @@ extension OptionalType {
     }
 }
 
-extension Optional: PostgreSQLDataCustomConvertible {
+extension Optional: PostgreSQLDataConvertible {
     /// See `PostgreSQLDataCustomConvertible.postgreSQLDataType`
     public static var postgreSQLDataType: PostgreSQLDataType {
         return requirePostgreSQLDataCustomConvertible(Wrapped.self).postgreSQLDataType

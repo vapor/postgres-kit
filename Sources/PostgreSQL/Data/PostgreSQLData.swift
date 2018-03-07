@@ -21,7 +21,11 @@ public struct PostgreSQLData {
 extension PostgreSQLData: CustomStringConvertible {
     /// See `CustomStringConvertible.description`
     public var description: String {
-        return "\(type) (\(format)) \(data?.hexDebug ?? "null")"
+        if let data = data {
+            return "\(type) (\(format)) \(String(data: data, encoding: .ascii) ?? "<non-ascii>"))"
+        } else {
+            return "\(type) (\(format)) <null>"
+        }
     }
 }
 

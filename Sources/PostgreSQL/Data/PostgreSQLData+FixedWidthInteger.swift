@@ -71,17 +71,17 @@ extension FixedWidthInteger {
     }
 }
 
-extension Int: PostgreSQLDataCustomConvertible {}
-extension Int8: PostgreSQLDataCustomConvertible {}
-extension Int16: PostgreSQLDataCustomConvertible {}
-extension Int32: PostgreSQLDataCustomConvertible {}
-extension Int64: PostgreSQLDataCustomConvertible {}
+extension Int: PostgreSQLDataConvertible {}
+extension Int8: PostgreSQLDataConvertible {}
+extension Int16: PostgreSQLDataConvertible {}
+extension Int32: PostgreSQLDataConvertible {}
+extension Int64: PostgreSQLDataConvertible {}
 
-extension UInt: PostgreSQLDataCustomConvertible {}
-extension UInt8: PostgreSQLDataCustomConvertible {}
-extension UInt16: PostgreSQLDataCustomConvertible {}
-extension UInt32: PostgreSQLDataCustomConvertible {}
-extension UInt64: PostgreSQLDataCustomConvertible {}
+extension UInt: PostgreSQLDataConvertible {}
+extension UInt8: PostgreSQLDataConvertible {}
+extension UInt16: PostgreSQLDataConvertible {}
+extension UInt32: PostgreSQLDataConvertible {}
+extension UInt64: PostgreSQLDataConvertible {}
 
 extension Data {
     /// Converts this data to a fixed-width integer.
