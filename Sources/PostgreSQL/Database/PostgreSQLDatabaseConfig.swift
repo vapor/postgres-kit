@@ -31,12 +31,13 @@ public struct PostgreSQLDatabaseConfig {
         self.password = password
     }
 
-    public init(connectionString: String) throws {
-        guard let url = URL(string: connectionString),
-            let hostname = url.host,
-            let port = url.port,
-            let username = url.user,
-            let database = URL(string: connectionString)?.path,
+    /// Creates a `PostgreSQLDatabaseConfig` frome a connection string.
+    public init(url: String) throws {
+        guard let urL = URL(string: url),
+            let hostname = urL.host,
+            let port = urL.port,
+            let username = urL.user,
+            let database = URL(string: url)?.path,
             database.count > 0
              else {
                 throw PostgreSQLError(identifier: "Bad Connection String",
@@ -49,6 +50,6 @@ public struct PostgreSQLDatabaseConfig {
         self.port = port
         self.username = username
         self.database = database
-        self.password = url.password
+        self.password = urL.password
     }
 }
