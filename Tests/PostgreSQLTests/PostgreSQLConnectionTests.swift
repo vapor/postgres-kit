@@ -7,14 +7,14 @@ class PostgreSQLConnectionTests: XCTestCase {
     func testVersion() throws {
         let client = try PostgreSQLConnection.makeTest()
         let results = try client.simpleQuery("SELECT version();").wait()
-        try XCTAssert(results[0]["version"]?.decode(String.self).contains("10.") == true)
+        try XCTAssert(results[0].firstValue(forColumn: "version")?.decode(String.self).contains("10.") == true)
     }
 
     func testSelectTypes() throws {
         let client = try PostgreSQLConnection.makeTest()
         let results = try client.query("select * from pg_type;").wait()
         if results.count > 350 {
-            let name = try results[128]["typname"]?.decode(String.self)
+            let name = try results[128].firstValue(forColumn: "typname")?.decode(String.self)
             XCTAssert(name != "")
         } else {
             XCTFail("Results count not large enough: \(results.count)")
@@ -29,7 +29,10 @@ class PostgreSQLConnectionTests: XCTestCase {
         let rows = try client.query(query, [1, 2]).wait()
 
         for row in rows {
-            try XCTAssert(row["typlen"]?.decode(Int.self) == 1 || row["typlen"]?.decode(Int.self) == 2)
+            try XCTAssert(
+                row.firstValue(forColumn: "typlen")?.decode(Int.self) == 1 ||
+                row.firstValue(forColumn: "typlen")?.decode(Int.self) == 2
+            )
         }
     }
 
@@ -106,21 +109,21 @@ class PostgreSQLConnectionTests: XCTestCase {
         let queryResult = try client.query("select * from kitchen_sink").wait()
         if queryResult.count == 1 {
             let row = queryResult[0]
-            try XCTAssertEqual(row["smallint"]?.decode(Int16.self), 1)
-            try XCTAssertEqual(row["integer"]?.decode(Int32.self), 2)
-            try XCTAssertEqual(row["bigint"]?.decode(Int64.self), 3)
-            try XCTAssertEqual(row["decimal"]?.decode(String.self), "4")
-            try XCTAssertEqual(row["real"]?.decode(Float.self), 6)
-            try XCTAssertEqual(row["double"]?.decode(Double.self), 7)
-            try XCTAssertEqual(row["varchar"]?.decode(String.self), "9")
-            try XCTAssertEqual(row["char"]?.decode(String.self), "10  ")
-            try XCTAssertEqual(row["text"]?.decode(String.self), "11")
-            try XCTAssertEqual(row["bytea"]?.decode(Data.self), Data([0x31, 0x32]))
-            try XCTAssertEqual(row["boolean"]?.decode(Bool.self), true)
-            try XCTAssertNotNil(row["timestamp"]?.decode(Date.self))
-            try XCTAssertNotNil(row["date"]?.decode(Date.self))
-            try XCTAssertNotNil(row["time"]?.decode(Date.self))
-            try XCTAssertEqual(row["point"]?.decode(PostgreSQLPoint.self), PostgreSQLPoint(x: 13.5, y: 14))
+            try XCTAssertEqual(row.firstValue(forColumn: "smallint")?.decode(Int16.self), 1)
+            try XCTAssertEqual(row.firstValue(forColumn: "integer")?.decode(Int32.self), 2)
+            try XCTAssertEqual(row.firstValue(forColumn: "bigint")?.decode(Int64.self), 3)
+            try XCTAssertEqual(row.firstValue(forColumn: "decimal")?.decode(String.self), "4")
+            try XCTAssertEqual(row.firstValue(forColumn: "real")?.decode(Float.self), 6)
+            try XCTAssertEqual(row.firstValue(forColumn: "double")?.decode(Double.self), 7)
+            try XCTAssertEqual(row.firstValue(forColumn: "varchar")?.decode(String.self), "9")
+            try XCTAssertEqual(row.firstValue(forColumn: "char")?.decode(String.self), "10  ")
+            try XCTAssertEqual(row.firstValue(forColumn: "text")?.decode(String.self), "11")
+            try XCTAssertEqual(row.firstValue(forColumn: "bytea")?.decode(Data.self), Data([0x31, 0x32]))
+            try XCTAssertEqual(row.firstValue(forColumn: "boolean")?.decode(Bool.self), true)
+            try XCTAssertNotNil(row.firstValue(forColumn: "timestamp")?.decode(Date.self))
+            try XCTAssertNotNil(row.firstValue(forColumn: "date")?.decode(Date.self))
+            try XCTAssertNotNil(row.firstValue(forColumn: "time")?.decode(Date.self))
+            try XCTAssertEqual(row.firstValue(forColumn: "point")?.decode(PostgreSQLPoint.self), PostgreSQLPoint(x: 13.5, y: 14))
         } else {
             XCTFail("query result count is: \(queryResult.count)")
         }
@@ -197,7 +200,7 @@ class PostgreSQLConnectionTests: XCTestCase {
         );
         """
 
-        var params: [PostgreSQLDataCustomConvertible] = []
+        var params: [PostgreSQLDataConvertible] = []
         params += Int16(1) // smallint
         params += Int32(2) // integer
         params += Int64(3) // bigint
@@ -223,23 +226,23 @@ class PostgreSQLConnectionTests: XCTestCase {
         let parameterizedResult = try client.query("select * from kitchen_sink").wait()
         if parameterizedResult.count == 1 {
             let row = parameterizedResult[0]
-            try XCTAssertEqual(row["smallint"]?.decode(Int16.self), 1)
-            try XCTAssertEqual(row["integer"]?.decode(Int32.self), 2)
-            try XCTAssertEqual(row["bigint"]?.decode(Int64.self), 3)
-            try XCTAssertEqual(row["decimal"]?.decode(String.self), "123456789.123456789")
-            try XCTAssertEqual(row["real"]?.decode(Float.self), 6)
-            try XCTAssertEqual(row["double"]?.decode(Double.self), 7)
-            try XCTAssertEqual(row["varchar"]?.decode(String.self), "8")
-            try XCTAssertEqual(row["char"]?.decode(String.self), "9   ")
-            try XCTAssertEqual(row["text"]?.decode(String.self), "10")
-            try XCTAssertEqual(row["bytea"]?.decode(Data.self), Data([0x31, 0x32]))
-            try XCTAssertEqual(row["boolean"]?.decode(Bool.self), true)
-            try XCTAssertNotNil(row["timestamp"]?.decode(Date.self))
-            try XCTAssertNotNil(row["date"]?.decode(Date.self))
-            try XCTAssertNotNil(row["time"]?.decode(Date.self))
-            try XCTAssertEqual(row["point"]?.decode(String.self), "(11.4,12.0)")
-            try XCTAssertNotNil(row["uuid"]?.decode(UUID.self))
-            try XCTAssertEqual(row["array"]?.decode([PostgreSQLPoint].self).first?.x, 1.0)
+            try XCTAssertEqual(row.firstValue(forColumn: "smallint")?.decode(Int16.self), 1)
+            try XCTAssertEqual(row.firstValue(forColumn: "integer")?.decode(Int32.self), 2)
+            try XCTAssertEqual(row.firstValue(forColumn: "bigint")?.decode(Int64.self), 3)
+            try XCTAssertEqual(row.firstValue(forColumn: "decimal")?.decode(String.self), "123456789.123456789")
+            try XCTAssertEqual(row.firstValue(forColumn: "real")?.decode(Float.self), 6)
+            try XCTAssertEqual(row.firstValue(forColumn: "double")?.decode(Double.self), 7)
+            try XCTAssertEqual(row.firstValue(forColumn: "varchar")?.decode(String.self), "8")
+            try XCTAssertEqual(row.firstValue(forColumn: "char")?.decode(String.self), "9   ")
+            try XCTAssertEqual(row.firstValue(forColumn: "text")?.decode(String.self), "10")
+            try XCTAssertEqual(row.firstValue(forColumn: "bytea")?.decode(Data.self), Data([0x31, 0x32]))
+            try XCTAssertEqual(row.firstValue(forColumn: "boolean")?.decode(Bool.self), true)
+            try XCTAssertNotNil(row.firstValue(forColumn: "timestamp")?.decode(Date.self))
+            try XCTAssertNotNil(row.firstValue(forColumn: "date")?.decode(Date.self))
+            try XCTAssertNotNil(row.firstValue(forColumn: "time")?.decode(Date.self))
+            try XCTAssertEqual(row.firstValue(forColumn: "point")?.decode(String.self), "(11.4,12.0)")
+            try XCTAssertNotNil(row.firstValue(forColumn: "uuid")?.decode(UUID.self))
+            try XCTAssertEqual(row.firstValue(forColumn: "array")?.decode([PostgreSQLPoint].self).first?.x, 1.0)
         } else {
             XCTFail("parameterized result count is: \(parameterizedResult.count)")
         }
@@ -262,8 +265,8 @@ class PostgreSQLConnectionTests: XCTestCase {
         let parameterizedResult = try client.query("select * from foo").wait()
         if parameterizedResult.count == 1 {
             let row = parameterizedResult[0]
-            try XCTAssertEqual(row["id"]?.decode(Int.self), 1)
-            try XCTAssertEqual(row["dict"]?.decode(Hello.self).message, "hello, world")
+            try XCTAssertEqual(row.firstValue(forColumn: "id")?.decode(Int.self), 1)
+            try XCTAssertEqual(row.firstValue(forColumn: "dict")?.decode(Hello.self).message, "hello, world")
         } else {
             XCTFail("parameterized result count is: \(parameterizedResult.count)")
         }

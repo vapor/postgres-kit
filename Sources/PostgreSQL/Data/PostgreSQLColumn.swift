@@ -24,9 +24,9 @@ extension PostgreSQLColumn: CustomStringConvertible {
 
 extension Dictionary where Key == PostgreSQLColumn {
     /// Accesses the _first_ value from this dictionary with a matching field name.
-    public func firstValue(forField fieldName: String) -> Value? {
+    public func firstValue(forColumn columnName: String) -> Value? {
         for (field, value) in self {
-            if field.name == fieldName {
+            if field.name == columnName {
                 return value
             }
         }
@@ -35,8 +35,8 @@ extension Dictionary where Key == PostgreSQLColumn {
 
     /// Access a `Value` from this dictionary keyed by `PostgreSQLColumn`s
     /// using a field (column) name and entity (table) name.
-    public func value(forTable table: String, atField field: String) -> Value? {
-        return self[PostgreSQLColumn(table: table, name: field)]
+    public func value(forTable table: String, atColumn column: String) -> Value? {
+        return self[PostgreSQLColumn(table: table, name: column)]
     }
 }
 
@@ -73,7 +73,7 @@ final class PostgreSQLTableNameCache {
                 .wait()
             let new: String?
             if res.count > 0 {
-                new = try res[0].firstValue(forField: "relname")!.decode(String.self)
+                new = try res[0].firstValue(forColumn: "relname")!.decode(String.self)
             } else {
                 new = nil
             }

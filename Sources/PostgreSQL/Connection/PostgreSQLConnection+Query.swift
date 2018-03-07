@@ -67,7 +67,7 @@ extension PostgreSQLConnection {
                     let parsed = try row.parse(
                         data: data,
                         formatCodes: resultFormats,
-                        tableNameCache: self.tableNameCache!
+                        tableNameCache: self.tableNameCache
                     )
                     try onRow(parsed)
                 case .close: break
