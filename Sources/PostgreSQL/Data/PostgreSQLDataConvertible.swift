@@ -40,17 +40,17 @@ extension PostgreSQLData: PostgreSQLDataConvertible {
 
 extension RawRepresentable where RawValue: PostgreSQLDataConvertible {
     /// See `PostgreSQLDataCustomConvertible.postgreSQLDataType`
-    static var postgreSQLDataType: PostgreSQLDataType {
-        return Self.postgreSQLDataType
+    public static var postgreSQLDataType: PostgreSQLDataType {
+        return RawValue.postgreSQLDataType
     }
 
     /// See `PostgreSQLDataCustomConvertible.postgreSQLDataArrayType`
-    static var postgreSQLDataArrayType: PostgreSQLDataType {
-        return Self.postgreSQLDataArrayType
+    public static var postgreSQLDataArrayType: PostgreSQLDataType {
+        return RawValue.postgreSQLDataArrayType
     }
 
     /// See `PostgreSQLDataCustomConvertible.convertFromPostgreSQLData(_:)`
-    static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> Self {
+    public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> Self {
         let aRawValue = try RawValue.convertFromPostgreSQLData(data)
         guard let enumValue = Self(rawValue: aRawValue) else {
             throw PostgreSQLError(identifier: "invalidRawValue", reason: "Unable to decode RawRepresentable from the database value.", source: .capture())
@@ -59,7 +59,7 @@ extension RawRepresentable where RawValue: PostgreSQLDataConvertible {
     }
 
     /// See `PostgreSQLDataCustomConvertible.convertToPostgreSQLData()`
-    func convertToPostgreSQLData() throws -> PostgreSQLData {
+    public func convertToPostgreSQLData() throws -> PostgreSQLData {
         return try self.rawValue.convertToPostgreSQLData()
     }
 }
