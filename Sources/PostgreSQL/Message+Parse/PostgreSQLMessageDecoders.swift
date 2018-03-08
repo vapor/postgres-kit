@@ -29,25 +29,25 @@ final class _PostgreSQLMessageDecoder: Decoder, SingleValueDecodingContainer {
     /// See SingleValueDecodingContainer.decode
     func decode(_ type: UInt8.Type) throws -> UInt8 {
         VERBOSE("_PostgreSQLMessageDecoder.decode(_: \(type))")
-        return try data.requireReadInteger(or: PostgreSQLError(identifier: "decodeUInt8", reason: "Could not decode UInt8", source: .capture()))
+        return try data.requireReadInteger()
     }
 
     /// See SingleValueDecodingContainer.decode
     func decode(_ type: Int16.Type) throws -> Int16 {
         VERBOSE("_PostgreSQLMessageDecoder.decode(_: \(type))")
-        return try data.requireReadInteger(or: PostgreSQLError(identifier: "decodeInt16", reason: "Could not decode Int16", source: .capture()))
+        return try data.requireReadInteger()
     }
 
     /// See SingleValueDecodingContainer.decode
     func decode(_ type: Int32.Type) throws -> Int32 {
         VERBOSE("_PostgreSQLMessageDecoder.decode(_: \(type))")
-        return try data.requireReadInteger(or: PostgreSQLError(identifier: "decodeInt32", reason: "Could not decode Int32", source: .capture()))
+        return try data.requireReadInteger()
     }
 
     /// See SingleValueDecodingContainer.decode
     func decode(_ type: String.Type) throws -> String {
         VERBOSE("_PostgreSQLMessageDecoder.decode(_: \(type))")
-        return try data.requireReadNullTerminatedString(or: PostgreSQLError(identifier: "decodeString", reason: "Could not decode String", source: .capture()))
+        return try data.requireReadNullTerminatedString()
     }
 
     /// See SingleValueDecodingContainer.decode
@@ -66,20 +66,6 @@ final class _PostgreSQLMessageDecoder: Decoder, SingleValueDecodingContainer {
             return try T(from: self)
         }
     }
-
-//    /// See SingleValueDecodingContainer.decodeIfPresent
-//    func decodeIfPresent<T>(_ type: T?) throws -> T? where T: Decodable {
-//        VERBOSE("_PostgreSQLMessageDecoder.decodeIfPresent(_: \(T.self)?)")
-//        if T.self == Data.self {
-//            let count: Int32 = try data.requireReadInteger(source: .capture())
-//            switch count {
-//            case -1: return nil
-//            default: return data.readData(length: Int(count)) as? T
-//            }
-//        } else {
-//            return nil
-//        }
-//    }
 
     /// See SingleValueDecodingContainer.decodeNil
     func decodeNil() -> Bool {
