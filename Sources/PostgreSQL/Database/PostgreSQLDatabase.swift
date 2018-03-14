@@ -14,8 +14,7 @@ public final class PostgreSQLDatabase: Database {
     /// Creates a new `PostgreSQLDatabase`.
     public init(config: PostgreSQLDatabaseConfig) {
         self.config = config
-        let group = MultiThreadedEventLoopGroup(numThreads: 1)
-        self.tableNameCache = PostgreSQLTableNameCache(connection: makeConnection(on: group))
+        self.tableNameCache = PostgreSQLTableNameCache(connection: makeConnection(on: EmbeddedEventLoop()))
     }
 
     /// See `Database.makeConnection()`
