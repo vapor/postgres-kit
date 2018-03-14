@@ -2,6 +2,7 @@ import Async
 import Foundation
 import XCTest
 import PostgreSQL
+import Core
 
 class PostgreSQLConnectionTests: XCTestCase {
     func testVersion() throws {
@@ -356,11 +357,17 @@ class PostgreSQLConnectionTests: XCTestCase {
 extension PostgreSQLConnection {
     /// Creates a test event loop and psql client.
     static func makeTest() throws -> PostgreSQLConnection {
+        let hostname: String
+        #if TEST_DOCKER_HOSTNAME
+        hostname = try Process.execute("docker-machine", "ip")
+        #else
+        hostname = "localhost"
+        #endif
         let group = MultiThreadedEventLoopGroup(numThreads: 1)
-        let client = try PostgreSQLConnection.connect(on: group) { error in
+        let client = try PostgreSQLConnection.connect(hostname: hostname, on: group) { error in
             XCTFail("\(error)")
         }.wait()
-        _ = try client.authenticate(username: "vapor_username", database: "vapor_database", password: "vapor_password").wait()
+        _ = try client.authenticate(username: "vapor_username", database: "vapor_database", password: nil).wait()
         return client
     }
 }

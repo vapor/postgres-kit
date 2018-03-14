@@ -23,7 +23,7 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-nio.git", from: "1.0.0"),
     ],
     targets: [
-        .target(name: "PostgreSQL", dependencies: ["Async", "Bits", "Crypto", "DatabaseKit", "NIO", "Service"]),
-        .testTarget(name: "PostgreSQLTests", dependencies: ["PostgreSQL"]),
+        .target(name: "PostgreSQL", dependencies: ["Async", "Bits", "Core", "Crypto", "DatabaseKit", "NIO", "Service"]),
+        .testTarget(name: "PostgreSQLTests", dependencies: ["Core", "PostgreSQL"]),
     ]
 )
