@@ -360,7 +360,7 @@ extension PostgreSQLConnection {
         let client = try PostgreSQLConnection.connect(on: group) { error in
             XCTFail("\(error)")
         }.wait()
-        _ = try client.authenticate(username: "postgres").wait()
+        _ = try client.authenticate(username: "vapor_username", database: "vapor_database", password: "vapor_password").wait()
         return client
     }
 }
