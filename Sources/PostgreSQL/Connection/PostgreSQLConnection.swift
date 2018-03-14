@@ -18,7 +18,7 @@ public final class PostgreSQLConnection {
     public var logger: PostgreSQLLogger?
 
     /// Caches oid -> table name data.
-    internal var tableNameCache: PostgreSQLTableNameCache?
+    internal weak var tableNameCache: PostgreSQLTableNameCache?
 
     /// Creates a new Redis client on the provided data source and sink.
     init(queue: QueueHandler<PostgreSQLMessage, PostgreSQLMessage>, channel: Channel) {
