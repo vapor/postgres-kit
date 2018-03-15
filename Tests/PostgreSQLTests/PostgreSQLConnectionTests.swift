@@ -338,8 +338,8 @@ class PostgreSQLConnectionTests: XCTestCase {
         SELECT "categories".* FROM "categories" WHERE ("categories"."id" = $1) LIMIT 1 OFFSET 0
         """, [1])
 
-        try print(acronyms.wait())
-        try print(categories.wait())
+        _ = try acronyms.wait()
+        _ = try categories.wait()
     }
 
     static var allTests = [
