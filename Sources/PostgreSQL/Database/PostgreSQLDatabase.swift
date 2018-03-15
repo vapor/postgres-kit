@@ -12,9 +12,9 @@ public final class PostgreSQLDatabase: Database {
     internal var tableNameCache: PostgreSQLTableNameCache?
 
     /// Creates a new `PostgreSQLDatabase`.
-    public init(config: PostgreSQLDatabaseConfig) {
+    public init(config: PostgreSQLDatabaseConfig, on worker: Worker) {
         self.config = config
-        self.tableNameCache = PostgreSQLTableNameCache(connection: makeConnection(on: EmbeddedEventLoop()))
+        self.tableNameCache = PostgreSQLTableNameCache(connection: makeConnection(on: worker))
     }
 
     /// See `Database.makeConnection()`
