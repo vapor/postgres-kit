@@ -2,13 +2,13 @@ import Async
 import NIO
 
 extension PostgreSQLConnection {
-    /// Connects to a Redis server using a TCP socket.
+    /// Connects to a PostgreSQL server using a TCP socket.
     public static func connect(
         hostname: String = "localhost",
         port: Int = 5432,
         on worker: Worker,
         onError: @escaping (Error) -> ()
-    ) throws -> Future<PostgreSQLConnection> {
+    ) -> Future<PostgreSQLConnection> {
         let handler = QueueHandler<PostgreSQLMessage, PostgreSQLMessage>(on: worker, onError: onError)
         let bootstrap = ClientBootstrap(group: worker.eventLoop)
             // Enable SO_REUSEADDR.
