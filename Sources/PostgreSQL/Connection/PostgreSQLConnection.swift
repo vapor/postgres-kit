@@ -25,6 +25,10 @@ public final class PostgreSQLConnection {
         self.queue = queue
         self.channel = channel
     }
+    
+    deinit {
+        close()
+    }
 
     /// Sends `PostgreSQLMessage` to the server.
     func send(_ messages: [PostgreSQLMessage], onResponse: @escaping (PostgreSQLMessage) throws -> ()) -> Future<Void> {
