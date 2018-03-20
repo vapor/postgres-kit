@@ -8,7 +8,7 @@ public final class PostgreSQLConnection {
         return channel.eventLoop
     }
 
-    /// Handles enqueued redis commands and responses.
+    /// Handles enqueued PostgreSQL commands and responses.
     private let queue: QueueHandler<PostgreSQLMessage, PostgreSQLMessage>
 
     /// The channel
@@ -20,7 +20,7 @@ public final class PostgreSQLConnection {
     /// Caches oid -> table name data.
     internal weak var tableNameCache: PostgreSQLTableNameCache?
 
-    /// Creates a new Redis client on the provided data source and sink.
+    /// Creates a new PostgreSQL client on the provided data source and sink.
     init(queue: QueueHandler<PostgreSQLMessage, PostgreSQLMessage>, channel: Channel) {
         self.queue = queue
         self.channel = channel
