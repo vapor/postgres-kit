@@ -38,6 +38,10 @@ public final class PostgreSQLConnection {
         self.channel = channel
         self.uniqueNameCounter = 0
     }
+    
+    deinit {
+        close()
+    }
 
     /// Sends `PostgreSQLMessage` to the server.
     func send(_ messages: [PostgreSQLMessage], onResponse: @escaping (PostgreSQLMessage) throws -> ()) -> Future<Void> {
