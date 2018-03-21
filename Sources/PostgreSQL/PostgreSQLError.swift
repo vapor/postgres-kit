@@ -27,3 +27,9 @@ public struct PostgreSQLError: Debuggable {
         self.suggestedFixes = suggestedFixes
     }
 }
+
+func VERBOSE(_ string: @autoclosure () -> (String)) {
+    #if VERBOSE
+    print("[VERBOSE] [PostgreSQL] \(string())")
+    #endif
+}

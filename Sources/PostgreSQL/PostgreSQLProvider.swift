@@ -1,3 +1,4 @@
+import Async
 import Service
 
 /// Provides base `PostgreSQL` services such as database and connection.
@@ -19,7 +20,9 @@ public final class PostgreSQLProvider: Provider {
     }
 
     /// See `Provider.boot`
-    public func boot(_ worker: Container) throws { }
+    public func didBoot(_ worker: Container) throws -> Future<Void> {
+        return .done(on: worker)
+    }
 }
 
 /// MARK: Services
@@ -33,6 +36,6 @@ extension PostgreSQLDatabaseConfig: ServiceType {
 extension PostgreSQLDatabase: ServiceType {
     /// See `ServiceType.makeService(for:)`
     public static func makeService(for worker: Container) throws -> PostgreSQLDatabase {
-        return try .init(config: worker.make(for: PostgreSQLDatabase.self))
+        return try .init(config: worker.make(), on: worker)
     }
 }

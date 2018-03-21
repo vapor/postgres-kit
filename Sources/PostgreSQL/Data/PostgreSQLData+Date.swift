@@ -1,6 +1,6 @@
 import Foundation
 
-extension Date: PostgreSQLDataCustomConvertible {
+extension Date: PostgreSQLDataConvertible {
     /// See `PostgreSQLDataCustomConvertible.postgreSQLDataType`
     public static var postgreSQLDataType: PostgreSQLDataType { return .timestamp }
 
@@ -24,8 +24,8 @@ extension Date: PostgreSQLDataCustomConvertible {
             switch data.type {
             case .timestamp, .time:
                 let microseconds = try value.makeFixedWidthInteger(Int64.self)
-                let seconds = microseconds / _microsecondsPerSecond
-                return Date(timeInterval: Double(seconds), since: _psqlDateStart)
+                let seconds = Double(microseconds) / Double(_microsecondsPerSecond)
+                return Date(timeInterval: seconds, since: _psqlDateStart)
             case .date:
                 let days = try value.makeFixedWidthInteger(Int32.self)
                 let seconds = days * _secondsInDay
@@ -37,7 +37,7 @@ extension Date: PostgreSQLDataCustomConvertible {
 
     /// See `PostgreSQLDataCustomConvertible.convertToPostgreSQLData()`
     public func convertToPostgreSQLData() throws -> PostgreSQLData {
-        return PostgreSQLData(type: .timestamp, format: .text, data: Data(description.utf8))
+        return PostgreSQLData(type: .timestamp, format: .binary, data: Int64(self.timeIntervalSince(_psqlDateStart) * Double(_microsecondsPerSecond)).data)
     }
 }
 

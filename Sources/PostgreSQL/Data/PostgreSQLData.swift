@@ -8,6 +8,11 @@ public struct PostgreSQLData {
     /// The data's format.
     public var format: PostgreSQLFormatCode
 
+    /// If `true`, this data is null.
+    public var isNull: Bool {
+        return data == nil
+    }
+
     /// The actual data.
     public var data: Data?
 
@@ -21,7 +26,11 @@ public struct PostgreSQLData {
 extension PostgreSQLData: CustomStringConvertible {
     /// See `CustomStringConvertible.description`
     public var description: String {
-        return "\(type) (\(format)) \(data?.hexDebug ?? "null")"
+        if let data = data {
+            return "\(type) (\(format)) \(String(data: data, encoding: .ascii) ?? "<non-ascii>"))"
+        } else {
+            return "\(type) (\(format)) <null>"
+        }
     }
 }
 

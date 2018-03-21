@@ -1,11 +1,9 @@
 import Bits
 import Foundation
+import NIO
+import Debugging
 
-extension Data {
-    public var hexDebug: String {
-        return "0x" + map { String(format: "%02X", $0) }.joined(separator: " ")
-    }
-}
+
 
 extension UnsafeBufferPointer {
     public var unsafeBaseAddress: UnsafePointer<Element> {

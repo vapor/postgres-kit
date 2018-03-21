@@ -64,8 +64,8 @@ extension BinaryFloatingPoint {
     }
 }
 
-extension Double: PostgreSQLDataCustomConvertible { }
-extension Float: PostgreSQLDataCustomConvertible { }
+extension Double: PostgreSQLDataConvertible { }
+extension Float: PostgreSQLDataConvertible { }
 
 extension Data {
     /// Converts this data to a floating-point number.

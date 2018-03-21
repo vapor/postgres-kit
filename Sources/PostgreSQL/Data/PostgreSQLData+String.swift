@@ -1,6 +1,6 @@
 import Foundation
 
-extension String: PostgreSQLDataCustomConvertible {
+extension String: PostgreSQLDataConvertible {
     /// See `PostgreSQLDataCustomConvertible.postgreSQLDataType`
     public static var postgreSQLDataType: PostgreSQLDataType { return .text }
 

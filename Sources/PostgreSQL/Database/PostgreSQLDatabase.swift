@@ -9,30 +9,30 @@ public final class PostgreSQLDatabase: Database {
     public var logger: PostgreSQLLogger?
 
     /// Creates a new `PostgreSQLDatabase`.
-    public init(config: PostgreSQLDatabaseConfig) {
+    public init(config: PostgreSQLDatabaseConfig, on worker: Worker) {
         self.config = config
     }
 
     /// See `Database.makeConnection()`
     public func makeConnection(on worker: Worker) -> Future<PostgreSQLConnection> {
-        do {
-            let client = try PostgreSQLConnection.connect(hostname: config.hostname, port: config.port, on: worker) { _, error in
+        let config = self.config
+        return Future.flatMap(on: worker) {
+            return try PostgreSQLConnection.connect(hostname: config.hostname, port: config.port, on: worker) { error in
                 print("[PostgreSQL] \(error)")
+            }.flatMap(to: PostgreSQLConnection.self) { client in
+                client.logger = self.logger
+                return client.authenticate(
+                    username: config.username,
+                    database: config.database,
+                    password: config.password
+                ).transform(to: client)
             }
-            client.logger = logger
-            return client.authenticate(
-                username: config.username, 
-                database: config.database,
-                password: config.password
-            ).transform(to: client)
-        } catch {
-            return Future(error: error)
         }
     }
 }
 
 /// A connection created by a `PostgreSQLDatabase`.
-extension PostgreSQLConnection: DatabaseConnection { }
+extension PostgreSQLConnection: DatabaseConnection, BasicWorker { }
 
 extension DatabaseIdentifier {
     /// Default identifier for `PostgreSQLDatabase`.
