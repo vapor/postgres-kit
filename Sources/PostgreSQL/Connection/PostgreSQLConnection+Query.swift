@@ -58,13 +58,7 @@ extension PostgreSQLConnection {
                 guard let row = currentRow else {
                     throw PostgreSQLError(identifier: "query", reason: "Unexpected PostgreSQLDataRow without preceding PostgreSQLRowDescription.", source: .capture())
                 }
-                print("before parse")
-                let parsed = try row.parse(
-                    data: data,
-                    formatCodes: resultFormat.formatCodes,
-                    tableNameCache: self.tableNameCache
-                )
-                print("after parse")
+                let parsed = try row.parse(data: data, formatCodes: resultFormat.formatCodes)
                 try onRow(parsed)
             case .close: break
             default: throw PostgreSQLError(identifier: "query", reason: "Unexpected message during PostgreSQLParseRequest: \(message)", source: .capture())

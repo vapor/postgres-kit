@@ -17,9 +17,6 @@ public final class PostgreSQLConnection {
     /// If non-nil, will log queries.
     public var logger: PostgreSQLLogger?
 
-    /// Caches oid -> table name data.
-    internal var tableNameCache: PostgreSQLTableNameCache?
-
     /// Returns a new unique portal name.
     internal var nextPortalName: String {
         defer { uniqueNameCounter = uniqueNameCounter &+ 1 }

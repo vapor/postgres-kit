@@ -25,11 +25,7 @@ extension PostgreSQLConnection {
                 guard let row = currentRow else {
                     throw PostgreSQLError(identifier: "simpleQuery", reason: "Unexpected PostgreSQLDataRow without preceding PostgreSQLRowDescription.", source: .capture())
                 }
-                let parsed = try row.parse(
-                    data: data,
-                    formatCodes: row.fields.map { $0.formatCode },
-                    tableNameCache: self.tableNameCache
-                )
+                let parsed = try row.parse(data: data, formatCodes: row.fields.map { $0.formatCode })
                 onRow(parsed)
             case .close: break // query over, waiting for `readyForQuery`
             default: throw PostgreSQLError(identifier: "simpleQuery", reason: "Unexpected message during PostgreSQLQuery: \(message)", source: .capture())

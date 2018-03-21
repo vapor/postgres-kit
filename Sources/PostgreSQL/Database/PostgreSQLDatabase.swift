@@ -8,13 +8,9 @@ public final class PostgreSQLDatabase: Database {
     /// If non-nil, will log queries.
     public var logger: PostgreSQLLogger?
 
-    /// Caches oid -> table name data.
-    internal var tableNameCache: PostgreSQLTableNameCache?
-
     /// Creates a new `PostgreSQLDatabase`.
     public init(config: PostgreSQLDatabaseConfig, on worker: Worker) {
         self.config = config
-        self.tableNameCache = PostgreSQLTableNameCache(connection: makeConnection(on: worker))
     }
 
     /// See `Database.makeConnection()`
@@ -25,7 +21,6 @@ public final class PostgreSQLDatabase: Database {
                 print("[PostgreSQL] \(error)")
             }.flatMap(to: PostgreSQLConnection.self) { client in
                 client.logger = self.logger
-                client.tableNameCache = self.tableNameCache
                 return client.authenticate(
                     username: config.username,
                     database: config.database,

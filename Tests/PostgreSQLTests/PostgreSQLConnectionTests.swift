@@ -342,34 +342,6 @@ class PostgreSQLConnectionTests: XCTestCase {
         _ = try categories.wait()
     }
 
-    func testTableNameCache() throws {
-        let hostname: String
-        #if Xcode
-        hostname = try Process.execute("docker-machine", "ip")
-        #else
-        hostname = "localhost"
-        #endif
-        let config = PostgreSQLDatabaseConfig.init(
-            hostname: hostname,
-            port: 5432,
-            username: "vapor_username",
-            database: "vapor_database",
-            password: nil
-        )
-        let main = MultiThreadedEventLoopGroup(numThreads: 1)
-        defer { try! main.syncShutdownGracefully() }
-        let sub = MultiThreadedEventLoopGroup(numThreads: 1)
-        defer { try! sub.syncShutdownGracefully() }
-
-        let database = PostgreSQLDatabase(config: config, on: main)
-        let client = try database.makeConnection(on: sub).wait()
-        let query = """
-        select * from "pg_type" where "typlen" = $1 or "typlen" = $2
-        """
-        let rows = try client.query(query, [1, 2]).wait()
-        XCTAssertEqual(rows[0].keys.first?.table, "pg_type")
-    }
-
     static var allTests = [
         ("testVersion", testVersion),
         ("testSelectTypes", testSelectTypes),
@@ -379,7 +351,6 @@ class PostgreSQLConnectionTests: XCTestCase {
         ("testStruct", testStruct),
         ("testNull", testNull),
         ("testGH24", testGH24),
-        ("testTableNameCache", testTableNameCache),
     ]
 }
 
@@ -388,7 +359,7 @@ extension PostgreSQLConnection {
     static func makeTest() throws -> PostgreSQLConnection {
         let hostname: String
         #if Xcode
-        hostname = try Process.execute("docker-machine", "ip")
+        hostname = (try? Process.execute("docker-machine", "ip")) ?? "192.168.99.100"
         #else
         hostname = "localhost"
         #endif
