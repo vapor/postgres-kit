@@ -23,7 +23,7 @@ public struct PostgreSQLDatabaseConfig {
     public let password: String?
     
     /// Creates a new `PostgreSQLDatabaseConfig`.
-    public init(hostname: String, port: Int, username: String, database: String? = nil, password: String? = nil) {
+    public init(hostname: String, port: Int = 5432, username: String, database: String? = nil, password: String? = nil) {
         self.hostname = hostname
         self.port = port
         self.username = username
