@@ -9,16 +9,11 @@ public enum PostgreSQLFormatCode: Int16, Codable {
 
 public struct PostgreSQLResultFormat {
     /// The format codes
-    internal let formatCodeFactory: ([PostgreSQLDataType]) -> [PostgreSQLFormatCode]
-
-    /// Dynamically choose result format based on data type.
-    public static func dynamic(_ callback: @escaping (PostgreSQLDataType) -> PostgreSQLFormatCode) -> PostgreSQLResultFormat {
-        return .init { return $0.map { callback($0) } }
-    }
+    internal let formatCodes: [PostgreSQLFormatCode]
 
     /// Request all of the results in a specific format.
     public static func all(_ code: PostgreSQLFormatCode) -> PostgreSQLResultFormat {
-        return .init { _ in return [code] }
+        return .init(formatCodes: [code])
     }
 
     /// Request all of the results in a specific format.
@@ -33,6 +28,11 @@ public struct PostgreSQLResultFormat {
 
     /// Let the server decide the formatting options.
     public static func notSpecified() -> PostgreSQLResultFormat {
-        return .init { _ in return [] }
+        return .init(formatCodes: [])
+    }
+
+    /// Request all of the results in a specific format.
+    public static func specific(_ codes: [PostgreSQLFormatCode]) -> PostgreSQLResultFormat {
+        return .init(formatCodes: codes)
     }
 }

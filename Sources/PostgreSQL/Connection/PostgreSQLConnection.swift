@@ -17,13 +17,26 @@ public final class PostgreSQLConnection {
     /// If non-nil, will log queries.
     public var logger: PostgreSQLLogger?
 
-    /// Caches oid -> table name data.
-    internal weak var tableNameCache: PostgreSQLTableNameCache?
+    /// Returns a new unique portal name.
+    internal var nextPortalName: String {
+        defer { uniqueNameCounter = uniqueNameCounter &+ 1 }
+        return "p_\(uniqueNameCounter)"
+    }
+
+    /// Returns a new unique statement name.
+    internal var nextStatementName: String {
+        defer { uniqueNameCounter = uniqueNameCounter &+ 1 }
+        return "s_\(uniqueNameCounter)"
+    }
+
+    /// A unique identifier for this connection, used to generate statment and portal names
+    private var uniqueNameCounter: UInt8
 
     /// Creates a new Redis client on the provided data source and sink.
     init(queue: QueueHandler<PostgreSQLMessage, PostgreSQLMessage>, channel: Channel) {
         self.queue = queue
         self.channel = channel
+        self.uniqueNameCounter = 0
     }
 
     /// Sends `PostgreSQLMessage` to the server.

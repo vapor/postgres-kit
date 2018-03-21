@@ -33,3 +33,13 @@ struct PostgreSQLDataRowColumn: Decodable {
         return PostgreSQLData(type: dataType, format: format, data: value)
     }
 }
+
+extension PostgreSQLDataRowColumn: CustomStringConvertible {
+    var description: String {
+        if let value = value {
+            return String(data: value, encoding: .ascii) ?? value.hexDebug
+        } else {
+            return "<null>"
+        }
+    }
+}
