@@ -9,7 +9,7 @@ public final class PostgreSQLDatabase: Database {
     public var logger: PostgreSQLLogger?
 
     /// Creates a new `PostgreSQLDatabase`.
-    public init(config: PostgreSQLDatabaseConfig, on worker: Worker) {
+    public init(config: PostgreSQLDatabaseConfig) {
         self.config = config
     }
 
