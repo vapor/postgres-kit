@@ -1,5 +1,5 @@
 import Async
-import Foundation
+import Core
 
 extension OptionalType {
     /// See `PostgreSQLDataCustomConvertible.convertFromPostgreSQLData(_:)`
