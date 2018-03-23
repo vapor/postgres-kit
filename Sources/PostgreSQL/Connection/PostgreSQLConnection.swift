@@ -113,20 +113,12 @@ public final class PostgreSQLConnection {
                     throw PostgreSQLError(identifier: "usernameUTF8", reason: "Could not convert username to UTF-8 encoded Data.", source: .capture())
                 }
 
-                let hasher = MD5()
                 // pwdhash = md5(password + username).hexdigest()
-                var passwordUsernameData = passwordData + usernameData
-                hasher.update(sequence: &passwordUsernameData)
-                hasher.finalize()
-                guard let pwdhash = hasher.hash.hexString.data(using: .utf8) else {
-                    throw PostgreSQLError(identifier: "hashUTF8", reason: "Could not convert password hash to UTF-8 encoded Data.", source: .capture())
-                }
-                hasher.reset()
-                // hash = ′ md 5′ + md 5(pwdhash + salt ).hexdigest ()
-                var saltedData = pwdhash + salt
-                hasher.update(sequence: &saltedData)
-                hasher.finalize()
-                let passwordMessage = PostgreSQLPasswordMessage(password: "md5" + hasher.hash.hexString)
+                let pwdhash = try MD5.digest(passwordData + usernameData).hexEncodedString()
+                // hash = "md5" + md 5(pwdhash + salt).hexdigest()
+                let hash = try "md5" + MD5.digest(Data(pwdhash.utf8) + salt).hexEncodedString()
+
+                let passwordMessage = PostgreSQLPasswordMessage(password: hash)
                 input = [.password(passwordMessage)]
             }
 
