@@ -379,10 +379,7 @@ extension PostgreSQLConnection {
     static func makeTest() throws -> PostgreSQLConnection {
         let hostname: String
         #if Xcode
-        //hostname = (try? Process.execute("docker-machine", "ip")) ?? "192.168.99.100"
-        // TODO: Switch this back contrib_bootstrap wasnt working for me and I didnt feel like
-        // delaying
-        hostname = "localhost"
+        hostname = (try? Process.execute("docker-machine", "ip")) ?? "192.168.99.100"
         #else
         hostname = "localhost"
         #endif
