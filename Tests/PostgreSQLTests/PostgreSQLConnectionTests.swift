@@ -342,6 +342,25 @@ class PostgreSQLConnectionTests: XCTestCase {
         _ = try categories.wait()
     }
 
+    func testNotifyAndListen() throws {
+        let notifyConn = try PostgreSQLConnection.makeTest()
+        let listenConn = try PostgreSQLConnection.makeTest()
+        var messageReceived = false
+        //listenConn
+        let channelName = "Foo"
+        let messageText = "Bar"
+        try listenConn.listen(channelName) { text in
+            messageReceived = text == messageText
+            }.catch({ err in XCTFail("error \(err)") })
+
+        try notifyConn.notify(channelName, message: messageText).wait()
+
+        sleep(1) // Wait for any delay in the message being received
+        notifyConn.close()
+        listenConn.close()
+        XCTAssert(messageReceived)
+    }
+
     static var allTests = [
         ("testVersion", testVersion),
         ("testSelectTypes", testSelectTypes),
@@ -351,6 +370,7 @@ class PostgreSQLConnectionTests: XCTestCase {
         ("testStruct", testStruct),
         ("testNull", testNull),
         ("testGH24", testGH24),
+        ("testNotifyAndListen", testNotifyAndListen)
     ]
 }
 
@@ -359,7 +379,10 @@ extension PostgreSQLConnection {
     static func makeTest() throws -> PostgreSQLConnection {
         let hostname: String
         #if Xcode
-        hostname = (try? Process.execute("docker-machine", "ip")) ?? "192.168.99.100"
+        //hostname = (try? Process.execute("docker-machine", "ip")) ?? "192.168.99.100"
+        // TODO: Switch this back contrib_bootstrap wasnt working for me and I didnt feel like
+        // delaying
+        hostname = "localhost"
         #else
         hostname = "localhost"
         #endif
