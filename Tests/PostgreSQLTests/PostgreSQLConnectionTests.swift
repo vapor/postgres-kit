@@ -345,13 +345,13 @@ class PostgreSQLConnectionTests: XCTestCase {
     func testNotifyAndListen() throws {
         let notifyConn = try PostgreSQLConnection.makeTest()
         let listenConn = try PostgreSQLConnection.makeTest()
-        var messageReceived = false
-        //listenConn
         let channelName = "Foo"
         let messageText = "Bar"
+        var messageReceived = false
+        
         try listenConn.listen(channelName) { text in
             messageReceived = text == messageText
-            }.catch({ err in XCTFail("error \(err)") })
+        }.catch({ err in XCTFail("error \(err)") })
 
         try notifyConn.notify(channelName, message: messageText).wait()
 
