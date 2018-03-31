@@ -2,7 +2,7 @@ import COperatingSystem
 import Foundation
 
 /// Representable by a `JSONB` column on the PostgreSQL database.
-public protocol PostgreSQLJSONCustomConvertible: PostgreSQLDataCustomConvertible { }
+public protocol PostgreSQLJSONCustomConvertible: PostgreSQLDataConvertible { }
 
 extension PostgreSQLJSONCustomConvertible {
     /// See `PostgreSQLDataCustomConvertible.postgreSQLDataType`

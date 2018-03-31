@@ -1,33 +1,52 @@
 import Async
 import Crypto
+import NIO
 
 /// A PostgreSQL frontend client.
 public final class PostgreSQLConnection {
+    public var eventLoop: EventLoop {
+        return channel.eventLoop
+    }
+
     /// Handles enqueued redis commands and responses.
-    private let queueStream: QueueStream<PostgreSQLMessage, PostgreSQLMessage>
+    private let queue: QueueHandler<PostgreSQLMessage, PostgreSQLMessage>
+
+    /// The channel
+    private let channel: Channel
 
     /// If non-nil, will log queries.
     public var logger: PostgreSQLLogger?
 
+    /// Returns a new unique portal name.
+    internal var nextPortalName: String {
+        defer { uniqueNameCounter = uniqueNameCounter &+ 1 }
+        return "p_\(uniqueNameCounter)"
+    }
+
+    /// Returns a new unique statement name.
+    internal var nextStatementName: String {
+        defer { uniqueNameCounter = uniqueNameCounter &+ 1 }
+        return "s_\(uniqueNameCounter)"
+    }
+
+    /// A unique identifier for this connection, used to generate statment and portal names
+    private var uniqueNameCounter: UInt8
+
     /// Creates a new Redis client on the provided data source and sink.
-    init<Stream>(stream: Stream, on worker: Worker) where Stream: ByteStream {
-        let queueStream = QueueStream<PostgreSQLMessage, PostgreSQLMessage>()
-
-        let serializerStream = PostgreSQLMessageSerializer().stream(on: worker)
-        let parserStream = PostgreSQLMessageParser().stream(on: worker)
-
-        stream.stream(to: parserStream)
-            .stream(to: queueStream)
-            .stream(to: serializerStream)
-            .output(to: stream)
-
-        self.queueStream = queueStream
+    init(queue: QueueHandler<PostgreSQLMessage, PostgreSQLMessage>, channel: Channel) {
+        self.queue = queue
+        self.channel = channel
+        self.uniqueNameCounter = 0
+    }
+    
+    deinit {
+        close()
     }
 
     /// Sends `PostgreSQLMessage` to the server.
     func send(_ messages: [PostgreSQLMessage], onResponse: @escaping (PostgreSQLMessage) throws -> ()) -> Future<Void> {
         var error: Error?
-        return queueStream.enqueue(messages) { message in
+        return queue.enqueue(messages) { message in
             switch message {
             case .readyForQuery:
                 if let e = error { throw e }
@@ -57,7 +76,7 @@ public final class PostgreSQLConnection {
             "database": database ?? username
         ])
         var authRequest: PostgreSQLAuthenticationRequest?
-        return queueStream.enqueue([.startupMessage(startup)]) { message in
+        return queue.enqueue([.startupMessage(startup)]) { message in
             switch message {
             case .authenticationRequest(let a):
                 authRequest = a
@@ -94,24 +113,16 @@ public final class PostgreSQLConnection {
                     throw PostgreSQLError(identifier: "usernameUTF8", reason: "Could not convert username to UTF-8 encoded Data.", source: .capture())
                 }
 
-                let hasher = MD5()
                 // pwdhash = md5(password + username).hexdigest()
-                var passwordUsernameData = passwordData + usernameData
-                hasher.update(sequence: &passwordUsernameData)
-                hasher.finalize()
-                guard let pwdhash = hasher.hash.hexString.data(using: .utf8) else {
-                    throw PostgreSQLError(identifier: "hashUTF8", reason: "Could not convert password hash to UTF-8 encoded Data.", source: .capture())
-                }
-                hasher.reset()
-                // hash = ′ md 5′ + md 5(pwdhash + salt ).hexdigest ()
-                var saltedData = pwdhash + salt
-                hasher.update(sequence: &saltedData)
-                hasher.finalize()
-                let passwordMessage = PostgreSQLPasswordMessage(password: "md5" + hasher.hash.hexString)
+                let pwdhash = try MD5.digest(passwordData + usernameData).hexEncodedString()
+                // hash = "md5" + md 5(pwdhash + salt).hexdigest()
+                let hash = try "md5" + MD5.digest(Data(pwdhash.utf8) + salt).hexEncodedString()
+
+                let passwordMessage = PostgreSQLPasswordMessage(password: hash)
                 input = [.password(passwordMessage)]
             }
 
-            return self.queueStream.enqueue(input) { message in
+            return self.queue.enqueue(input) { message in
                 switch message {
                 case .error(let error): throw error
                 case .readyForQuery: return true
@@ -125,6 +136,6 @@ public final class PostgreSQLConnection {
 
     /// Closes this client.
     public func close() {
-        queueStream.close()
+        channel.close(promise: nil)
     }
 }

@@ -1,21 +1,21 @@
-import Async
 import Foundation
 import XCTest
+import NIO
 import PostgreSQL
-import TCP
+import Core
 
 class PostgreSQLConnectionTests: XCTestCase {
     func testVersion() throws {
-        let (client, eventLoop) = try PostgreSQLConnection.makeTest()
-        let results = try client.simpleQuery("SELECT version();").await(on: eventLoop)
-        try XCTAssert(results[0]["version"]?.decode(String.self).contains("10.") == true)
+        let client = try PostgreSQLConnection.makeTest()
+        let results = try client.simpleQuery("SELECT version();").wait()
+        try XCTAssert(results[0].firstValue(forColumn: "version")?.decode(String.self).contains("10.") == true)
     }
 
     func testSelectTypes() throws {
-        let (client, eventLoop) = try PostgreSQLConnection.makeTest()
-        let results = try client.query("select * from pg_type;").await(on: eventLoop)
+        let client = try PostgreSQLConnection.makeTest()
+        let results = try client.query("select * from pg_type;").wait()
         if results.count > 350 {
-            let name = try results[128]["typname"]?.decode(String.self)
+            let name = try results[128].firstValue(forColumn: "typname")?.decode(String.self)
             XCTAssert(name != "")
         } else {
             XCTFail("Results count not large enough: \(results.count)")
@@ -23,19 +23,22 @@ class PostgreSQLConnectionTests: XCTestCase {
     }
 
     func testParse() throws {
-        let (client, eventLoop) = try PostgreSQLConnection.makeTest()
+        let client = try PostgreSQLConnection.makeTest()
         let query = """
         select * from "pg_type" where "typlen" = $1 or "typlen" = $2
         """
-        let rows = try client.query(query, [1, 2]).await(on: eventLoop)
+        let rows = try client.query(query, [1, 2]).wait()
 
         for row in rows {
-            try XCTAssert(row["typlen"]?.decode(Int.self) == 1 || row["typlen"]?.decode(Int.self) == 2)
+            try XCTAssert(
+                row.firstValue(forColumn: "typlen")?.decode(Int.self) == 1 ||
+                row.firstValue(forColumn: "typlen")?.decode(Int.self) == 2
+            )
         }
     }
 
     func testTypes() throws {
-        let (client, eventLoop) = try PostgreSQLConnection.makeTest()
+        let client = try PostgreSQLConnection.makeTest()
         let createQuery = """
         create table kitchen_sink (
             "smallint" smallint,
@@ -67,8 +70,8 @@ class PostgreSQLConnectionTests: XCTestCase {
             -- "uuid" uuid
         );
         """
-        _ = try client.query("drop table if exists kitchen_sink;").await(on: eventLoop)
-        let createResult = try client.query(createQuery).await(on: eventLoop)
+        _ = try client.query("drop table if exists kitchen_sink;").wait()
+        let createResult = try client.query(createQuery).wait()
         XCTAssertEqual(createResult.count, 0)
 
         let insertQuery = """
@@ -102,33 +105,33 @@ class PostgreSQLConnectionTests: XCTestCase {
             -- "uuid" uuid
         );
         """
-        let insertResult = try! client.query(insertQuery).await(on: eventLoop)
+        let insertResult = try client.query(insertQuery).wait()
         XCTAssertEqual(insertResult.count, 0)
-        let queryResult = try client.query("select * from kitchen_sink").await(on: eventLoop)
+        let queryResult = try client.query("select * from kitchen_sink").wait()
         if queryResult.count == 1 {
             let row = queryResult[0]
-            try XCTAssertEqual(row["smallint"]?.decode(Int16.self), 1)
-            try XCTAssertEqual(row["integer"]?.decode(Int32.self), 2)
-            try XCTAssertEqual(row["bigint"]?.decode(Int64.self), 3)
-            try XCTAssertEqual(row["decimal"]?.decode(String.self), "4")
-            try XCTAssertEqual(row["real"]?.decode(Float.self), 6)
-            try XCTAssertEqual(row["double"]?.decode(Double.self), 7)
-            try XCTAssertEqual(row["varchar"]?.decode(String.self), "9")
-            try XCTAssertEqual(row["char"]?.decode(String.self), "10  ")
-            try XCTAssertEqual(row["text"]?.decode(String.self), "11")
-            try XCTAssertEqual(row["bytea"]?.decode(Data.self), Data([0x31, 0x32]))
-            try XCTAssertEqual(row["boolean"]?.decode(Bool.self), true)
-            try XCTAssertNotNil(row["timestamp"]?.decode(Date.self))
-            try XCTAssertNotNil(row["date"]?.decode(Date.self))
-            try XCTAssertNotNil(row["time"]?.decode(Date.self))
-            try XCTAssertEqual(row["point"]?.decode(PostgreSQLPoint.self), PostgreSQLPoint(x: 13.5, y: 14))
+            try XCTAssertEqual(row.firstValue(forColumn: "smallint")?.decode(Int16.self), 1)
+            try XCTAssertEqual(row.firstValue(forColumn: "integer")?.decode(Int32.self), 2)
+            try XCTAssertEqual(row.firstValue(forColumn: "bigint")?.decode(Int64.self), 3)
+            try XCTAssertEqual(row.firstValue(forColumn: "decimal")?.decode(String.self), "4")
+            try XCTAssertEqual(row.firstValue(forColumn: "real")?.decode(Float.self), 6)
+            try XCTAssertEqual(row.firstValue(forColumn: "double")?.decode(Double.self), 7)
+            try XCTAssertEqual(row.firstValue(forColumn: "varchar")?.decode(String.self), "9")
+            try XCTAssertEqual(row.firstValue(forColumn: "char")?.decode(String.self), "10  ")
+            try XCTAssertEqual(row.firstValue(forColumn: "text")?.decode(String.self), "11")
+            try XCTAssertEqual(row.firstValue(forColumn: "bytea")?.decode(Data.self), Data([0x31, 0x32]))
+            try XCTAssertEqual(row.firstValue(forColumn: "boolean")?.decode(Bool.self), true)
+            try XCTAssertNotNil(row.firstValue(forColumn: "timestamp")?.decode(Date.self))
+            try XCTAssertNotNil(row.firstValue(forColumn: "date")?.decode(Date.self))
+            try XCTAssertNotNil(row.firstValue(forColumn: "time")?.decode(Date.self))
+            try XCTAssertEqual(row.firstValue(forColumn: "point")?.decode(PostgreSQLPoint.self), PostgreSQLPoint(x: 13.5, y: 14))
         } else {
             XCTFail("query result count is: \(queryResult.count)")
         }
     }
 
     func testParameterizedTypes() throws {
-        let (client, eventLoop) = try PostgreSQLConnection.makeTest()
+        let client = try PostgreSQLConnection.makeTest()
         let createQuery = """
         create table kitchen_sink (
             "smallint" smallint,
@@ -161,8 +164,8 @@ class PostgreSQLConnectionTests: XCTestCase {
             -- "bit" bit(16),
         );
         """
-        _ = try client.query("drop table if exists kitchen_sink;").await(on: eventLoop)
-        let createResult = try client.query(createQuery).await(on: eventLoop)
+        _ = try client.query("drop table if exists kitchen_sink;").wait()
+        let createResult = try client.query(createQuery).wait()
         XCTAssertEqual(createResult.count, 0)
 
         let insertQuery = """
@@ -198,7 +201,7 @@ class PostgreSQLConnectionTests: XCTestCase {
         );
         """
 
-        var params: [PostgreSQLDataCustomConvertible] = []
+        var params: [PostgreSQLDataConvertible] = []
         params += Int16(1) // smallint
         params += Int32(2) // integer
         params += Int64(3) // bigint
@@ -218,29 +221,29 @@ class PostgreSQLConnectionTests: XCTestCase {
         params += UUID() // new uuid
         // params.append([1,2,3] as [Int]) // new array
 
-        let insertResult = try! client.query(insertQuery, params).await(on: eventLoop)
+        let insertResult = try client.query(insertQuery, params).wait()
         XCTAssertEqual(insertResult.count, 0)
 
-        let parameterizedResult = try! client.query("select * from kitchen_sink").await(on: eventLoop)
+        let parameterizedResult = try client.query("select * from kitchen_sink").wait()
         if parameterizedResult.count == 1 {
             let row = parameterizedResult[0]
-            try XCTAssertEqual(row["smallint"]?.decode(Int16.self), 1)
-            try XCTAssertEqual(row["integer"]?.decode(Int32.self), 2)
-            try XCTAssertEqual(row["bigint"]?.decode(Int64.self), 3)
-            try XCTAssertEqual(row["decimal"]?.decode(String.self), "123456789.123456789")
-            try XCTAssertEqual(row["real"]?.decode(Float.self), 6)
-            try XCTAssertEqual(row["double"]?.decode(Double.self), 7)
-            try XCTAssertEqual(row["varchar"]?.decode(String.self), "8")
-            try XCTAssertEqual(row["char"]?.decode(String.self), "9   ")
-            try XCTAssertEqual(row["text"]?.decode(String.self), "10")
-            try XCTAssertEqual(row["bytea"]?.decode(Data.self), Data([0x31, 0x32]))
-            try XCTAssertEqual(row["boolean"]?.decode(Bool.self), true)
-            try XCTAssertNotNil(row["timestamp"]?.decode(Date.self))
-            try XCTAssertNotNil(row["date"]?.decode(Date.self))
-            try XCTAssertNotNil(row["time"]?.decode(Date.self))
-            try XCTAssertEqual(row["point"]?.decode(String.self), "(11.4,12.0)")
-            try XCTAssertNotNil(row["uuid"]?.decode(UUID.self))
-            try XCTAssertEqual(row["array"]?.decode([PostgreSQLPoint].self).first?.x, 1.0)
+            try XCTAssertEqual(row.firstValue(forColumn: "smallint")?.decode(Int16.self), 1)
+            try XCTAssertEqual(row.firstValue(forColumn: "integer")?.decode(Int32.self), 2)
+            try XCTAssertEqual(row.firstValue(forColumn: "bigint")?.decode(Int64.self), 3)
+            try XCTAssertEqual(row.firstValue(forColumn: "decimal")?.decode(String.self), "123456789.123456789")
+            try XCTAssertEqual(row.firstValue(forColumn: "real")?.decode(Float.self), 6)
+            try XCTAssertEqual(row.firstValue(forColumn: "double")?.decode(Double.self), 7)
+            try XCTAssertEqual(row.firstValue(forColumn: "varchar")?.decode(String.self), "8")
+            try XCTAssertEqual(row.firstValue(forColumn: "char")?.decode(String.self), "9   ")
+            try XCTAssertEqual(row.firstValue(forColumn: "text")?.decode(String.self), "10")
+            try XCTAssertEqual(row.firstValue(forColumn: "bytea")?.decode(Data.self), Data([0x31, 0x32]))
+            try XCTAssertEqual(row.firstValue(forColumn: "boolean")?.decode(Bool.self), true)
+            try XCTAssertNotNil(row.firstValue(forColumn: "timestamp")?.decode(Date.self))
+            try XCTAssertNotNil(row.firstValue(forColumn: "date")?.decode(Date.self))
+            try XCTAssertNotNil(row.firstValue(forColumn: "time")?.decode(Date.self))
+            try XCTAssertEqual(row.firstValue(forColumn: "point")?.decode(String.self), "(11.4,12.0)")
+            try XCTAssertNotNil(row.firstValue(forColumn: "uuid")?.decode(UUID.self))
+            try XCTAssertEqual(row.firstValue(forColumn: "array")?.decode([PostgreSQLPoint].self).first?.x, 1.0)
         } else {
             XCTFail("parameterized result count is: \(parameterizedResult.count)")
         }
@@ -251,37 +254,92 @@ class PostgreSQLConnectionTests: XCTestCase {
             var message: String
         }
 
-        let (client, eventLoop) = try! PostgreSQLConnection.makeTest()
-        _ = try! client.query("drop table if exists foo;").await(on: eventLoop)
-        let createResult = try! client.query("create table foo (id integer, dict jsonb);").await(on: eventLoop)
+        let client = try PostgreSQLConnection.makeTest()
+        _ = try client.query("drop table if exists foo;").wait()
+        let createResult = try client.query("create table foo (id integer, dict jsonb);").wait()
         XCTAssertEqual(createResult.count, 0)
-        let insertResult = try! client.query("insert into foo values ($1, $2);", [
+        let insertResult = try client.query("insert into foo values ($1, $2);", [
             Int32(1), Hello(message: "hello, world")
-        ]).await(on: eventLoop)
+        ]).wait()
 
         XCTAssertEqual(insertResult.count, 0)
-        let parameterizedResult = try! client.query("select * from foo").await(on: eventLoop)
+        let parameterizedResult = try client.query("select * from foo").wait()
         if parameterizedResult.count == 1 {
             let row = parameterizedResult[0]
-            try! XCTAssertEqual(row["id"]?.decode(Int.self), 1)
-            try! XCTAssertEqual(row["dict"]?.decode(Hello.self).message, "hello, world")
+            try XCTAssertEqual(row.firstValue(forColumn: "id")?.decode(Int.self), 1)
+            try XCTAssertEqual(row.firstValue(forColumn: "dict")?.decode(Hello.self).message, "hello, world")
         } else {
             XCTFail("parameterized result count is: \(parameterizedResult.count)")
         }
     }
 
     func testNull() throws {
-        let (client, eventLoop) = try PostgreSQLConnection.makeTest()
-        _ = try client.query("drop table if exists nulltest;").await(on: eventLoop)
-        let createResult = try client.query("create table nulltest (i integer not null, d timestamp);").await(on: eventLoop)
+        let client = try PostgreSQLConnection.makeTest()
+        _ = try client.query("drop table if exists nulltest;").wait()
+        let createResult = try client.query("create table nulltest (i integer not null, d timestamp);").wait()
         XCTAssertEqual(createResult.count, 0)
-        let insertResult = try! client.query("insert into nulltest  (i, d) VALUES ($1, $2)", [
+        let insertResult = try client.query("insert into nulltest  (i, d) VALUES ($1, $2)", [
             PostgreSQLData(type: .int2, format: .binary, data: Data([0x00, 0x01])),
             PostgreSQLData(type: .timestamp, format: .binary, data: nil),
-        ]).await(on: eventLoop)
+        ]).wait()
         XCTAssertEqual(insertResult.count, 0)
-        let parameterizedResult = try! client.query("select * from nulltest").await(on: eventLoop)
+        let parameterizedResult = try client.query("select * from nulltest").wait()
         XCTAssertEqual(parameterizedResult.count, 1)
+    }
+
+    func testGH24() throws {
+        /// PREPARE
+        let client = try PostgreSQLConnection.makeTest()
+        _ = try client.query("""
+        DROP TABLE IF EXISTS "acronym+category"
+        """).wait()
+        _ = try client.query("""
+        DROP TABLE IF EXISTS "categories"
+        """).wait()
+        _ = try client.query("""
+        DROP TABLE IF EXISTS "acronyms"
+        """).wait()
+        _ = try client.query("""
+        DROP TABLE IF EXISTS "users"
+        """).wait()
+
+        /// CREATE
+        let _ = try client.query("""
+        CREATE TABLE "users" ("id" UUID PRIMARY KEY, "name" TEXT NOT NULL, "username" TEXT NOT NULL)
+        """).wait()
+        let _ = try client.query("""
+        CREATE TABLE "acronyms" ("id" BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, "short" TEXT NOT NULL, "long" TEXT NOT NULL, "userID" UUID NOT NULL, FOREIGN KEY ("userID") REFERENCES "users" ("id"), FOREIGN KEY ("userID") REFERENCES "users" ("id"))
+        """).wait()
+        let _ = try client.query("""
+        CREATE TABLE "categories" ("id" BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, "name" TEXT NOT NULL)
+        """).wait()
+        let _ = try client.query("""
+        CREATE TABLE "acronym+category" ("id" UUID PRIMARY KEY, "acronymID" BIGINT NOT NULL, "categoryID" BIGINT NOT NULL, FOREIGN KEY ("acronymID") REFERENCES "acronyms" ("id"), FOREIGN KEY ("categoryID") REFERENCES "categories" ("id"), FOREIGN KEY ("acronymID") REFERENCES "acronyms" ("id"), FOREIGN KEY ("categoryID") REFERENCES "categories" ("id"))
+        """).wait()
+
+        /// INSERT
+        let userUUID = UUID()
+        let _ = try client.query("""
+        INSERT INTO "users" ("id", "name", "username") VALUES ($1, $2, $3)
+        """, [userUUID, "Vapor Test", "vapor"]).wait()
+        let _ = try client.query("""
+        INSERT INTO "acronyms" ("id", "userID", "short", "long") VALUES ($1, $2, $3, $4)
+        """, [1, userUUID, "ilv", "i love vapor"]).wait()
+        let _ = try client.query("""
+        INSERT INTO "categories" ("id", "name") VALUES ($1, $2);
+        """, [1, "all"]).wait()
+
+
+        /// SELECT
+        let acronyms = try client.query("""
+        SELECT "acronyms".* FROM "acronyms" WHERE ("acronyms"."id" = $1) LIMIT 1 OFFSET 0
+        """, [1])
+        let categories = try client.query("""
+        SELECT "categories".* FROM "categories" WHERE ("categories"."id" = $1) LIMIT 1 OFFSET 0
+        """, [1])
+
+        _ = try acronyms.wait()
+        _ = try categories.wait()
     }
 
     static var allTests = [
@@ -292,18 +350,25 @@ class PostgreSQLConnectionTests: XCTestCase {
         ("testParameterizedTypes", testParameterizedTypes),
         ("testStruct", testStruct),
         ("testNull", testNull),
+        ("testGH24", testGH24),
     ]
 }
 
 extension PostgreSQLConnection {
     /// Creates a test event loop and psql client.
-    static func makeTest() throws -> (PostgreSQLConnection, EventLoop) {
-        let eventLoop = try DefaultEventLoop(label: "codes.vapor.postgresql.client.test")
-        let client = try PostgreSQLConnection.connect(on: eventLoop) { _, error in
+    static func makeTest() throws -> PostgreSQLConnection {
+        let hostname: String
+        #if Xcode
+        hostname = (try? Process.execute("docker-machine", "ip")) ?? "192.168.99.100"
+        #else
+        hostname = "localhost"
+        #endif
+        let group = MultiThreadedEventLoopGroup(numThreads: 1)
+        let client = try PostgreSQLConnection.connect(hostname: hostname, on: group) { error in
             XCTFail("\(error)")
-        }
-        _ = try client.authenticate(username: "postgres").await(on: eventLoop)
-        return (client, eventLoop)
+        }.wait()
+        _ = try client.authenticate(username: "vapor_username", database: "vapor_database", password: nil).wait()
+        return client
     }
 }
 

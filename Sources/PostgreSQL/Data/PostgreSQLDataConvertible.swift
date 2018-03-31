@@ -1,5 +1,5 @@
 /// Capable of being converted to/from `PostgreSQLData`
-public protocol PostgreSQLDataCustomConvertible {
+public protocol PostgreSQLDataConvertible {
     /// This type's preferred data type.
     static var postgreSQLDataType: PostgreSQLDataType { get }
 
@@ -15,12 +15,12 @@ public protocol PostgreSQLDataCustomConvertible {
 
 extension PostgreSQLData {
     /// Gets a `String` from the supplied path or throws a decoding error.
-    public func decode<T>(_ type: T.Type) throws -> T where T: PostgreSQLDataCustomConvertible {
+    public func decode<T>(_ type: T.Type) throws -> T where T: PostgreSQLDataConvertible {
         return try T.convertFromPostgreSQLData(self)
     }
 }
 
-extension PostgreSQLData: PostgreSQLDataCustomConvertible {
+extension PostgreSQLData: PostgreSQLDataConvertible {
     /// See `PostgreSQLDataCustomConvertible.postgreSQLDataType`
     public static var postgreSQLDataType: PostgreSQLDataType { return .void }
 
@@ -38,19 +38,19 @@ extension PostgreSQLData: PostgreSQLDataCustomConvertible {
     }
 }
 
-extension RawRepresentable where RawValue: PostgreSQLDataCustomConvertible {
+extension RawRepresentable where RawValue: PostgreSQLDataConvertible {
     /// See `PostgreSQLDataCustomConvertible.postgreSQLDataType`
-    static var postgreSQLDataType: PostgreSQLDataType {
-        return Self.postgreSQLDataType
+    public static var postgreSQLDataType: PostgreSQLDataType {
+        return RawValue.postgreSQLDataType
     }
 
     /// See `PostgreSQLDataCustomConvertible.postgreSQLDataArrayType`
-    static var postgreSQLDataArrayType: PostgreSQLDataType {
-        return Self.postgreSQLDataArrayType
+    public static var postgreSQLDataArrayType: PostgreSQLDataType {
+        return RawValue.postgreSQLDataArrayType
     }
 
     /// See `PostgreSQLDataCustomConvertible.convertFromPostgreSQLData(_:)`
-    static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> Self {
+    public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> Self {
         let aRawValue = try RawValue.convertFromPostgreSQLData(data)
         guard let enumValue = Self(rawValue: aRawValue) else {
             throw PostgreSQLError(identifier: "invalidRawValue", reason: "Unable to decode RawRepresentable from the database value.", source: .capture())
@@ -59,7 +59,7 @@ extension RawRepresentable where RawValue: PostgreSQLDataCustomConvertible {
     }
 
     /// See `PostgreSQLDataCustomConvertible.convertToPostgreSQLData()`
-    func convertToPostgreSQLData() throws -> PostgreSQLData {
+    public func convertToPostgreSQLData() throws -> PostgreSQLData {
         return try self.rawValue.convertToPostgreSQLData()
     }
 }

@@ -1,7 +1,7 @@
 import Foundation
 
 /// Representable by a `T[]` column on the PostgreSQL database.
-public protocol PostgreSQLArrayCustomConvertible: PostgreSQLDataCustomConvertible {
+public protocol PostgreSQLArrayCustomConvertible: PostgreSQLDataConvertible {
     /// The associated array element type
     associatedtype PostgreSQLArrayElement // : PostgreSQLDataCustomConvertible
 
@@ -127,15 +127,15 @@ extension Array: PostgreSQLArrayCustomConvertible {
     }
 }
 
-func requirePostgreSQLDataCustomConvertible<T>(_ type: T.Type) -> PostgreSQLDataCustomConvertible.Type {
-    guard let custom = T.self as? PostgreSQLDataCustomConvertible.Type else {
+func requirePostgreSQLDataCustomConvertible<T>(_ type: T.Type) -> PostgreSQLDataConvertible.Type {
+    guard let custom = T.self as? PostgreSQLDataConvertible.Type else {
         fatalError("`\(T.self)` does not conform to `PostgreSQLDataCustomConvertible`")
     }
     return custom
 }
 
-func requirePostgreSQLDataCustomConvertible<T>(_ type: T) -> PostgreSQLDataCustomConvertible {
-    guard let custom = type as? PostgreSQLDataCustomConvertible else {
+func requirePostgreSQLDataCustomConvertible<T>(_ type: T) -> PostgreSQLDataConvertible {
+    guard let custom = type as? PostgreSQLDataConvertible else {
         fatalError("`\(T.self)` does not conform to `PostgreSQLDataCustomConvertible`")
     }
     return custom

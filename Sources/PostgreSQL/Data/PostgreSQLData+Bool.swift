@@ -1,6 +1,6 @@
 import Foundation
 
-extension Bool: PostgreSQLDataCustomConvertible {
+extension Bool: PostgreSQLDataConvertible {
     /// See `PostgreSQLDataCustomConvertible.postgreSQLDataType`
     public static var postgreSQLDataType: PostgreSQLDataType { return .bool }
     

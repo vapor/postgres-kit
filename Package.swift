@@ -7,26 +7,23 @@ let package = Package(
         .library(name: "PostgreSQL", targets: ["PostgreSQL"]),
     ],
     dependencies: [
-        // ⏱ Promises and reactive-streams in Swift built for high-performance and scalability.
-        .package(url: "https://github.com/vapor/async.git", from: "1.0.0-rc"),
-        
         // 🌎 Utility package containing tools for byte manipulation, Codable, OS APIs, and debugging.
-        .package(url: "https://github.com/vapor/core.git", from: "3.0.0-rc"),
+        .package(url: "https://github.com/vapor/core.git", from: "3.0.0-rc.2"),
         
         // 🔑 Hashing (BCrypt, SHA, HMAC, etc), encryption, and randomness.
-        .package(url: "https://github.com/vapor/crypto.git", from: "3.0.0-rc"),
+        .package(url: "https://github.com/vapor/crypto.git", from: "3.0.0-rc.2"),
 
         // 🗄 Core services for creating database integrations.
-        .package(url: "https://github.com/vapor/database-kit.git", from: "1.0.0-rc"),
+        .package(url: "https://github.com/vapor/database-kit.git", from: "1.0.0-rc.2"),
 
         // 📦 Dependency injection / inversion of control framework.
-        .package(url: "https://github.com/vapor/service.git", from: "1.0.0-rc"),
-
-        // 🔌 Non-blocking TCP socket layer, with event-driven server and client.
-        .package(url: "https://github.com/vapor/sockets.git", from: "3.0.0-rc"),
+        .package(url: "https://github.com/vapor/service.git", from: "1.0.0-rc.2"),
+        
+        // Event-driven network application framework for high performance protocol servers & clients, non-blocking.
+        .package(url: "https://github.com/apple/swift-nio.git", from: "1.0.0"),
     ],
     targets: [
-        .target(name: "PostgreSQL", dependencies: ["Async", "Bits", "Crypto", "DatabaseKit", "Service", "TCP"]),
-        .testTarget(name: "PostgreSQLTests", dependencies: ["PostgreSQL"]),
+        .target(name: "PostgreSQL", dependencies: ["Async", "Bits", "Core", "Crypto", "DatabaseKit", "NIO", "Service"]),
+        .testTarget(name: "PostgreSQLTests", dependencies: ["Core", "PostgreSQL"]),
     ]
 )

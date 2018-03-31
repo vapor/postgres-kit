@@ -1,6 +1,6 @@
 import Foundation
 
-extension UUID: PostgreSQLDataCustomConvertible {
+extension UUID: PostgreSQLDataConvertible {
     /// See `PostgreSQLDataCustomConvertible.postgreSQLDataType`
     public static var postgreSQLDataType: PostgreSQLDataType { return .uuid }
 
