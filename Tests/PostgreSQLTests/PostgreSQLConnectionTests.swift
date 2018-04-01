@@ -342,6 +342,17 @@ class PostgreSQLConnectionTests: XCTestCase {
         _ = try categories.wait()
     }
 
+    func testGH33() throws {
+        let config = try PostgreSQLDatabaseConfig(url: "postgres://user@host:1234/db")
+        XCTAssertEqual(config.hostname, "host")
+        XCTAssertEqual(config.port, 1234)
+        XCTAssertEqual(config.username, "user")
+        XCTAssertEqual(config.database, "db")
+
+        XCTAssertThrowsError(try PostgreSQLDatabaseConfig(url: "https://host/path"))
+        XCTAssertThrowsError(try PostgreSQLDatabaseConfig(url: "postgres://nouser"))
+    }
+
     static var allTests = [
         ("testVersion", testVersion),
         ("testSelectTypes", testSelectTypes),
@@ -351,6 +362,7 @@ class PostgreSQLConnectionTests: XCTestCase {
         ("testStruct", testStruct),
         ("testNull", testNull),
         ("testGH24", testGH24),
+        ("testGH33", testGH33),
     ]
 }
 

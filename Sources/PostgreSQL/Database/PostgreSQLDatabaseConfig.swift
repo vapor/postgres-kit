@@ -34,22 +34,19 @@ public struct PostgreSQLDatabaseConfig {
     /// Creates a `PostgreSQLDatabaseConfig` frome a connection string.
     public init(url: String) throws {
         guard let urL = URL(string: url),
-            let hostname = urL.host,
-            let port = urL.port,
             let username = urL.user,
-            let database = URL(string: url)?.path,
-            database.count > 0
+            let hostname = urL.host,
+            let path = URL(string: url)?.path,
+            "postgres" == urL.scheme
              else {
                 throw PostgreSQLError(identifier: "Bad Connection String",
-                                 reason: "Host could not be parsed",
+                                 reason: "Config could not be parsed",
                                  possibleCauses: ["Foundation URL is unable to parse the provided connection string"],
                                  suggestedFixes: ["Check the connection string being passed"],
                                  source: .capture())
         }
-        self.hostname = hostname
-        self.port = port
-        self.username = username
-        self.database = database
-        self.password = urL.password
+        let database = String(path.dropFirst())
+        let port = urL.port ?? 5432
+        self.init(hostname: hostname, port: port, username: username, database: database, password: urL.password)
     }
 }
