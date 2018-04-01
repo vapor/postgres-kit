@@ -35,9 +35,9 @@ public struct PostgreSQLDatabaseConfig {
     public init(url: String) throws {
         guard let urL = URL(string: url),
             let username = urL.user,
-			let hostname = urL.host,
+            let hostname = urL.host,
             let path = URL(string: url)?.path,
-			"postgres" == urL.scheme
+            "postgres" == urL.scheme
              else {
                 throw PostgreSQLError(identifier: "Bad Connection String",
                                  reason: "Config could not be parsed",
@@ -45,8 +45,8 @@ public struct PostgreSQLDatabaseConfig {
                                  suggestedFixes: ["Check the connection string being passed"],
                                  source: .capture())
         }
-		let database = String(path.dropFirst())
-		let port = urL.port ?? 5432
-		self.init(hostname: hostname, port: port, username: username, database: database, password: urL.password)
+        let database = String(path.dropFirst())
+        let port = urL.port ?? 5432
+        self.init(hostname: hostname, port: port, username: username, database: database, password: urL.password)
     }
 }
