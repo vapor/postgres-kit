@@ -3,7 +3,7 @@ import Foundation
 public struct PostgreSQLDatabaseConfig {
     /// Creates a `PostgreSQLDatabaseConfig` with default settings.
     public static func `default`() -> PostgreSQLDatabaseConfig {
-        return .init(hostname: "localhost", port: nil, username: "postgres")
+        return .init(hostname: "localhost", port: 5432, username: "postgres")
     }
 
     /// Destination hostname.
@@ -23,9 +23,9 @@ public struct PostgreSQLDatabaseConfig {
     public let password: String?
     
     /// Creates a new `PostgreSQLDatabaseConfig`.
-    public init(hostname: String, port: Int?, username: String, database: String? = nil, password: String? = nil) {
+    public init(hostname: String, port: Int = 5432, username: String, database: String? = nil, password: String? = nil) {
         self.hostname = hostname
-        self.port = port ?? 5432
+        self.port = port
         self.username = username
         self.database = database
         self.password = password
@@ -46,6 +46,7 @@ public struct PostgreSQLDatabaseConfig {
                                  source: .capture())
         }
 		let database = String(path.dropFirst())
-		self.init(hostname: hostname, port: urL.port, username: username, database: database, password: urL.password)
+		let port = urL.port ?? 5432
+		self.init(hostname: hostname, port: port, username: username, database: database, password: urL.password)
     }
 }
