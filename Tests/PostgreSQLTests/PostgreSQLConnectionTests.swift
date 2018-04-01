@@ -342,7 +342,7 @@ class PostgreSQLConnectionTests: XCTestCase {
         _ = try categories.wait()
     }
 
-	func testPostgreSQLDatabaseConfig() throws {
+	func testGH33() throws {
 		let config = try PostgreSQLDatabaseConfig(url: "postgres://user@host:1234/db")
 		XCTAssertEqual(config.hostname, "host")
 		XCTAssertEqual(config.port, 1234)
@@ -362,6 +362,7 @@ class PostgreSQLConnectionTests: XCTestCase {
         ("testStruct", testStruct),
         ("testNull", testNull),
         ("testGH24", testGH24),
+        ("testGH33", testGH33),
     ]
 }
 
