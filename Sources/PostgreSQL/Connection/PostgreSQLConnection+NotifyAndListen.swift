@@ -14,10 +14,10 @@ extension PostgreSQLConnection {
             switch message {
             case let .notificationResponse(notification):
                 try handler(notification.message)
-                return true
             default:
-                return false
+                break
             }
+            return false
         })
     }
 
