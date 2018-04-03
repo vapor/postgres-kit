@@ -114,9 +114,9 @@ public final class PostgreSQLConnection {
                 }
 
                 // pwdhash = md5(password + username).hexdigest()
-                let pwdhash = try MD5.digest(passwordData + usernameData).hexEncodedString()
+                let pwdhash = try MD5.hash(passwordData + usernameData).hexEncodedString()
                 // hash = "md5" + md 5(pwdhash + salt).hexdigest()
-                let hash = try "md5" + MD5.digest(Data(pwdhash.utf8) + salt).hexEncodedString()
+                let hash = try "md5" + MD5.hash(Data(pwdhash.utf8) + salt).hexEncodedString()
 
                 let passwordMessage = PostgreSQLPasswordMessage(password: hash)
                 input = [.password(passwordMessage)]
