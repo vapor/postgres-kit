@@ -49,7 +49,11 @@ public struct PostgreSQLDatabaseConfig {
         self.hostname = hostname
         self.port = port
         self.username = username
-        self.database = database
+        if database.hasPrefix("/") {
+            self.database = database.dropFirst().description
+        } else {
+            self.database = database
+        }
         self.password = urL.password
     }
 }
