@@ -352,6 +352,33 @@ class PostgreSQLConnectionTests: XCTestCase {
         XCTAssertEqual(config.database, "database")
     }
 
+    // https://github.com/vapor/postgresql/issues/46
+    func testGH46() throws {
+        struct Overview {
+            var platform: String
+            var identifier: String
+            var count: Int
+        }
+
+        let connection = try PostgreSQLConnection.makeTest()
+        _ = try connection.simpleQuery("DROP TABLE IF EXISTS apps").wait()
+        _ = try connection.simpleQuery("CREATE TABLE apps (id INT, platform TEXT, identifier TEXT)").wait()
+        _ = try connection.simpleQuery("INSERT INTO apps VALUES (1, 'a', 'b')").wait()
+        _ = try connection.simpleQuery("INSERT INTO apps VALUES (2, 'c', 'd')").wait()
+        _ = try connection.simpleQuery("INSERT INTO apps VALUES (3, 'a', 'd')").wait()
+        _ = try connection.simpleQuery("INSERT INTO apps VALUES (4, 'a', 'b')").wait()
+        let overviews = try connection.query("SELECT platform, identifier, COUNT(id) as count FROM apps GROUP BY platform, identifier").map(to: [Overview].self) { data in
+            return try data.map { row in
+                return try Overview(
+                    platform: row.firstValue(forColumn: "platform")!.decode(String.self),
+                    identifier: row.firstValue(forColumn: "identifier")!.decode(String.self),
+                    count: row.firstValue(forColumn: "count")!.decode(Int.self)
+                )
+            }
+        }.wait()
+        XCTAssertEqual(overviews.count, 3)
+    }
+
     static var allTests = [
         ("testVersion", testVersion),
         ("testSelectTypes", testSelectTypes),
@@ -362,6 +389,7 @@ class PostgreSQLConnectionTests: XCTestCase {
         ("testNull", testNull),
         ("testGH24", testGH24),
         ("testURLParsing", testURLParsing),
+        ("testGH46", testGH46),
     ]
 }
 
