@@ -2,6 +2,11 @@ import Bits
 
 /// A frontend or backend PostgreSQL message.
 enum PostgreSQLMessage {
+    /// Identifies the message as SSL opening sequence
+    case sslMessage(PostgreSQLSSLMessage)
+    /// Identifies the message as the response from the server to SSL message
+    case sslRequest(PostgreSQLSSLRequest)
+    /// Identifies the message as the initial start up message.
     case startupMessage(PostgreSQLStartupMessage)
     /// Identifies the message as an error.
     case error(PostgreSQLDiagnosticResponse)

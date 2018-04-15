@@ -28,6 +28,17 @@ final class PostgreSQLMessageDecoder: ByteToMessageDecoder {
 
         //// peek at messageSize
         guard let messageSize: Int32 = buffer.peekInteger(skipping: MemoryLayout<Byte>.size) else {
+
+            // message can still be a SSL Request
+            if messageType == .S || messageType == .N {
+                if let data = buffer.readSlice(length: 1) {
+                    let decoder = _PostgreSQLMessageDecoder(data: data)
+                    let message = try PostgreSQLMessage.sslRequest(decoder.decode())
+                    ctx.fireChannelRead(wrapInboundOut(message))
+                    return .continue
+                }
+            }
+
             VERBOSE("   [needMoreData: messageSize=nil]")
             return .needMoreData
         }
