@@ -21,7 +21,7 @@ public final class PostgreSQLDatabase: Database {
                 print("[PostgreSQL] \(error)")
             }
 
-            if config.shouldPreferSSL ?? false {
+            if config.shouldPreferSSL {
                 connection = connection.flatMap(to: PostgreSQLConnection.self) { client in
                     return client.establishSSLConnection().transform(to: client)
                 }
