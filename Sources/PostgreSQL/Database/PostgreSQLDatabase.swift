@@ -17,15 +17,23 @@ public final class PostgreSQLDatabase: Database {
     public func makeConnection(on worker: Worker) -> Future<PostgreSQLConnection> {
         let config = self.config
         return Future.flatMap(on: worker) {
-            return try PostgreSQLConnection.connect(hostname: config.hostname, port: config.port, on: worker) { error in
+            var connection = try PostgreSQLConnection.connect(hostname: config.hostname, port: config.port, on: worker) { error in
                 print("[PostgreSQL] \(error)")
-            }.flatMap(to: PostgreSQLConnection.self) { client in
+            }
+
+            if config.shouldPreferSSL {
+                connection = connection.flatMap(to: PostgreSQLConnection.self) { client in
+                    return client.establishSSLConnection().transform(to: client)
+                }
+            }
+
+            return connection.flatMap(to: PostgreSQLConnection.self) { client in
                 client.logger = self.logger
                 return client.authenticate(
                     username: config.username,
                     database: config.database,
                     password: config.password
-                ).transform(to: client)
+                    ).transform(to: client)
             }
         }
     }

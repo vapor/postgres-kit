@@ -378,6 +378,7 @@ extension PostgreSQLConnection {
         let client = try PostgreSQLConnection.connect(hostname: hostname, on: group) { error in
             XCTFail("\(error)")
         }.wait()
+        _ = client.establishSSLConnection()
         _ = try client.authenticate(username: "vapor_username", database: "vapor_database", password: nil).wait()
         return client
     }

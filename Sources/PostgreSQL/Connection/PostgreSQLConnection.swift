@@ -1,6 +1,7 @@
 import Async
 import Crypto
 import NIO
+import NIOOpenSSL
 
 /// A PostgreSQL frontend client.
 public final class PostgreSQLConnection {
@@ -66,6 +67,25 @@ public final class PostgreSQLConnection {
             responses.append(response)
         }.map(to: [PostgreSQLMessage].self) {
             return responses
+        }
+    }
+
+    /// Checks if the server supports SSL and adds the SSL handler to the pipeline
+    public func establishSSLConnection() -> Future<Void> {
+        return queue.enqueue([.sslMessage(PostgreSQLSSLMessage())]) { message in
+            guard case .sslRequest(let request) = message else {
+                throw PostgreSQLError(identifier: "SSL request", reason: "Unsupported message encountered during SSL request: \(message).", source: .capture())
+            }
+
+            guard request == .S else {
+                return true
+            }
+
+            let configuration = TLSConfiguration.forClient(certificateVerification: .none)
+            let sslContext = try SSLContext(configuration: configuration)
+            let handler = try OpenSSLClientHandler(context: sslContext)
+            let _ = self.channel.pipeline.add(handler: handler, first: true)
+            return true
         }
     }
 

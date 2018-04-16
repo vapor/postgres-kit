@@ -21,18 +21,22 @@ public struct PostgreSQLDatabaseConfig {
     
     /// Optional password to use for authentication.
     public let password: String?
+
+    /// Optional ssl connection
+    public let shouldPreferSSL: Bool
     
     /// Creates a new `PostgreSQLDatabaseConfig`.
-    public init(hostname: String, port: Int = 5432, username: String, database: String? = nil, password: String? = nil) {
+    public init(hostname: String, port: Int = 5432, username: String, database: String? = nil, password: String? = nil, shouldPreferSSL: Bool = false) {
         self.hostname = hostname
         self.port = port
         self.username = username
         self.database = database
         self.password = password
+        self.shouldPreferSSL = shouldPreferSSL
     }
 
     /// Creates a `PostgreSQLDatabaseConfig` frome a connection string.
-    public init(url: String) throws {
+    public init(url: String, shouldPreferSSL: Bool = false) throws {
         guard let urL = URL(string: url),
             let hostname = urL.host,
             let port = urL.port,
@@ -55,5 +59,6 @@ public struct PostgreSQLDatabaseConfig {
             self.database = database
         }
         self.password = urL.password
+        self.shouldPreferSSL = shouldPreferSSL
     }
 }
