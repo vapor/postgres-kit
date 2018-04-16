@@ -28,7 +28,6 @@ final class PostgreSQLMessageDecoder: ByteToMessageDecoder {
 
         //// peek at messageSize
         guard let messageSize: Int32 = buffer.peekInteger(skipping: MemoryLayout<Byte>.size) else {
-
             // message can still be a SSL Request
             if messageType == .S || messageType == .N {
                 if let data = buffer.readSlice(length: 1) {
