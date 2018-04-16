@@ -1,10 +1,3 @@
-//
-//  PostgreSQLSSLRequest.swift
-//  Async
-//
-//  Created by franz busch on 15.04.18.
-//
-
 import Foundation
 
 /// SSL request returned by the server.
