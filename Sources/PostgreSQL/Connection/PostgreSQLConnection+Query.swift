@@ -5,9 +5,9 @@ extension PostgreSQLConnection {
     public func query(
         _ string: String,
         _ parameters: [PostgreSQLDataConvertible] = []
-    ) throws -> Future<[[PostgreSQLColumn: PostgreSQLData]]> {
+    ) -> Future<[[PostgreSQLColumn: PostgreSQLData]]> {
         var rows: [[PostgreSQLColumn: PostgreSQLData]] = []
-        return try query(string, parameters) { row in
+        return query(string, parameters) { row in
             rows.append(row)
         }.map(to: [[PostgreSQLColumn: PostgreSQLData]].self) {
             return rows
@@ -17,6 +17,22 @@ extension PostgreSQLConnection {
     /// Sends a parameterized PostgreSQL query command, returning the parsed results to
     /// the supplied closure.
     public func query(
+        _ string: String,
+        _ parameters: [PostgreSQLDataConvertible] = [],
+        resultFormat: PostgreSQLResultFormat = .binary(),
+        onRow: @escaping ([PostgreSQLColumn: PostgreSQLData]) throws -> ()
+    ) -> Future<Void> {
+        return operation {
+            do {
+                return try self._query(string, parameters, resultFormat: resultFormat, onRow: onRow)
+            } catch {
+                return self.eventLoop.newFailedFuture(error: error)
+            }
+        }
+    }
+
+    /// Non-operation bounded query.
+    private func _query(
         _ string: String,
         _ parameters: [PostgreSQLDataConvertible] = [],
         resultFormat: PostgreSQLResultFormat = .binary(),

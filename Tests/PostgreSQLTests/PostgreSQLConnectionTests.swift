@@ -331,10 +331,10 @@ class PostgreSQLConnectionTests: XCTestCase {
 
 
         /// SELECT
-        let acronyms = try client.query("""
+        let acronyms = client.query("""
         SELECT "acronyms".* FROM "acronyms" WHERE ("acronyms"."id" = $1) LIMIT 1 OFFSET 0
         """, [1])
-        let categories = try client.query("""
+        let categories = client.query("""
         SELECT "categories".* FROM "categories" WHERE ("categories"."id" = $1) LIMIT 1 OFFSET 0
         """, [1])
 
