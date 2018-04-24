@@ -39,6 +39,8 @@ extension PostgreSQLConnection {
         onRow: @escaping ([PostgreSQLColumn: PostgreSQLData]) throws -> ()
     ) throws -> Future<Void> {
         let parameters = try parameters.map { try $0.convertToPostgreSQLData() }
+        logger?.record(query: string, values: parameters.map { $0.description })
+
         let parse = PostgreSQLParseRequest(
             statementName: "",
             query: string,

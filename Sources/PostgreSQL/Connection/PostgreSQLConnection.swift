@@ -15,7 +15,7 @@ public final class PostgreSQLConnection: DatabaseConnection, BasicWorker {
     private let channel: Channel
 
     /// If non-nil, will log queries.
-    public var logger: PostgreSQLLogger?
+    public var logger: DatabaseLogger?
 
     /// See `DatabaseConnection`.
     public var isClosed: Bool
