@@ -7,6 +7,8 @@ enum PostgreSQLMessage {
     case error(PostgreSQLDiagnosticResponse)
     /// Identifies the message as a notice.
     case notice(PostgreSQLDiagnosticResponse)
+    /// Identifies the message as a notification response.
+    case notificationResponse(PostgreSQLNotificationResponse)
     /// One of the various authentication request message formats.
     case authenticationRequest(PostgreSQLAuthenticationRequest)
     /// Identifies the message as a password response.

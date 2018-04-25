@@ -9,7 +9,7 @@ public final class PostgreSQLConnection: DatabaseConnection, BasicWorker {
     }
 
     /// Handles enqueued redis commands and responses.
-    private let queue: QueueHandler<PostgreSQLMessage, PostgreSQLMessage>
+    internal let queue: QueueHandler<PostgreSQLMessage, PostgreSQLMessage>
 
     /// The channel
     private let channel: Channel
@@ -184,10 +184,17 @@ public final class PostgreSQLConnection: DatabaseConnection, BasicWorker {
         }
     }
 
+    internal var beforeClose: ((PostgreSQLConnection) -> Future<Void>)?
+
     /// Closes this client.
     public func close() {
-        isClosed = true
-        channel.close(promise: nil)
+        if let beforeClose = beforeClose {
+            _ = beforeClose(self).then { _ in
+                self.channel.close(mode: CloseMode.all)
+            }
+        } else {
+            channel.close(promise: nil)
+        }
     }
 
     /// Called when this class deinitializes.
