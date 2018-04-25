@@ -44,6 +44,15 @@ public final class PostgreSQLConnection: DatabaseConnection, BasicWorker {
     /// The current query running, if one exists.
     private var pipeline: Future<Void>
 
+    /// Block type to be called on close of connection
+    internal typealias CloseHandler = ((PostgreSQLConnection) -> Future<Void>)
+    /// Called on close of the connection
+    internal var closeHandlers = [CloseHandler]()
+    /// Handler type for Notifications
+    internal typealias NotificationHandler = (String) throws -> Void
+    /// Handlers to be stored by channel name
+    internal var notificationHandlers: [String: NotificationHandler] = [:]
+
     /// Creates a new Redis client on the provided data source and sink.
     init(queue: QueueHandler<PostgreSQLMessage, PostgreSQLMessage>, channel: Channel) {
         self.queue = queue
@@ -184,18 +193,23 @@ public final class PostgreSQLConnection: DatabaseConnection, BasicWorker {
         }
     }
 
-    internal var beforeClose: ((PostgreSQLConnection) -> Future<Void>)?
 
     /// Closes this client.
     public func close() {
-        if let beforeClose = beforeClose {
-            _ = beforeClose(self).then { _ in
-                self.channel.close(mode: CloseMode.all)
+        _ = executeCloseHandlersThenClose()
+    }
+
+
+    private  func executeCloseHandlersThenClose() -> Future<Void> {
+        if let beforeClose = closeHandlers.popLast() {
+            return beforeClose(self).then { _ in
+                self.executeCloseHandlersThenClose()
             }
         } else {
-            channel.close(promise: nil)
+            return channel.close(mode: .all)
         }
     }
+
 
     /// Called when this class deinitializes.
     deinit {
