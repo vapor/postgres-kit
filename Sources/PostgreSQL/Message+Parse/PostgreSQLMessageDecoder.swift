@@ -49,6 +49,7 @@ final class PostgreSQLMessageDecoder: ByteToMessageDecoder {
         let decoder = _PostgreSQLMessageDecoder(data: messageData)
         let message: PostgreSQLMessage
         switch messageType {
+        case .A: message = try .notificationResponse(decoder.decode())
         case .E: message = try .error(decoder.decode())
         case .N: message = try .notice(decoder.decode())
         case .R: message = try .authenticationRequest(decoder.decode())
