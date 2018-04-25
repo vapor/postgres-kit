@@ -145,6 +145,5 @@ public final class PostgreSQLConnection {
         } else {
             channel.close(promise: nil)
         }
-
     }
 }
