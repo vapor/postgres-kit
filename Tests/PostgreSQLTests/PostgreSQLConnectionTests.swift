@@ -5,6 +5,7 @@ import PostgreSQL
 import Core
 
 class PostgreSQLConnectionTests: XCTestCase {
+    let defaultTimeout = 5.0
     func testVersion() throws {
         let client = try PostgreSQLConnection.makeTest()
         let results = try client.simpleQuery("SELECT version();").wait()
@@ -343,23 +344,30 @@ class PostgreSQLConnectionTests: XCTestCase {
     }
 
     func testNotifyAndListen() throws {
+        let completionHandlerExpectation1 = expectation(description: "first completion handler called")
+        let completionHandlerExpectation2 = expectation(description: "final completion handler called")
         let notifyConn = try PostgreSQLConnection.makeTest()
         let listenConn = try PostgreSQLConnection.makeTest()
         let channelName = "Foo"
         let messageText = "Bar"
-        var messageReceived = false
-        
+        let finalMessageText = "Baz"
+
         try listenConn.listen(channelName) { text in
-            messageReceived = text == messageText
+            if text == messageText {
+                completionHandlerExpectation1.fulfill()
+            } else if text == finalMessageText {
+                completionHandlerExpectation2.fulfill()
+            }
         }.catch({ err in XCTFail("error \(err)") })
 
         try notifyConn.notify(channelName, message: messageText).wait()
+        try notifyConn.notify(channelName, message: finalMessageText).wait()
 
-        sleep(1) // Wait for any delay in the message being received
         notifyConn.close()
         listenConn.close()
-        XCTAssert(messageReceived)
+        waitForExpectations(timeout: defaultTimeout)
     }
+
 
     func testURLParsing() throws {
         let databaseURL = "postgres://username:password@hostname.com:5432/database"
@@ -390,7 +398,8 @@ extension PostgreSQLConnection {
     static func makeTest() throws -> PostgreSQLConnection {
         let hostname: String
         #if Xcode
-        hostname = (try? Process.execute("docker-machine", "ip")) ?? "192.168.99.100"
+        //hostname = (try? Process.execute("docker-machine", "ip")) ?? "192.168.99.100"
+        hostname = "localhost"
         #else
         hostname = "localhost"
         #endif
