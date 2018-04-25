@@ -9,6 +9,5 @@ struct PostgreSQLNotificationResponse: Decodable {
         _ = try container.decode(Int32.self)
         channel = try container.decode(String.self)
         message = try container.decode(String.self)
-        NSLog("Found self \(channel) \(message)")
     }
 }
