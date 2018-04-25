@@ -14,7 +14,7 @@ public final class PostgreSQLProvider: Provider {
         try services.register(DatabaseKitProvider())
         services.register(PostgreSQLDatabaseConfig.self)
         services.register(PostgreSQLDatabase.self)
-        var databases = DatabaseConfig()
+        var databases = DatabasesConfig()
         databases.add(database: PostgreSQLDatabase.self, as: .psql)
         services.register(databases)
     }
