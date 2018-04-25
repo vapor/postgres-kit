@@ -8,22 +8,25 @@ let package = Package(
     ],
     dependencies: [
         // 🌎 Utility package containing tools for byte manipulation, Codable, OS APIs, and debugging.
-        .package(url: "https://github.com/vapor/core.git", from: "3.0.0-rc.2"),
+        .package(url: "https://github.com/vapor/core.git", from: "3.0.0"),
         
         // 🔑 Hashing (BCrypt, SHA, HMAC, etc), encryption, and randomness.
-        .package(url: "https://github.com/vapor/crypto.git", from: "3.0.0-rc.2"),
+        .package(url: "https://github.com/vapor/crypto.git", from: "3.0.0"),
 
         // 🗄 Core services for creating database integrations.
-        .package(url: "https://github.com/vapor/database-kit.git", from: "1.0.0-rc.2"),
+        .package(url: "https://github.com/vapor/database-kit.git", .branch("gm")),
 
         // 📦 Dependency injection / inversion of control framework.
-        .package(url: "https://github.com/vapor/service.git", from: "1.0.0-rc.2"),
+        .package(url: "https://github.com/vapor/service.git", from: "1.0.0"),
+
+        // *️⃣ Build SQL queries in Swift.
+        .package(url: "https://github.com/vapor/sql.git", from: "1.0.0"),
         
         // Event-driven network application framework for high performance protocol servers & clients, non-blocking.
         .package(url: "https://github.com/apple/swift-nio.git", from: "1.0.0"),
     ],
     targets: [
-        .target(name: "PostgreSQL", dependencies: ["Async", "Bits", "Core", "Crypto", "DatabaseKit", "NIO", "Service"]),
+        .target(name: "PostgreSQL", dependencies: ["Async", "Bits", "Core", "Crypto", "DatabaseKit", "NIO", "Service", "SQL"]),
         .testTarget(name: "PostgreSQLTests", dependencies: ["Core", "PostgreSQL"]),
     ]
 )

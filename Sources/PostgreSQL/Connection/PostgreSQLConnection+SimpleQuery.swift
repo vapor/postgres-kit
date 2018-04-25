@@ -10,11 +10,15 @@ extension PostgreSQLConnection {
             return rows
         }
     }
-
     /// Sends a simple PostgreSQL query command, returning the parsed results to
     /// the supplied closure.
     public func simpleQuery(_ string: String, onRow: @escaping ([PostgreSQLColumn: PostgreSQLData]) -> ()) -> Future<Void> {
-        logger?.log(query: string, parameters: [])
+        return operation { self._simpleQuery(string, onRow: onRow) }
+    }
+
+    /// Non-operation bounded simple query.
+    private func _simpleQuery(_ string: String, onRow: @escaping ([PostgreSQLColumn: PostgreSQLData]) -> ()) -> Future<Void> {
+        logger?.record(query: string)
         var currentRow: PostgreSQLRowDescription?
         let query = PostgreSQLQuery(query: string)
         return send([.query(query)]) { message in
