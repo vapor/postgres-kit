@@ -399,9 +399,9 @@ class PostgreSQLConnectionTests: XCTestCase {
     }
 
     func testUnlisten() throws {
-        let completionHandlerExpectation = expectation(description: "notify completion handler called")
-        completionHandlerExpectation.expectedFulfillmentCount = 2
-        completionHandlerExpectation.assertForOverFulfill = true
+        let unlistenHandlerExpectation = expectation(description: "unlisten completion handler called")
+
+        let listenHandlerExpectation = expectation(description: "listen completion handler called")
 
         let notifyConn = try PostgreSQLConnection.makeTest()
         let listenConn = try PostgreSQLConnection.makeTest()
@@ -410,16 +410,15 @@ class PostgreSQLConnectionTests: XCTestCase {
 
         try listenConn.listen(channelName) { text in
             if text == messageText {
-                completionHandlerExpectation.fulfill()
+                listenHandlerExpectation.fulfill()
             }
         }.catch({ err in XCTFail("error \(err)") })
 
         try notifyConn.notify(channelName, message: messageText).wait()
         try notifyConn.unlisten(channelName, unlistenHandler: {
-            completionHandlerExpectation.fulfill()
+            unlistenHandlerExpectation.fulfill()
         }).wait()
         waitForExpectations(timeout: defaultTimeout)
-
         notifyConn.close()
         listenConn.close()
     }
