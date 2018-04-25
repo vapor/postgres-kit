@@ -1,6 +1,8 @@
 import Async
 
 extension PostgreSQLConnection {
+    /// Note: after calling `listen'` on a connection, it can no longer handle other database operations. Do not try to send other SQL commands through this connection afterwards.
+    /// IAlso, notifications will only be sent for as long as this connection remains open; you are responsible for opening a new connection to listen on when this one closes.
     public func listen(
         _ channelName: String,
         handler: @escaping (String) throws -> ()
