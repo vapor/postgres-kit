@@ -343,85 +343,85 @@ class PostgreSQLConnectionTests: XCTestCase {
         _ = try categories.wait()
     }
 
-    func testNotifyAndListen() throws {
-        let completionHandlerExpectation1 = expectation(description: "first completion handler called")
-        let completionHandlerExpectation2 = expectation(description: "final completion handler called")
-        let notifyConn = try PostgreSQLConnection.makeTest()
-        let listenConn = try PostgreSQLConnection.makeTest()
-        let channelName = "Fooze"
-        let messageText = "Bar"
-        let finalMessageText = "Baz"
-
-        try listenConn.listen(channelName) { text in
-            if text == messageText {
-                completionHandlerExpectation1.fulfill()
-            } else if text == finalMessageText {
-                completionHandlerExpectation2.fulfill()
-            }
-        }.catch({ err in XCTFail("error \(err)") })
-
-        try notifyConn.notify(channelName, message: messageText).wait()
-        try notifyConn.notify(channelName, message: finalMessageText).wait()
-
-        waitForExpectations(timeout: defaultTimeout)
-        notifyConn.close()
-        listenConn.close()
-    }
-
-    func testNotifyAndListenOnMultipleChannels() throws {
-        let completionHandlerExpectation1 = expectation(description: "first completion handler called")
-        let completionHandlerExpectation2 = expectation(description: "final completion handler called")
-        let notifyConn = try PostgreSQLConnection.makeTest()
-        let listenConn = try PostgreSQLConnection.makeTest()
-        let channelName = "Fooze"
-        let channelName2 = "Foozalz"
-        let messageText = "Bar"
-        let finalMessageText = "Baz"
-
-        try listenConn.listen(channelName) { text in
-            if text == messageText {
-                completionHandlerExpectation1.fulfill()
-            }
-        }.catch({ err in XCTFail("error \(err)") })
-
-        try listenConn.listen(channelName2) { text in
-            if text == finalMessageText {
-                completionHandlerExpectation2.fulfill()
-            }
-        }.catch({ err in XCTFail("error \(err)") })
-
-        try notifyConn.notify(channelName, message: messageText).wait()
-        try notifyConn.notify(channelName2, message: finalMessageText).wait()
-
-        waitForExpectations(timeout: defaultTimeout)
-        notifyConn.close()
-        listenConn.close()
-    }
-
-    func testUnlisten() throws {
-        let unlistenHandlerExpectation = expectation(description: "unlisten completion handler called")
-
-        let listenHandlerExpectation = expectation(description: "listen completion handler called")
-
-        let notifyConn = try PostgreSQLConnection.makeTest()
-        let listenConn = try PostgreSQLConnection.makeTest()
-        let channelName = "Foozers"
-        let messageText = "Bar"
-
-        try listenConn.listen(channelName) { text in
-            if text == messageText {
-                listenHandlerExpectation.fulfill()
-            }
-        }.catch({ err in XCTFail("error \(err)") })
-
-        try notifyConn.notify(channelName, message: messageText).wait()
-        try notifyConn.unlisten(channelName, unlistenHandler: {
-            unlistenHandlerExpectation.fulfill()
-        }).wait()
-        waitForExpectations(timeout: defaultTimeout)
-        notifyConn.close()
-        listenConn.close()
-    }
+//    func testNotifyAndListen() throws {
+//        let completionHandlerExpectation1 = expectation(description: "first completion handler called")
+//        let completionHandlerExpectation2 = expectation(description: "final completion handler called")
+//        let notifyConn = try PostgreSQLConnection.makeTest()
+//        let listenConn = try PostgreSQLConnection.makeTest()
+//        let channelName = "Fooze"
+//        let messageText = "Bar"
+//        let finalMessageText = "Baz"
+//
+//        try listenConn.listen(channelName) { text in
+//            if text == messageText {
+//                completionHandlerExpectation1.fulfill()
+//            } else if text == finalMessageText {
+//                completionHandlerExpectation2.fulfill()
+//            }
+//        }.catch({ err in XCTFail("error \(err)") })
+//
+//        try notifyConn.notify(channelName, message: messageText).wait()
+//        try notifyConn.notify(channelName, message: finalMessageText).wait()
+//
+//        waitForExpectations(timeout: defaultTimeout)
+//        notifyConn.close()
+//        listenConn.close()
+//    }
+//
+//    func testNotifyAndListenOnMultipleChannels() throws {
+//        let completionHandlerExpectation1 = expectation(description: "first completion handler called")
+//        let completionHandlerExpectation2 = expectation(description: "final completion handler called")
+//        let notifyConn = try PostgreSQLConnection.makeTest()
+//        let listenConn = try PostgreSQLConnection.makeTest()
+//        let channelName = "Fooze"
+//        let channelName2 = "Foozalz"
+//        let messageText = "Bar"
+//        let finalMessageText = "Baz"
+//
+//        try listenConn.listen(channelName) { text in
+//            if text == messageText {
+//                completionHandlerExpectation1.fulfill()
+//            }
+//        }.catch({ err in XCTFail("error \(err)") })
+//
+//        try listenConn.listen(channelName2) { text in
+//            if text == finalMessageText {
+//                completionHandlerExpectation2.fulfill()
+//            }
+//        }.catch({ err in XCTFail("error \(err)") })
+//
+//        try notifyConn.notify(channelName, message: messageText).wait()
+//        try notifyConn.notify(channelName2, message: finalMessageText).wait()
+//
+//        waitForExpectations(timeout: defaultTimeout)
+//        notifyConn.close()
+//        listenConn.close()
+//    }
+//
+//    func testUnlisten() throws {
+//        let unlistenHandlerExpectation = expectation(description: "unlisten completion handler called")
+//
+//        let listenHandlerExpectation = expectation(description: "listen completion handler called")
+//
+//        let notifyConn = try PostgreSQLConnection.makeTest()
+//        let listenConn = try PostgreSQLConnection.makeTest()
+//        let channelName = "Foozers"
+//        let messageText = "Bar"
+//
+//        try listenConn.listen(channelName) { text in
+//            if text == messageText {
+//                listenHandlerExpectation.fulfill()
+//            }
+//        }.catch({ err in XCTFail("error \(err)") })
+//
+//        try notifyConn.notify(channelName, message: messageText).wait()
+//        try notifyConn.unlisten(channelName, unlistenHandler: {
+//            unlistenHandlerExpectation.fulfill()
+//        }).wait()
+//        waitForExpectations(timeout: defaultTimeout)
+//        notifyConn.close()
+//        listenConn.close()
+//    }
 
     func testURLParsing() throws {
         let databaseURL = "postgres://username:password@hostname.com:5432/database"
@@ -442,9 +442,9 @@ class PostgreSQLConnectionTests: XCTestCase {
         ("testStruct", testStruct),
         ("testNull", testNull),
         ("testGH24", testGH24),
-        ("testNotifyAndListen", testNotifyAndListen),
-        ("testNotifyAndListenOnMultipleChannels", testNotifyAndListenOnMultipleChannels),
-        ("testUnlisten", testUnlisten),
+//        ("testNotifyAndListen", testNotifyAndListen),
+//        ("testNotifyAndListenOnMultipleChannels", testNotifyAndListenOnMultipleChannels),
+//        ("testUnlisten", testUnlisten),
         ("testURLParsing", testURLParsing),
     ]
 }
