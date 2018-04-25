@@ -33,7 +33,7 @@ class PostgreSQLConnectionTests: XCTestCase {
         for row in rows {
             try XCTAssert(
                 row.firstValue(forColumn: "typlen")?.decode(Int.self) == 1 ||
-                    row.firstValue(forColumn: "typlen")?.decode(Int.self) == 2
+                row.firstValue(forColumn: "typlen")?.decode(Int.self) == 2
             )
         }
     }
@@ -261,7 +261,7 @@ class PostgreSQLConnectionTests: XCTestCase {
         XCTAssertEqual(createResult.count, 0)
         let insertResult = try client.query("insert into foo values ($1, $2);", [
             Int32(1), Hello(message: "hello, world")
-            ]).wait()
+        ]).wait()
 
         XCTAssertEqual(insertResult.count, 0)
         let parameterizedResult = try client.query("select * from foo").wait()
@@ -282,7 +282,7 @@ class PostgreSQLConnectionTests: XCTestCase {
         let insertResult = try client.query("insert into nulltest  (i, d) VALUES ($1, $2)", [
             PostgreSQLData(type: .int2, format: .binary, data: Data([0x00, 0x01])),
             PostgreSQLData(type: .timestamp, format: .binary, data: nil),
-            ]).wait()
+        ]).wait()
         XCTAssertEqual(insertResult.count, 0)
         let parameterizedResult = try client.query("select * from nulltest").wait()
         XCTAssertEqual(parameterizedResult.count, 1)
@@ -358,7 +358,7 @@ class PostgreSQLConnectionTests: XCTestCase {
             } else if text == finalMessageText {
                 completionHandlerExpectation2.fulfill()
             }
-            }.catch({ err in XCTFail("error \(err)") })
+        }.catch({ err in XCTFail("error \(err)") })
 
         try notifyConn.notify(channelName, message: messageText).wait()
         try notifyConn.notify(channelName, message: finalMessageText).wait()
@@ -382,14 +382,13 @@ class PostgreSQLConnectionTests: XCTestCase {
             if text == messageText {
                 completionHandlerExpectation1.fulfill()
             }
-
-            }.catch({ err in XCTFail("error \(err)") })
+        }.catch({ err in XCTFail("error \(err)") })
 
         try listenConn.listen(channelName2) { text in
             if text == finalMessageText {
                 completionHandlerExpectation2.fulfill()
             }
-            }.catch({ err in XCTFail("error \(err)") })
+        }.catch({ err in XCTFail("error \(err)") })
 
         try notifyConn.notify(channelName, message: messageText).wait()
         try notifyConn.notify(channelName2, message: finalMessageText).wait()
@@ -448,7 +447,7 @@ class PostgreSQLConnectionTests: XCTestCase {
         ("testNotifyAndListenOnMultipleChannels", testNotifyAndListenOnMultipleChannels),
         ("testUnlisten", testUnlisten),
         ("testURLParsing", testURLParsing),
-        ]
+    ]
 }
 
 extension PostgreSQLConnection {
