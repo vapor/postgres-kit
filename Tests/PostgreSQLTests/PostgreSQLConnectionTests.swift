@@ -455,15 +455,14 @@ extension PostgreSQLConnection {
     static func makeTest() throws -> PostgreSQLConnection {
         let hostname: String
         #if Xcode
-        //hostname = (try? Process.execute("docker-machine", "ip")) ?? "192.168.99.100"
-        hostname = "localhost"
+        hostname = (try? Process.execute("docker-machine", "ip")) ?? "192.168.99.100"
         #else
         hostname = "localhost"
         #endif
         let group = MultiThreadedEventLoopGroup(numThreads: 1)
         let client = try PostgreSQLConnection.connect(hostname: hostname, on: group) { error in
             XCTFail("\(error)")
-            }.wait()
+        }.wait()
         _ = try client.authenticate(username: "vapor_username", database: "vapor_database", password: nil).wait()
         return client
     }
