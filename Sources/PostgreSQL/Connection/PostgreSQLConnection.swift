@@ -1,5 +1,6 @@
 import Crypto
 import NIO
+import NIOOpenSSL
 
 /// A PostgreSQL frontend client.
 public final class PostgreSQLConnection: DatabaseConnection, BasicWorker {
@@ -126,6 +127,23 @@ public final class PostgreSQLConnection: DatabaseConnection, BasicWorker {
 
         /// return the newly enqueued work's future result
         return new
+    }
+    
+    /// Trys opening a SLL connection
+    internal func attemptSSLConnection(using tlsConfiguration: TLSConfiguration) -> Future<Void> {
+        return queue.enqueue([.sslSupportRequest(PostgreSQLSSLSupportRequest())]) { message in
+            guard case .sslSupportResponse(let response) = message else {
+                throw PostgreSQLError(identifier: "SSL support check", reason: "Unsupported message encountered during SSL support check: \(message).", source: .capture())
+            }
+            guard response == .supported else {
+                throw PostgreSQLError(identifier: "SSL support check", reason: "tlsConfiguration given in PostgresSQLConfiguration, but SSL connection not supported by PostgreSQL server", source: .capture())
+            }
+            return true
+        }.flatMap {
+            let sslContext = try SSLContext(configuration: tlsConfiguration)
+            let handler = try OpenSSLClientHandler(context: sslContext)
+            return self.channel.pipeline.add(handler: handler, first: true)
+        }
     }
 
     /// Authenticates the `PostgreSQLClient` using a username with no password.

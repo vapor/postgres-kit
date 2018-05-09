@@ -2,6 +2,11 @@ import Bits
 
 /// A frontend or backend PostgreSQL message.
 enum PostgreSQLMessage {
+    /// Asks the server if it supports SSL.
+    case sslSupportRequest(PostgreSQLSSLSupportRequest)
+    /// Response after sending an sslSupportRequest message.
+    case sslSupportResponse(PostgreSQLSSLSupportResponse)
+    /// Startup message
     case startupMessage(PostgreSQLStartupMessage)
     /// Identifies the message as an error.
     case error(PostgreSQLDiagnosticResponse)

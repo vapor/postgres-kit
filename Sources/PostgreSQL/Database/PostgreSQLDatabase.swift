@@ -22,6 +22,11 @@ public final class PostgreSQLDatabase: Database, LogSupporting {
             return try PostgreSQLConnection.connect(hostname: config.hostname, port: config.port, on: worker) { error in
                 print("[PostgreSQL] \(error)")
             }.flatMap(to: PostgreSQLConnection.self) { client in
+                if let tlsConfiguration = config.tlsConfiguration {
+                    return client.attemptSSLConnection(using: tlsConfiguration).transform(to: client)
+                }
+                return Future.map(on: worker) { client }
+            }.flatMap(to: PostgreSQLConnection.self) { client in
                 return client.authenticate(
                     username: config.username,
                     database: config.database,
