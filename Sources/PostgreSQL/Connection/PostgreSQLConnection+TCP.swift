@@ -1,11 +1,13 @@
 import Async
 import NIO
+import NIOOpenSSL
 
 extension PostgreSQLConnection {
     /// Connects to a Redis server using a TCP socket.
     public static func connect(
         hostname: String = "localhost",
         port: Int = 5432,
+        tlsConfiguration: TLSConfiguration? = nil,
         on worker: Worker,
         onError: @escaping (Error) -> ()
     ) throws -> Future<PostgreSQLConnection> {
@@ -19,8 +21,12 @@ extension PostgreSQLConnection {
                 }
         }
 
-        return bootstrap.connect(host: hostname, port: port).map(to: PostgreSQLConnection.self) { channel in
-            return .init(queue: handler, channel: channel)
+        return bootstrap.connect(host: hostname, port: port).flatMap(to: PostgreSQLConnection.self) { channel in
+            let connection = PostgreSQLConnection(queue: handler, channel: channel)
+            if let tlsConfiguration = tlsConfiguration {
+                return connection.attemptSSLConnection(using: tlsConfiguration).transform(to: connection)
+            }
+            return Future.map(on: worker) { connection }
         }
     }
 }

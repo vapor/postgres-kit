@@ -1,6 +1,7 @@
 import Foundation
 import XCTest
 import NIO
+import NIOOpenSSL
 import PostgreSQL
 import Core
 
@@ -8,6 +9,12 @@ class PostgreSQLConnectionTests: XCTestCase {
     let defaultTimeout = 5.0
     func testVersion() throws {
         let client = try PostgreSQLConnection.makeTest()
+        let results = try client.simpleQuery("SELECT version();").wait()
+        try XCTAssert(results[0].firstValue(forColumn: "version")?.decode(String.self).contains("10.") == true)
+    }
+    
+    func testSSLConnection() throws {
+        let client = try PostgreSQLConnection.makeTest(tlsConfiguration: .forClient(certificateVerification: .none))
         let results = try client.simpleQuery("SELECT version();").wait()
         try XCTAssert(results[0].firstValue(forColumn: "version")?.decode(String.self).contains("10.") == true)
     }
@@ -451,7 +458,7 @@ class PostgreSQLConnectionTests: XCTestCase {
 
 extension PostgreSQLConnection {
     /// Creates a test event loop and psql client.
-    static func makeTest() throws -> PostgreSQLConnection {
+    static func makeTest(tlsConfiguration: TLSConfiguration? = nil) throws -> PostgreSQLConnection {
         let hostname: String
         #if Xcode
         hostname = (try? Process.execute("docker-machine", "ip")) ?? "192.168.99.100"
@@ -459,7 +466,7 @@ extension PostgreSQLConnection {
         hostname = "localhost"
         #endif
         let group = MultiThreadedEventLoopGroup(numThreads: 1)
-        let client = try PostgreSQLConnection.connect(hostname: hostname, on: group) { error in
+        let client = try PostgreSQLConnection.connect(hostname: hostname, tlsConfiguration: tlsConfiguration, on: group) { error in
             XCTFail("\(error)")
         }.wait()
         _ = try client.authenticate(username: "vapor_username", database: "vapor_database", password: nil).wait()
