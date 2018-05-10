@@ -1,7 +1,7 @@
 /// Represents a PostgreSQL column.
 public struct PostgreSQLColumn: Hashable, Equatable {
     /// The table this column belongs to.
-    public var tableOID: Int32
+    public var tableOID: UInt32
 
     /// The column's name.
     public var name: String
@@ -26,7 +26,7 @@ extension Dictionary where Key == PostgreSQLColumn {
 
     /// Access a `Value` from this dictionary keyed by `PostgreSQLColumn`s
     /// using a field (column) name and entity (table) name.
-    public func value(forTableOID tableOID: Int32, atColumn column: String) -> Value? {
+    public func value(forTableOID tableOID: UInt32, atColumn column: String) -> Value? {
         return self[PostgreSQLColumn(tableOID: tableOID, name: column)]
     }
 }
