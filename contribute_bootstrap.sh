@@ -13,11 +13,8 @@ docker rm vapor-psql-ssl
 echo "💧  creating vapor-psql dev db..."
 docker run --name vapor-psql -e POSTGRES_USER=vapor_username -e POSTGRES_DB=vapor_database -p 5432:5432 -d postgres:latest
 
-echo "💧  building postgres-ssl docker image..."
-docker build -t postgres-ssl https://github.com/scenecheck/postgres-ssl.git
-
 echo "💧  creating vapor-psql-ssl dev db..."
-docker run -d --name vapor-psql-ssl -e POSTGRES_USER=vapor_username -e POSTGRES_DB=vapor_database -p 5433:5432 postgres-ssl
+docker run -d --name vapor-psql-ssl -e POSTGRES_USER=vapor_username -e POSTGRES_DB=vapor_database -p 5433:5432 scenecheck/postgres-ssl:latest
 
 echo "💧  generating xcode proj..."
 swift package -Xswiftc -DTEST_DOCKER_HOSTNAME generate-xcodeproj
