@@ -13,8 +13,8 @@ class PostgreSQLConnectionTests: XCTestCase {
         try XCTAssert(results[0].firstValue(forColumn: "version")?.decode(String.self).contains("10.") == true)
     }
     
-    func testSSLConnection() throws {
-        let client = try PostgreSQLConnection.makeTest(tlsConfiguration: .forClient(certificateVerification: .none))
+    func testUnverifiedSSLConnection() throws {
+        let client = try PostgreSQLConnection.makeTest(transportConfig: .unverifiedTLS)
         let results = try client.simpleQuery("SELECT version();").wait()
         try XCTAssert(results[0].firstValue(forColumn: "version")?.decode(String.self).contains("10.") == true)
     }
@@ -441,7 +441,7 @@ class PostgreSQLConnectionTests: XCTestCase {
     }
 
     static var allTests = [
-        ("testSSLConnection", testSSLConnection),
+        ("testUnverifiedSSLConnection", testUnverifiedSSLConnection),
         ("testVersion", testVersion),
         ("testSelectTypes", testSelectTypes),
         ("testParse", testParse),
@@ -459,7 +459,7 @@ class PostgreSQLConnectionTests: XCTestCase {
 
 extension PostgreSQLConnection {
     /// Creates a test event loop and psql client.
-    static func makeTest(tlsConfiguration: TLSConfiguration? = nil) throws -> PostgreSQLConnection {
+    static func makeTest(transportConfig: PostgreSQLTransportConfig? = nil) throws -> PostgreSQLConnection {
         let hostname: String
         #if Xcode
         hostname = (try? Process.execute("docker-machine", "ip")) ?? "192.168.99.100"
@@ -469,8 +469,8 @@ extension PostgreSQLConnection {
         let group = MultiThreadedEventLoopGroup(numThreads: 1)
         var client: PostgreSQLConnection
         
-        if let tlsConfiguration = tlsConfiguration {
-            client = try PostgreSQLConnection.connect(hostname: hostname, port: 5433, tlsConfiguration: tlsConfiguration, on: group) { error in
+        if let transportConfig = transportConfig {
+            client = try PostgreSQLConnection.connect(hostname: hostname, port: 5433, transportConfig: transportConfig, on: group) { error in
                 XCTFail("\(error)")
             }.wait()
         } else {

@@ -19,7 +19,7 @@ public final class PostgreSQLDatabase: Database, LogSupporting {
     public func newConnection(on worker: Worker) -> Future<PostgreSQLConnection> {
         let config = self.config
         return Future.flatMap(on: worker) {
-            return try PostgreSQLConnection.connect(hostname: config.hostname, port: config.port, tlsConfiguration: config.tlsConfiguration, on: worker) { error in
+            return try PostgreSQLConnection.connect(hostname: config.hostname, port: config.port, transportConfig: config.transportConfig, on: worker) { error in
                 print("[PostgreSQL] \(error)")
             }.flatMap(to: PostgreSQLConnection.self) { client in
                 return client.authenticate(

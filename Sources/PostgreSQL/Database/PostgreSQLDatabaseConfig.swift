@@ -24,22 +24,22 @@ public struct PostgreSQLDatabaseConfig {
     /// Optional password to use for authentication.
     public let password: String?
     
-    /// Optional TLSConfiguration. Set this if your PostgreSQL server requires an SSL connection
-    /// For paid Heroku Postgres plans, set this to `.forClient(certificateVerification: .none)`
-    public let tlsConfiguration: TLSConfiguration?
+    /// Configures how data is transported to the server. Use this to enable SSL.
+    /// See `PostgreSQLTransportConfig` for more info
+    public let transportConfig: PostgreSQLTransportConfig
     
     /// Creates a new `PostgreSQLDatabaseConfig`.
-    public init(hostname: String, port: Int = 5432, username: String, database: String? = nil, password: String? = nil, tlsConfiguration: TLSConfiguration? = nil) {
+    public init(hostname: String, port: Int = 5432, username: String, database: String? = nil, password: String? = nil, transportConfig: PostgreSQLTransportConfig = .cleartext) {
         self.hostname = hostname
         self.port = port
         self.username = username
         self.database = database
         self.password = password
-        self.tlsConfiguration = tlsConfiguration
+        self.transportConfig = transportConfig
     }
 
     /// Creates a `PostgreSQLDatabaseConfig` frome a connection string.
-    public init(url urlString: String, tlsConfiguration: TLSConfiguration? = nil) throws {
+    public init(url urlString: String, transportConfig: PostgreSQLTransportConfig = .cleartext) throws {
         guard let url = URL(string: urlString),
             let hostname = url.host,
             let port = url.port,
@@ -64,6 +64,6 @@ public struct PostgreSQLDatabaseConfig {
             self.database = database
         }
         self.password = url.password
-        self.tlsConfiguration = tlsConfiguration
+        self.transportConfig = transportConfig
     }
 }
