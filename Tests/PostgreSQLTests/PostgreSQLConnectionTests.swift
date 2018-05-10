@@ -469,7 +469,13 @@ extension PostgreSQLConnection {
         let hostname = "localhost"
         let hostnameSSL = "localhost-ssl"
         let portSSL = 5432
-        let password = "vapor_password"
+        let password: String?
+        
+        if transportConfig != nil {
+            password = "vapor_password"
+        } else {
+            password = nil
+        }
         #endif
         
         let group = MultiThreadedEventLoopGroup(numThreads: 1)
