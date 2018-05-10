@@ -24,7 +24,8 @@ public struct PostgreSQLDatabaseConfig {
     /// Optional password to use for authentication.
     public let password: String?
     
-    /// Optional TLSConfiguration. Set this if your PostgreSQL server requires an SSL configuration
+    /// Optional TLSConfiguration. Set this if your PostgreSQL server requires an SSL connection
+    /// For paid Heroku Postgres plans, set this to `.forClient(certificateVerification: .none)`
     public let tlsConfiguration: TLSConfiguration?
     
     /// Creates a new `PostgreSQLDatabaseConfig`.

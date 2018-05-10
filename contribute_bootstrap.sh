@@ -5,7 +5,6 @@ echo "💧  exporting docker machine environment..."
 eval $(docker-machine env default)
 
 echo "💧  cleaning previous psql containers..."
-rm -rf postgres
 docker stop vapor-psql
 docker stop vapor-psql-ssl
 docker rm vapor-psql
