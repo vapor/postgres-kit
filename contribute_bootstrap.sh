@@ -15,7 +15,6 @@ docker run --name vapor-psql -e POSTGRES_USER=vapor_username -e POSTGRES_DB=vapo
 
 echo "💧  building postgres-ssl docker image..."
 docker build -t postgres-ssl https://github.com/scenecheck/postgres-ssl.git
-# docker build -t postgres-ssl ~/Repositories/Docker-Postgres-SSL # 
 
 echo "💧  creating vapor-psql-ssl dev db..."
 docker run -d --name vapor-psql-ssl -e POSTGRES_USER=vapor_username -e POSTGRES_DB=vapor_database -p 5433:5432 postgres-ssl
