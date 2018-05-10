@@ -459,40 +459,34 @@ class PostgreSQLConnectionTests: XCTestCase {
 
 extension PostgreSQLConnection {
     /// Creates a test event loop and psql client.
-    static func makeTest(transportConfig: PostgreSQLTransportConfig? = nil) throws -> PostgreSQLConnection {
+    static func makeTest() throws -> PostgreSQLConnection {
         #if Xcode
-        let hostname = (try? Process.execute("docker-machine", "ip")) ?? "192.168.99.100"
-        let hostnameSSL = hostname
-        let portSSL = 5433
-        let password: String? = nil
+        return try _makeTest(hostname: self.dockerMachineHostname)
         #else
-        let hostname = "localhost"
-        let hostnameSSL = "localhost-ssl"
-        let portSSL = 5432
-        let password: String?
-        
-        if transportConfig != nil {
-            password = "vapor_password"
-        } else {
-            password = nil
-        }
+        return try _makeTest(hostname: "localhost")
         #endif
-        
+    }
+    
+    /// Creates a test event loop and psql client over ssl
+    static func makeTest(transportConfig: PostgreSQLTransportConfig) throws -> PostgreSQLConnection {
+        #if Xcode
+        return try _makeTest(hostname: self.dockerMachineHostname, port: 5433, transportConfig: transportConfig)
+        #else
+        return try _makeTest(hostname: "localhost-ssl", password: "vapor_password", transportConfig: transportConfig)
+        #endif
+    }
+    
+    private static func _makeTest(hostname: String, password: String? = nil, port: Int = 5432, transportConfig: PostgreSQLTransportConfig = .cleartext) throws -> PostgreSQLConnection {
         let group = MultiThreadedEventLoopGroup(numThreads: 1)
-        var client: PostgreSQLConnection
-        
-        if let transportConfig = transportConfig {
-            client = try PostgreSQLConnection.connect(hostname: hostnameSSL, port: portSSL, transportConfig: transportConfig, on: group) { error in
-                XCTFail("\(error)")
+        let client = try PostgreSQLConnection.connect(hostname: hostname, port: port, transportConfig: transportConfig, on: group) { error in
+            XCTFail("\(error)")
             }.wait()
-        } else {
-            client = try PostgreSQLConnection.connect(hostname: hostname, on: group) { error in
-                XCTFail("\(error)")
-            }.wait()
-        }
-        
         _ = try client.authenticate(username: "vapor_username", database: "vapor_database", password: password).wait()
         return client
+    }
+    
+    private static var dockerMachineHostname: String {
+        return (try? Process.execute("docker-machine", "ip")) ?? "192.168.99.100"
     }
 }
 
