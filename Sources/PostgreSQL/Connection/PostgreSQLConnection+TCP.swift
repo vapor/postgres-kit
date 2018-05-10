@@ -24,7 +24,7 @@ extension PostgreSQLConnection {
         return bootstrap.connect(host: hostname, port: port).flatMap(to: PostgreSQLConnection.self) { channel in
             let connection = PostgreSQLConnection(queue: handler, channel: channel)
             if let tlsConfiguration = tlsConfiguration {
-                return connection.attemptSSLConnection(using: tlsConfiguration).transform(to: connection)
+                return connection.addSSLClientHandler(using: tlsConfiguration).transform(to: connection)
             }
             return Future.map(on: worker) { connection }
         }

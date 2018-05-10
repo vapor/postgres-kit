@@ -441,6 +441,7 @@ class PostgreSQLConnectionTests: XCTestCase {
     }
 
     static var allTests = [
+        ("testSSLConnection", testSSLConnection),
         ("testVersion", testVersion),
         ("testSelectTypes", testSelectTypes),
         ("testParse", testParse),
@@ -466,9 +467,18 @@ extension PostgreSQLConnection {
         hostname = "localhost"
         #endif
         let group = MultiThreadedEventLoopGroup(numThreads: 1)
-        let client = try PostgreSQLConnection.connect(hostname: hostname, tlsConfiguration: tlsConfiguration, on: group) { error in
-            XCTFail("\(error)")
-        }.wait()
+        var client: PostgreSQLConnection
+        
+        if let tlsConfiguration = tlsConfiguration {
+            client = try PostgreSQLConnection.connect(hostname: hostname, port: 5433, tlsConfiguration: tlsConfiguration, on: group) { error in
+                XCTFail("\(error)")
+            }.wait()
+        } else {
+            client = try PostgreSQLConnection.connect(hostname: hostname, on: group) { error in
+                XCTFail("\(error)")
+            }.wait()
+        }
+        
         _ = try client.authenticate(username: "vapor_username", database: "vapor_database", password: nil).wait()
         return client
     }
