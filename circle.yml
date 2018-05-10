@@ -14,13 +14,12 @@ jobs:
     docker:
       - image: codevapor/swift:4.1
       - image: circleci/postgres:latest
-        name: vapor-psql
+        name: localhost
         environment:
           POSTGRES_USER: vapor_username
           POSTGRES_DB: vapor_database
           POSTGRES_PASSWORD: vapor_password
       - image: scenecheck/postgres-ssl:latest
-        command: -p 5433
         name: vapor-psql-ssl
         environment:
           POSTGRES_USER: vapor_username
