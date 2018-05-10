@@ -460,18 +460,18 @@ class PostgreSQLConnectionTests: XCTestCase {
 extension PostgreSQLConnection {
     /// Creates a test event loop and psql client.
     static func makeTest(transportConfig: PostgreSQLTransportConfig? = nil) throws -> PostgreSQLConnection {
-        let hostname: String
-        let hostnameSSL: String
-        let portSSL: Int
         #if Xcode
-        hostname = (try? Process.execute("docker-machine", "ip")) ?? "192.168.99.100"
-        hostnameSSL = hostname
-        portSSL = 5433
+        let hostname = (try? Process.execute("docker-machine", "ip")) ?? "192.168.99.100"
+        let hostnameSSL = hostname
+        let portSSL = 5433
+        let password: String? = nil
         #else
-        hostname = "localhost"
-        hostnameSSL = "localhost-ssl"
-        portSSL = 5432
+        let hostname = "localhost"
+        let hostnameSSL = "localhost-ssl"
+        let portSSL = 5432
+        let password = "vapor_password"
         #endif
+        
         let group = MultiThreadedEventLoopGroup(numThreads: 1)
         var client: PostgreSQLConnection
         
@@ -485,7 +485,7 @@ extension PostgreSQLConnection {
             }.wait()
         }
         
-        _ = try client.authenticate(username: "vapor_username", database: "vapor_database", password: nil).wait()
+        _ = try client.authenticate(username: "vapor_username", database: "vapor_database", password: password).wait()
         return client
     }
 }
