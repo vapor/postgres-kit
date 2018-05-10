@@ -461,16 +461,22 @@ extension PostgreSQLConnection {
     /// Creates a test event loop and psql client.
     static func makeTest(transportConfig: PostgreSQLTransportConfig? = nil) throws -> PostgreSQLConnection {
         let hostname: String
+        let hostnameSSL: String
+        let portSSL: Int
         #if Xcode
         hostname = (try? Process.execute("docker-machine", "ip")) ?? "192.168.99.100"
+        hostnameSSL = hostname
+        portSSL = 5433
         #else
         hostname = "localhost"
+        hostnameSsl = "localhost-ssl"
+        portSSL = 5432
         #endif
         let group = MultiThreadedEventLoopGroup(numThreads: 1)
         var client: PostgreSQLConnection
         
         if let transportConfig = transportConfig {
-            client = try PostgreSQLConnection.connect(hostname: hostname, port: 5433, transportConfig: transportConfig, on: group) { error in
+            client = try PostgreSQLConnection.connect(hostname: hostnameSSL, port: portSSL, transportConfig: transportConfig, on: group) { error in
                 XCTFail("\(error)")
             }.wait()
         } else {
