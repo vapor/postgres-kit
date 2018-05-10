@@ -469,7 +469,7 @@ extension PostgreSQLConnection {
         portSSL = 5433
         #else
         hostname = "localhost"
-        hostnameSsl = "localhost-ssl"
+        hostnameSSL = "localhost-ssl"
         portSSL = 5432
         #endif
         let group = MultiThreadedEventLoopGroup(numThreads: 1)
