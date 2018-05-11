@@ -14,7 +14,7 @@ class PostgreSQLConnectionTests: XCTestCase {
     }
     
     func testUnverifiedSSLConnection() throws {
-        let client = try PostgreSQLConnection.makeTest(transportConfig: .unverifiedTLS)
+        let client = try PostgreSQLConnection.makeTest(transport: .unverifiedTLS)
         let results = try client.simpleQuery("SELECT version();").wait()
         try XCTAssert(results[0].firstValue(forColumn: "version")?.decode(String.self).contains("10.") == true)
     }
@@ -468,17 +468,17 @@ extension PostgreSQLConnection {
     }
     
     /// Creates a test event loop and psql client over ssl
-    static func makeTest(transportConfig: PostgreSQLTransportConfig) throws -> PostgreSQLConnection {
+    static func makeTest(transport: PostgreSQLTransportConfig) throws -> PostgreSQLConnection {
         #if Xcode
-        return try _makeTest(hostname: self.dockerMachineHostname, port: 5433, transportConfig: transportConfig)
+        return try _makeTest(hostname: self.dockerMachineHostname, port: 5433, transport: transport)
         #else
-        return try _makeTest(hostname: "localhost-ssl", password: "vapor_password", transportConfig: transportConfig)
+        return try _makeTest(hostname: "localhost-ssl", password: "vapor_password", transport: transport)
         #endif
     }
     
-    private static func _makeTest(hostname: String, password: String? = nil, port: Int = 5432, transportConfig: PostgreSQLTransportConfig = .cleartext) throws -> PostgreSQLConnection {
+    private static func _makeTest(hostname: String, password: String? = nil, port: Int = 5432, transport: PostgreSQLTransportConfig = .cleartext) throws -> PostgreSQLConnection {
         let group = MultiThreadedEventLoopGroup(numThreads: 1)
-        let client = try PostgreSQLConnection.connect(hostname: hostname, port: port, transportConfig: transportConfig, on: group) { error in
+        let client = try PostgreSQLConnection.connect(hostname: hostname, port: port, transport: transport, on: group) { error in
             XCTFail("\(error)")
             }.wait()
         _ = try client.authenticate(username: "vapor_username", database: "vapor_database", password: password).wait()

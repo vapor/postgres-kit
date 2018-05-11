@@ -7,7 +7,7 @@ extension PostgreSQLConnection {
     public static func connect(
         hostname: String = "localhost",
         port: Int = 5432,
-        transportConfig: PostgreSQLTransportConfig = .cleartext,
+        transport: PostgreSQLTransportConfig = .cleartext,
         on worker: Worker,
         onError: @escaping (Error) -> ()
     ) throws -> Future<PostgreSQLConnection> {
@@ -21,12 +21,13 @@ extension PostgreSQLConnection {
                 }
         }
 
-        return bootstrap.connect(host: hostname, port: port).flatMap(to: PostgreSQLConnection.self) { channel in
+        return bootstrap.connect(host: hostname, port: port).flatMap { channel in
             let connection = PostgreSQLConnection(queue: handler, channel: channel)
-            if case .tls(let tlsConfiguration) = transportConfig.method {
+            if case .tls(let tlsConfiguration) = transport.method {
                 return connection.addSSLClientHandler(using: tlsConfiguration).transform(to: connection)
+            } else {
+                return worker.eventLoop.newSucceededFuture(result: connection)
             }
-            return worker.eventLoop.newSucceededFuture(result: connection)
         }
     }
 }

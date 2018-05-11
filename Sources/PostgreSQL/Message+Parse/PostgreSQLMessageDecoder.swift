@@ -35,10 +35,10 @@ final class PostgreSQLMessageDecoder: ByteToMessageDecoder {
                 ctx.fireChannelRead(wrapInboundOut(message))
                 VERBOSE("   [message=\(message)]")
                 return .continue
+            } else {
+                VERBOSE("   [needMoreData: messageSize=nil]")
+                return .needMoreData
             }
-            
-            VERBOSE("   [needMoreData: messageSize=nil]")
-            return .needMoreData
         }
 
         /// ensure message is large enough or reject
