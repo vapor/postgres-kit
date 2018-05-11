@@ -3,7 +3,7 @@ version: 2
 jobs:
   macos:
     macos:
-      xcode: "9.2"
+      xcode: "9.3"
     steps:
       - checkout
       - run: swift build
@@ -14,6 +14,12 @@ jobs:
     docker:
       - image: codevapor/swift:4.1
       - image: circleci/postgres:latest
+        environment:
+          POSTGRES_USER: vapor_username
+          POSTGRES_DB: vapor_database
+          POSTGRES_PASSWORD: vapor_password
+      - image: scenecheck/postgres-ssl:latest
+        name: localhost-ssl
         environment:
           POSTGRES_USER: vapor_username
           POSTGRES_DB: vapor_database

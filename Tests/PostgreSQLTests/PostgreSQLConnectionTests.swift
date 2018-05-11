@@ -1,6 +1,7 @@
 import Foundation
 import XCTest
 import NIO
+import NIOOpenSSL
 import PostgreSQL
 import Core
 
@@ -8,6 +9,12 @@ class PostgreSQLConnectionTests: XCTestCase {
     let defaultTimeout = 5.0
     func testVersion() throws {
         let client = try PostgreSQLConnection.makeTest()
+        let results = try client.simpleQuery("SELECT version();").wait()
+        try XCTAssert(results[0].firstValue(forColumn: "version")?.decode(String.self).contains("10.") == true)
+    }
+    
+    func testUnverifiedSSLConnection() throws {
+        let client = try PostgreSQLConnection.makeTest(transport: .unverifiedTLS)
         let results = try client.simpleQuery("SELECT version();").wait()
         try XCTAssert(results[0].firstValue(forColumn: "version")?.decode(String.self).contains("10.") == true)
     }
@@ -434,6 +441,7 @@ class PostgreSQLConnectionTests: XCTestCase {
     }
 
     static var allTests = [
+        ("testUnverifiedSSLConnection", testUnverifiedSSLConnection),
         ("testVersion", testVersion),
         ("testSelectTypes", testSelectTypes),
         ("testParse", testParse),
@@ -452,18 +460,33 @@ class PostgreSQLConnectionTests: XCTestCase {
 extension PostgreSQLConnection {
     /// Creates a test event loop and psql client.
     static func makeTest() throws -> PostgreSQLConnection {
-        let hostname: String
         #if Xcode
-        hostname = (try? Process.execute("docker-machine", "ip")) ?? "192.168.99.100"
+        return try _makeTest(hostname: self.dockerMachineHostname)
         #else
-        hostname = "localhost"
+        return try _makeTest(hostname: "localhost")
         #endif
+    }
+    
+    /// Creates a test event loop and psql client over ssl.
+    static func makeTest(transport: PostgreSQLTransportConfig) throws -> PostgreSQLConnection {
+        #if Xcode
+        return try _makeTest(hostname: self.dockerMachineHostname, port: 5433, transport: transport)
+        #else
+        return try _makeTest(hostname: "localhost-ssl", password: "vapor_password", transport: transport)
+        #endif
+    }
+    
+    private static func _makeTest(hostname: String, password: String? = nil, port: Int = 5432, transport: PostgreSQLTransportConfig = .cleartext) throws -> PostgreSQLConnection {
         let group = MultiThreadedEventLoopGroup(numThreads: 1)
-        let client = try PostgreSQLConnection.connect(hostname: hostname, on: group) { error in
+        let client = try PostgreSQLConnection.connect(hostname: hostname, port: port, transport: transport, on: group) { error in
             XCTFail("\(error)")
         }.wait()
-        _ = try client.authenticate(username: "vapor_username", database: "vapor_database", password: nil).wait()
+        _ = try client.authenticate(username: "vapor_username", database: "vapor_database", password: password).wait()
         return client
+    }
+    
+    private static var dockerMachineHostname: String {
+        return (try? Process.execute("docker-machine", "ip")) ?? "192.168.99.100"
     }
 }
 

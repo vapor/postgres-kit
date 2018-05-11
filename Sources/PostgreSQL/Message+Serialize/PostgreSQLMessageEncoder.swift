@@ -19,6 +19,9 @@ final class PostgreSQLMessageEncoder: MessageToByteEncoder {
         let encoder = _PostgreSQLMessageEncoder()
         let identifier: Byte?
         switch message {
+        case .sslSupportRequest(let request):
+            identifier = nil
+            try request.encode(to: encoder)
         case .startupMessage(let message):
             identifier = nil
             try message.encode(to: encoder)

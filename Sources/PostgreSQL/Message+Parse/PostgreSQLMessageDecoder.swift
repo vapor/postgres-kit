@@ -26,10 +26,19 @@ final class PostgreSQLMessageDecoder: ByteToMessageDecoder {
             return .needMoreData
         }
 
-        //// peek at messageSize
+        /// peek at messageSize
         guard let messageSize: Int32 = buffer.peekInteger(skipping: MemoryLayout<Byte>.size) else {
-            VERBOSE("   [needMoreData: messageSize=nil]")
-            return .needMoreData
+            // Response from a PostgreSQLSSLSupportRequest will only return a single byte, so we need to handle that case
+            if (messageType == .S || messageType == .N), let data = buffer.readSlice(length: MemoryLayout<Byte>.size) {
+                let decoder = _PostgreSQLMessageDecoder(data: data)
+                let message = try PostgreSQLMessage.sslSupportResponse(decoder.decode())
+                ctx.fireChannelRead(wrapInboundOut(message))
+                VERBOSE("   [message=\(message)]")
+                return .continue
+            } else {
+                VERBOSE("   [needMoreData: messageSize=nil]")
+                return .needMoreData
+            }
         }
 
         /// ensure message is large enough or reject
