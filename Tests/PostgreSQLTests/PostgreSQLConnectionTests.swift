@@ -467,7 +467,7 @@ extension PostgreSQLConnection {
         #endif
     }
     
-    /// Creates a test event loop and psql client over ssl
+    /// Creates a test event loop and psql client over ssl.
     static func makeTest(transport: PostgreSQLTransportConfig) throws -> PostgreSQLConnection {
         #if Xcode
         return try _makeTest(hostname: self.dockerMachineHostname, port: 5433, transport: transport)
@@ -480,7 +480,7 @@ extension PostgreSQLConnection {
         let group = MultiThreadedEventLoopGroup(numThreads: 1)
         let client = try PostgreSQLConnection.connect(hostname: hostname, port: port, transport: transport, on: group) { error in
             XCTFail("\(error)")
-            }.wait()
+        }.wait()
         _ = try client.authenticate(username: "vapor_username", database: "vapor_database", password: password).wait()
         return client
     }

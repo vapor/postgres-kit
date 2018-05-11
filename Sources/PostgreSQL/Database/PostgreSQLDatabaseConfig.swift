@@ -29,17 +29,17 @@ public struct PostgreSQLDatabaseConfig {
     public let transportConfig: PostgreSQLTransportConfig
     
     /// Creates a new `PostgreSQLDatabaseConfig`.
-    public init(hostname: String, port: Int = 5432, username: String, database: String? = nil, password: String? = nil, transportConfig: PostgreSQLTransportConfig = .cleartext) {
+    public init(hostname: String, port: Int = 5432, username: String, database: String? = nil, password: String? = nil, transport: PostgreSQLTransportConfig = .cleartext) {
         self.hostname = hostname
         self.port = port
         self.username = username
         self.database = database
         self.password = password
-        self.transportConfig = transportConfig
+        self.transportConfig = transport
     }
 
     /// Creates a `PostgreSQLDatabaseConfig` frome a connection string.
-    public init(url urlString: String, transportConfig: PostgreSQLTransportConfig = .cleartext) throws {
+    public init(url urlString: String, transport: PostgreSQLTransportConfig = .cleartext) throws {
         guard let url = URL(string: urlString),
             let hostname = url.host,
             let port = url.port,
@@ -64,6 +64,6 @@ public struct PostgreSQLDatabaseConfig {
             self.database = database
         }
         self.password = url.password
-        self.transportConfig = transportConfig
+        self.transportConfig = transport
     }
 }
