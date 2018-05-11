@@ -43,6 +43,12 @@ final class _PostgreSQLMessageDecoder: Decoder, SingleValueDecodingContainer {
         VERBOSE("_PostgreSQLMessageDecoder.decode(_: \(type))")
         return try data.requireReadInteger()
     }
+    
+    /// See SingleValueDecodingContainer.decode
+    func decode(_ type: UInt32.Type) throws -> UInt32 {
+        VERBOSE("_PostgreSQLMessageDecoder.decode(_: \(type))")
+        return try data.requireReadInteger()
+    }
 
     /// See SingleValueDecodingContainer.decode
     func decode(_ type: String.Type) throws -> String {
@@ -98,7 +104,6 @@ final class _PostgreSQLMessageDecoder: Decoder, SingleValueDecodingContainer {
     func decode(_ type: Int64.Type) throws -> Int64 { throw PostgreSQLError(identifier: "decoder", reason: "Unsupported decode type: \(type)", source: .capture()) }
     func decode(_ type: UInt.Type) throws -> UInt { throw PostgreSQLError(identifier: "decoder", reason: "Unsupported decode type: \(type)", source: .capture()) }
     func decode(_ type: UInt16.Type) throws -> UInt16 { throw PostgreSQLError(identifier: "decoder", reason: "Unsupported decode type: \(type)", source: .capture()) }
-    func decode(_ type: UInt32.Type) throws -> UInt32 { throw PostgreSQLError(identifier: "decoder", reason: "Unsupported decode type: \(type)", source: .capture()) }
     func decode(_ type: UInt64.Type) throws -> UInt64 { throw PostgreSQLError(identifier: "decoder", reason: "Unsupported decode type: \(type)", source: .capture()) }
     func decode(_ type: Float.Type) throws -> Float { throw PostgreSQLError(identifier: "decoder", reason: "Unsupported decode type: \(type)", source: .capture()) }
     func decode(_ type: Double.Type) throws -> Double { throw PostgreSQLError(identifier: "decoder", reason: "Unsupported decode type: \(type)", source: .capture()) }

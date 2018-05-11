@@ -45,7 +45,7 @@ struct PostgreSQLRowDescriptionField: Decodable {
     var name: String
 
     /// If the field can be identified as a column of a specific table, the object ID of the table; otherwise zero.
-    var tableObjectID: Int32
+    var tableObjectID: UInt32
 
     /// If the field can be identified as a column of a specific table, the attribute number of the column; otherwise zero.
     var columnAttributeNumber: Int16
