@@ -489,18 +489,18 @@ extension PostgreSQLConnection {
     /// Creates a test event loop and psql client.
     static func makeTest() throws -> PostgreSQLConnection {
         #if Xcode
-        return try _makeTest(hostname: self.dockerMachineHostname)
+        return try _makeTest(hostname: self.dockerMachineHostname, password: "vapor_password")
         #else
-        return try _makeTest(hostname: "localhost")
+        return try _makeTest(hostname: "cleartext")
         #endif
     }
     
     /// Creates a test event loop and psql client over ssl.
     static func makeTest(transport: PostgreSQLTransportConfig) throws -> PostgreSQLConnection {
         #if Xcode
-        return try _makeTest(hostname: self.dockerMachineHostname, port: 5433, transport: transport)
+        return try _makeTest(hostname: self.dockerMachineHostname, password: "vapor_password", port: 5433, transport: transport)
         #else
-        return try _makeTest(hostname: "localhost-ssl", password: "vapor_password", transport: transport)
+        return try _makeTest(hostname: "tls", password: "vapor_password", transport: transport)
         #endif
     }
     
