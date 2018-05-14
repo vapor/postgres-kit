@@ -8,7 +8,7 @@ import Core
 class PostgreSQLConnectionTests: XCTestCase {
     let defaultTimeout = 5.0
     func testVersion() throws {
-        let client = try PostgreSQLConnection.makeTest()
+        let client = try PostgreSQLConnection.makeTest(transport: .cleartext)
         let results = try client.simpleQuery("SELECT version();").wait()
         try XCTAssert(results[0].firstValue(forColumn: "version")?.decode(String.self).contains("10.") == true)
     }
@@ -20,7 +20,7 @@ class PostgreSQLConnectionTests: XCTestCase {
     }
 
     func testSelectTypes() throws {
-        let client = try PostgreSQLConnection.makeTest()
+        let client = try PostgreSQLConnection.makeTest(transport: .cleartext)
         let results = try client.query("select * from pg_type;").wait()
         if results.count > 350 {
             let name = try results[128].firstValue(forColumn: "typname")?.decode(String.self)
@@ -31,7 +31,7 @@ class PostgreSQLConnectionTests: XCTestCase {
     }
 
     func testParse() throws {
-        let client = try PostgreSQLConnection.makeTest()
+        let client = try PostgreSQLConnection.makeTest(transport: .cleartext)
         let query = """
         select * from "pg_type" where "typlen" = $1 or "typlen" = $2
         """
@@ -46,7 +46,7 @@ class PostgreSQLConnectionTests: XCTestCase {
     }
 
     func testTypes() throws {
-        let client = try PostgreSQLConnection.makeTest()
+        let client = try PostgreSQLConnection.makeTest(transport: .cleartext)
         let createQuery = """
         create table kitchen_sink (
             "smallint" smallint,
@@ -139,7 +139,7 @@ class PostgreSQLConnectionTests: XCTestCase {
     }
 
     func testParameterizedTypes() throws {
-        let client = try PostgreSQLConnection.makeTest()
+        let client = try PostgreSQLConnection.makeTest(transport: .cleartext)
         let createQuery = """
         create table kitchen_sink (
             "smallint" smallint,
@@ -262,7 +262,7 @@ class PostgreSQLConnectionTests: XCTestCase {
             var message: String
         }
 
-        let client = try PostgreSQLConnection.makeTest()
+        let client = try PostgreSQLConnection.makeTest(transport: .cleartext)
         _ = try client.query("drop table if exists foo;").wait()
         let createResult = try client.query("create table foo (id integer, dict jsonb);").wait()
         XCTAssertEqual(createResult.count, 0)
@@ -282,7 +282,7 @@ class PostgreSQLConnectionTests: XCTestCase {
     }
 
     func testNull() throws {
-        let client = try PostgreSQLConnection.makeTest()
+        let client = try PostgreSQLConnection.makeTest(transport: .cleartext)
         _ = try client.query("drop table if exists nulltest;").wait()
         let createResult = try client.query("create table nulltest (i integer not null, d timestamp);").wait()
         XCTAssertEqual(createResult.count, 0)
@@ -297,7 +297,7 @@ class PostgreSQLConnectionTests: XCTestCase {
 
     func testGH24() throws {
         /// PREPARE
-        let client = try PostgreSQLConnection.makeTest()
+        let client = try PostgreSQLConnection.makeTest(transport: .cleartext)
         _ = try client.query("""
         DROP TABLE IF EXISTS "acronym+category"
         """).wait()
@@ -448,7 +448,7 @@ class PostgreSQLConnectionTests: XCTestCase {
             var count: Int
         }
 
-        let connection = try PostgreSQLConnection.makeTest()
+        let connection = try PostgreSQLConnection.makeTest(transport: .cleartext)
         _ = try connection.simpleQuery("DROP TABLE IF EXISTS apps").wait()
         _ = try connection.simpleQuery("CREATE TABLE apps (id INT, platform TEXT, identifier TEXT)").wait()
         _ = try connection.simpleQuery("INSERT INTO apps VALUES (1, 'a', 'b')").wait()
@@ -486,24 +486,16 @@ class PostgreSQLConnectionTests: XCTestCase {
 }
 
 extension PostgreSQLConnection {
-    /// Creates a test event loop and psql client.
-    static func makeTest() throws -> PostgreSQLConnection {
-        #if Xcode
-        return try _makeTest(hostname: self.dockerMachineHostname)
-        #else
-        return try _makeTest(hostname: "localhost")
-        #endif
-    }
-    
     /// Creates a test event loop and psql client over ssl.
     static func makeTest(transport: PostgreSQLTransportConfig) throws -> PostgreSQLConnection {
-        #if Xcode
-        return try _makeTest(hostname: self.dockerMachineHostname, port: 5433, transport: transport)
+        #if os(macOS)
+        return try _makeTest(hostname: "192.168.99.100", password: "vapor_password", port: transport.isTLS ? 5433 : 5432, transport: transport)
         #else
-        return try _makeTest(hostname: "localhost-ssl", password: "vapor_password", transport: transport)
+        return try _makeTest(hostname: transport.isTLS ? "tls" : "cleartext", password: "vapor_password", transport: transport)
         #endif
     }
-    
+
+    /// Creates a test connection.
     private static func _makeTest(hostname: String, password: String? = nil, port: Int = 5432, transport: PostgreSQLTransportConfig = .cleartext) throws -> PostgreSQLConnection {
         let group = MultiThreadedEventLoopGroup(numThreads: 1)
         let client = try PostgreSQLConnection.connect(hostname: hostname, port: port, transport: transport, on: group) { error in
@@ -511,10 +503,6 @@ extension PostgreSQLConnection {
         }.wait()
         _ = try client.authenticate(username: "vapor_username", database: "vapor_database", password: password).wait()
         return client
-    }
-    
-    private static var dockerMachineHostname: String {
-        return (try? Process.execute("docker-machine", "ip")) ?? "192.168.99.100"
     }
 }
 

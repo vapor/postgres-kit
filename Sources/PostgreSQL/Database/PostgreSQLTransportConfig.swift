@@ -36,6 +36,14 @@ public struct PostgreSQLTransportConfig {
     public static func customTLS(_ tlsConfiguration: TLSConfiguration)-> PostgreSQLTransportConfig {
         return .init(method: .tls(tlsConfiguration))
     }
+
+    /// Returns `true` if this configuration uses TLS.
+    public var isTLS: Bool {
+        switch method {
+        case .cleartext: return false
+        case .tls: return true
+        }
+    }
     
     internal enum Method {
         case cleartext
