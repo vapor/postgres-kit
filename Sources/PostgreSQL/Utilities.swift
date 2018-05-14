@@ -37,7 +37,8 @@ extension Data {
             return
         }
         for _ in 0..<n {
-            assert(popFirst() != nil)
+            let first = popFirst()
+            assert(first != nil)
         }
     }
 
