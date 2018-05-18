@@ -42,10 +42,15 @@ extension PostgreSQLJSONCustomConvertible {
         guard let encodable = self as? Encodable else {
             fatalError("`\(Self.self)` is not `Encodable`.")
         }
-        return try PostgreSQLData(
+        
+        // JSONB requires version number in a first byte
+        let jsonBVersion: [UInt8] = [0x01]
+        let jsonData = try JSONEncoder().encode(EncoderWrapper(encodable))
+        
+        return PostgreSQLData(
             type: .jsonb,
-            format: .text,
-            data: JSONEncoder().encode(EncoderWrapper(encodable))
+            format: .binary,
+            data: jsonBVersion + jsonData
         )
     }
 }
