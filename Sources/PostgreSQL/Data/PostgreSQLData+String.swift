@@ -56,7 +56,8 @@ extension String: PostgreSQLDataConvertible {
                     if offset < metadata.weight.bigEndian + 1 {
                         integer += string
                     } else {
-                        fractional += string
+                        // Leading zeros matter with fractional
+                        fractional += fractional.count == 0 ? String(repeating: "0", count: 4 - string.count) + string : string
                     }
                 }
 
