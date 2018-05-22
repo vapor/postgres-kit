@@ -489,7 +489,7 @@ extension PostgreSQLConnection {
     /// Creates a test event loop and psql client over ssl.
     static func makeTest(transport: PostgreSQLTransportConfig) throws -> PostgreSQLConnection {
         #if os(macOS)
-        return try _makeTest(hostname: "localhost", port: transport.isTLS ? 5433 : 5432, transport: transport)
+        return try _makeTest(hostname: "192.168.99.100", password: "vapor_password", port: transport.isTLS ? 5433 : 5432, transport: transport)
         #else
         return try _makeTest(hostname: transport.isTLS ? "tls" : "cleartext", password: "vapor_password", transport: transport)
         #endif
@@ -501,7 +501,7 @@ extension PostgreSQLConnection {
         let client = try PostgreSQLConnection.connect(hostname: hostname, port: port, transport: transport, on: group) { error in
             XCTFail("\(error)")
         }.wait()
-        _ = try client.authenticate(username: "postgres", database: "vapor_database", password: password).wait()
+        _ = try client.authenticate(username: "vapor_username", database: "vapor_database", password: password).wait()
         return client
     }
 }
