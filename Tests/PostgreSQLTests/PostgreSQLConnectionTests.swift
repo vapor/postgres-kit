@@ -213,7 +213,7 @@ class PostgreSQLConnectionTests: XCTestCase {
         params += Int16(1) // smallint
         params += Int32(2) // integer
         params += Int64(3) // bigint
-        params += String("123456789.123456789") // decimal
+        params += String("123456789.0123456789") // decimal
         params += Double(5) // numeric
         params += Float(6) // real
         params += Double(7) // double
@@ -238,7 +238,7 @@ class PostgreSQLConnectionTests: XCTestCase {
             try XCTAssertEqual(row.firstValue(forColumn: "smallint")?.decode(Int16.self), 1)
             try XCTAssertEqual(row.firstValue(forColumn: "integer")?.decode(Int32.self), 2)
             try XCTAssertEqual(row.firstValue(forColumn: "bigint")?.decode(Int64.self), 3)
-            try XCTAssertEqual(row.firstValue(forColumn: "decimal")?.decode(String.self), "123456789.123456789")
+            try XCTAssertEqual(row.firstValue(forColumn: "decimal")?.decode(String.self), "123456789.0123456789")
             try XCTAssertEqual(row.firstValue(forColumn: "real")?.decode(Float.self), 6)
             try XCTAssertEqual(row.firstValue(forColumn: "double")?.decode(Double.self), 7)
             try XCTAssertEqual(row.firstValue(forColumn: "varchar")?.decode(String.self), "8")
@@ -489,7 +489,7 @@ extension PostgreSQLConnection {
     /// Creates a test event loop and psql client over ssl.
     static func makeTest(transport: PostgreSQLTransportConfig) throws -> PostgreSQLConnection {
         #if os(macOS)
-        return try _makeTest(hostname: "192.168.99.100", password: "vapor_password", port: transport.isTLS ? 5433 : 5432, transport: transport)
+        return try _makeTest(hostname: "localhost", port: transport.isTLS ? 5433 : 5432, transport: transport)
         #else
         return try _makeTest(hostname: transport.isTLS ? "tls" : "cleartext", password: "vapor_password", transport: transport)
         #endif
@@ -501,7 +501,7 @@ extension PostgreSQLConnection {
         let client = try PostgreSQLConnection.connect(hostname: hostname, port: port, transport: transport, on: group) { error in
             XCTFail("\(error)")
         }.wait()
-        _ = try client.authenticate(username: "vapor_username", database: "vapor_database", password: password).wait()
+        _ = try client.authenticate(username: "postgres", database: "vapor_database", password: password).wait()
         return client
     }
 }
