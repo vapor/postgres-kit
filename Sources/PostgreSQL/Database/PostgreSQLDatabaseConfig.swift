@@ -33,20 +33,16 @@ public struct PostgreSQLDatabaseConfig {
     public let transportConfig: PostgreSQLTransportConfig
     
     /// Creates a new `PostgreSQLDatabaseConfig`.
-	public init(hostname: String, port: Int = 5432, username: String, database: String? = nil, password: String? = nil, transport: PostgreSQLTransportConfig = .cleartext) {
-		self.serverAddress = .tcp(hostname: hostname, port: port)
+	public init(serverAddress: ServerAddress, username: String, database: String? = nil, password: String? = nil, transport: PostgreSQLTransportConfig = .cleartext) {
+		self.serverAddress = serverAddress
 		self.username = username
 		self.database = database
 		self.password = password
 		self.transportConfig = transport
 	}
 	
-	public init(unixSocket: String, username: String, database: String? = nil, password: String? = nil, transport: PostgreSQLTransportConfig = .cleartext) {
-		self.serverAddress = .unixSocket(path: unixSocket)
-		self.username = username
-		self.database = database
-		self.password = password
-		self.transportConfig = transport
+	public init(hostname: String, port: Int = 5432, username: String, database: String? = nil, password: String? = nil, transport: PostgreSQLTransportConfig = .cleartext) {
+		self.init(serverAddress: .tcp(hostname: hostname, port: port), username: username, database: database, password: password, transport: transport)
 	}
 
     /// Creates a `PostgreSQLDatabaseConfig` frome a connection string.
