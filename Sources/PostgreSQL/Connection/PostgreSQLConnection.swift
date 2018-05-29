@@ -24,21 +24,6 @@ public final class PostgreSQLConnection: DatabaseConnection, BasicWorker {
     /// See `Extendable`.
     public var extend: Extend
 
-    /// Returns a new unique portal name.
-    internal var nextPortalName: String {
-        defer { uniqueNameCounter = uniqueNameCounter &+ 1 }
-        return "p_\(uniqueNameCounter)"
-    }
-
-    /// Returns a new unique statement name.
-    internal var nextStatementName: String {
-        defer { uniqueNameCounter = uniqueNameCounter &+ 1 }
-        return "s_\(uniqueNameCounter)"
-    }
-
-    /// A unique identifier for this connection, used to generate statment and portal names
-    private var uniqueNameCounter: UInt8
-
     /// In-flight `send(...)` futures.
     private var currentSend: Promise<Void>?
 
@@ -58,7 +43,6 @@ public final class PostgreSQLConnection: DatabaseConnection, BasicWorker {
     init(queue: QueueHandler<PostgreSQLMessage, PostgreSQLMessage>, channel: Channel) {
         self.queue = queue
         self.channel = channel
-        self.uniqueNameCounter = 0
         self.isClosed = false
         self.extend = [:]
         self.pipeline = channel.eventLoop.newSucceededFuture(result: ())
