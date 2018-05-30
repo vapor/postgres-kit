@@ -7,16 +7,20 @@ public struct PostgreSQLDatabaseConfig {
     public static func `default`() -> PostgreSQLDatabaseConfig {
         return .init(hostname: "localhost", port: 5432, username: "postgres")
     }
-	
-	public enum ServerAddress {
-		case tcp(hostname: String, port: Int)
-		case unixSocket(path: String)
-		
-		public static let `default` = ServerAddress.tcp(hostname: "localhost", port: 5432)
-		public static let defaultViaSocket = ServerAddress.unixSocket(path: "/tmp/.s.PGSQL.5432")
-	}
-	
-	public let serverAddress: ServerAddress
+    
+    /// Specifies how to connect to a PostgreSQL server.
+    public enum ServerAddress {
+        /// Connect via TCP using the given hostname and port.
+        case tcp(hostname: String, port: Int)
+        /// Connect via a Unix domain socket file.
+        case unixSocket(path: String)
+        
+        public static let `default` = ServerAddress.tcp(hostname: "localhost", port: 5432)
+        public static let socketDefault = ServerAddress.unixSocket(path: "/tmp/.s.PGSQL.5432")
+    }
+    
+    /// Which server to connect to.
+    public let serverAddress: ServerAddress
 
     /// Username to authenticate.
     public let username: String
