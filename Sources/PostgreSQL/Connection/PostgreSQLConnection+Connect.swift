@@ -11,7 +11,7 @@ extension PostgreSQLConnection {
         on worker: Worker,
         onError: @escaping (Error) -> ()
         ) throws -> Future<PostgreSQLConnection> {
-        return connect(to: .tcp(hostname: hostname, port: port), transport: transport, on: worker, onError: onError)
+        return try connect(to: .tcp(hostname: hostname, port: port), transport: transport, on: worker, onError: onError)
     }
     
     /// Connects to a PostgreSQL server using a TCP socket.
