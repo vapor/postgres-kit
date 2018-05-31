@@ -4,6 +4,9 @@ import NIOOpenSSL
 
 /// A PostgreSQL frontend client.
 public final class PostgreSQLConnection: DatabaseConnection, BasicWorker {
+    /// See `DatabaseConnection`.
+    public typealias Database = PostgreSQLDatabase
+    
     /// See `BasicWorker`.
     public var eventLoop: EventLoop {
         return channel.eventLoop

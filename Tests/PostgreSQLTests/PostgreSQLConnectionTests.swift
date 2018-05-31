@@ -466,6 +466,36 @@ class PostgreSQLConnectionTests: XCTestCase {
         }.wait()
         XCTAssertEqual(overviews.count, 3)
     }
+    
+    func testDML() throws {
+        let conn = try PostgreSQLConnection.makeTest(transport: .cleartext)
+        _ = try conn.simpleQuery("DROP TABLE IF EXISTS users").wait()
+        _ = try conn.simpleQuery("CREATE TABLE users (id INT, name TEXT)").wait()
+        defer { _ = try? conn.simpleQuery("DROP TABLE users").wait() }
+        
+        let save = try conn.query(.dml(
+            statement: .insert(),
+            table: "users",
+            columns: [
+                "id": .bind(42),
+                "name": .bind("vapor")
+            ]
+        )).wait()
+        XCTAssertEqual(save.count, 0)
+
+        let search = try conn.query(.dml(
+            statement: .select(),
+            table: "users",
+            keys: [.all],
+            predicates: [.predicate("name", .equal, .bind("vapor"))]
+        )).wait()
+        XCTAssertEqual(search.count, 1)
+        
+        
+        try conn.query(.select("id", "name", from: "users")) { row in
+            print(row)
+        }.wait()
+    }
 
     static var allTests = [
         ("testUnverifiedSSLConnection", testUnverifiedSSLConnection),
@@ -488,8 +518,8 @@ class PostgreSQLConnectionTests: XCTestCase {
 extension PostgreSQLConnection {
     /// Creates a test event loop and psql client over ssl.
     static func makeTest(transport: PostgreSQLTransportConfig) throws -> PostgreSQLConnection {
-        #if os(macOS)
-        return try _makeTest(hostname: "192.168.99.100", password: "vapor_password", port: transport.isTLS ? 5433 : 5432, transport: transport)
+        #if Xcode
+        return try _makeTest(hostname: "localhost", password: "vapor_password", port: transport.isTLS ? 5433 : 5432, transport: transport)
         #else
         return try _makeTest(hostname: transport.isTLS ? "tls" : "cleartext", password: "vapor_password", transport: transport)
         #endif

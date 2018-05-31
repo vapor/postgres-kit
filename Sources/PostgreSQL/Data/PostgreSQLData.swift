@@ -27,7 +27,11 @@ extension PostgreSQLData: CustomStringConvertible {
     /// See `CustomStringConvertible.description`
     public var description: String {
         if let data = data {
-            return "\(type) (\(format)) \(String(data: data, encoding: .ascii) ?? "<non-ascii>"))"
+            switch type {
+            case .text, .varchar: return "\(type) (\(format)) \(String(data: data, encoding: .ascii) ?? "<non-ascii>"))"
+            default: return "\(type) (\(format)) 0x\(data.hexEncodedString())"
+            }
+            
         } else {
             return "\(type) (\(format)) <null>"
         }

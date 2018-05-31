@@ -17,17 +17,17 @@ public struct PostgreSQLResultFormat {
     }
 
     /// Request all of the results in a specific format.
-    public static func text() -> PostgreSQLResultFormat {
+    public static var text: PostgreSQLResultFormat {
         return .all(.text)
     }
 
     /// Request all of the results in a specific format.
-    public static func binary() -> PostgreSQLResultFormat {
+    public static var binary: PostgreSQLResultFormat {
         return .all(.binary)
     }
 
     /// Let the server decide the formatting options.
-    public static func notSpecified() -> PostgreSQLResultFormat {
+    public static var unspecified: PostgreSQLResultFormat {
         return .init(formatCodes: [])
     }
 

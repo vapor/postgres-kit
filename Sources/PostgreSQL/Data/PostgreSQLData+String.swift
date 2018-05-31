@@ -1,13 +1,11 @@
-import Foundation
-
 extension String: PostgreSQLDataConvertible {
-    /// See `PostgreSQLDataCustomConvertible.postgreSQLDataType`
+    /// See `PostgreSQLDataConvertible`.
     public static var postgreSQLDataType: PostgreSQLDataType { return .text }
 
-    /// See `PostgreSQLDataCustomConvertible.postgreSQLDataArrayType`
+    /// See `PostgreSQLDataConvertible`.
     public static var postgreSQLDataArrayType: PostgreSQLDataType { return ._text }
 
-    /// See `PostgreSQLDataCustomConvertible.convertFromPostgreSQLData(_:)`
+    /// See `PostgreSQLDataConvertible`.
     public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> String {
         guard let value = data.data else {
             throw PostgreSQLError(identifier: "string", reason: "Could not decode String from `null` data.", source: .capture())
@@ -84,7 +82,7 @@ extension String: PostgreSQLDataConvertible {
         }
     }
 
-    /// See `PostgreSQLDataCustomConvertible.convertToPostgreSQLData()`
+    /// See `PostgreSQLDataConvertible`.
     public func convertToPostgreSQLData() throws -> PostgreSQLData {
         return PostgreSQLData(type: .text, format: .binary, data: Data(utf8))
     }

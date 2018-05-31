@@ -1,5 +1,3 @@
-import Async
-
 extension PostgreSQLConnection {
     /// Sends a simple PostgreSQL query command, collecting the parsed results.
     public func simpleQuery(_ string: String) -> Future<[[PostgreSQLColumn: PostgreSQLData]]> {
