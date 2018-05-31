@@ -3,14 +3,24 @@ import NIO
 import NIOOpenSSL
 
 extension PostgreSQLConnection {
-    /// Connects to a Redis server using a TCP socket.
+    @available(*, deprecated, message: "Use `.connect(to:...)` instead.")
     public static func connect(
         hostname: String = "localhost",
         port: Int = 5432,
         transport: PostgreSQLTransportConfig = .cleartext,
         on worker: Worker,
         onError: @escaping (Error) -> ()
-    ) throws -> Future<PostgreSQLConnection> {
+        ) throws -> Future<PostgreSQLConnection> {
+        return try connect(to: .tcp(hostname: hostname, port: port), transport: transport, on: worker, onError: onError)
+    }
+    
+    /// Connects to a PostgreSQL server using a TCP socket.
+    public static func connect(
+        to serverAddress: PostgreSQLDatabaseConfig.ServerAddress = .default,
+        transport: PostgreSQLTransportConfig = .cleartext,
+        on worker: Worker,
+        onError: @escaping (Error) -> ()
+        ) throws -> Future<PostgreSQLConnection> {
         let handler = QueueHandler<PostgreSQLMessage, PostgreSQLMessage>(on: worker, onError: onError)
         let bootstrap = ClientBootstrap(group: worker.eventLoop)
             // Enable SO_REUSEADDR.
@@ -20,8 +30,16 @@ extension PostgreSQLConnection {
                     channel.pipeline.add(handler: handler)
                 }
         }
-
-        return bootstrap.connect(host: hostname, port: port).flatMap { channel in
+        
+        let connectedBootstrap: Future<Channel>
+        switch serverAddress {
+        case let .tcp(hostname, port):
+            connectedBootstrap = bootstrap.connect(host: hostname, port: port)
+        case let .unixSocket(socketPath):
+            connectedBootstrap = bootstrap.connect(unixDomainSocketPath: socketPath)
+        }
+        
+        return connectedBootstrap.flatMap { channel in
             let connection = PostgreSQLConnection(queue: handler, channel: channel)
             if case .tls(let tlsConfiguration) = transport.method {
                 return connection.addSSLClientHandler(using: tlsConfiguration).transform(to: connection)
