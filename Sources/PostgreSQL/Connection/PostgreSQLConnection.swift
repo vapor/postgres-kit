@@ -9,7 +9,7 @@ public final class PostgreSQLConnection: DatabaseConnection, BasicWorker {
         return channel.eventLoop
     }
 
-    /// Handles enqueued redis commands and responses.
+    /// Handles enqueued PostgreSQL commands and responses.
     internal let queue: QueueHandler<PostgreSQLMessage, PostgreSQLMessage>
 
     /// The channel
@@ -39,7 +39,7 @@ public final class PostgreSQLConnection: DatabaseConnection, BasicWorker {
     /// Handlers to be stored by channel name
     internal var notificationHandlers: [String: NotificationHandler] = [:]
 
-    /// Creates a new Redis client on the provided data source and sink.
+    /// Creates a new PostgreSQL client on the provided data source and sink.
     init(queue: QueueHandler<PostgreSQLMessage, PostgreSQLMessage>, channel: Channel) {
         self.queue = queue
         self.channel = channel

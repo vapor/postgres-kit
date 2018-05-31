@@ -7,12 +7,20 @@ public struct PostgreSQLDatabaseConfig {
     public static func `default`() -> PostgreSQLDatabaseConfig {
         return .init(hostname: "localhost", port: 5432, username: "postgres")
     }
-
-    /// Destination hostname.
-    public let hostname: String
-
-    /// Destination port.
-    public let port: Int
+    
+    /// Specifies how to connect to a PostgreSQL server.
+    public enum ServerAddress {
+        /// Connect via TCP using the given hostname and port.
+        case tcp(hostname: String, port: Int)
+        /// Connect via a Unix domain socket file.
+        case unixSocket(path: String)
+        
+        public static let `default` = ServerAddress.tcp(hostname: "localhost", port: 5432)
+        public static let socketDefault = ServerAddress.unixSocket(path: "/tmp/.s.PGSQL.5432")
+    }
+    
+    /// Which server to connect to.
+    public let serverAddress: ServerAddress
 
     /// Username to authenticate.
     public let username: String
@@ -29,14 +37,17 @@ public struct PostgreSQLDatabaseConfig {
     public let transportConfig: PostgreSQLTransportConfig
     
     /// Creates a new `PostgreSQLDatabaseConfig`.
-    public init(hostname: String, port: Int = 5432, username: String, database: String? = nil, password: String? = nil, transport: PostgreSQLTransportConfig = .cleartext) {
-        self.hostname = hostname
-        self.port = port
-        self.username = username
-        self.database = database
-        self.password = password
-        self.transportConfig = transport
-    }
+	public init(serverAddress: ServerAddress, username: String, database: String? = nil, password: String? = nil, transport: PostgreSQLTransportConfig = .cleartext) {
+		self.serverAddress = serverAddress
+		self.username = username
+		self.database = database
+		self.password = password
+		self.transportConfig = transport
+	}
+	
+	public init(hostname: String, port: Int = 5432, username: String, database: String? = nil, password: String? = nil, transport: PostgreSQLTransportConfig = .cleartext) {
+		self.init(serverAddress: .tcp(hostname: hostname, port: port), username: username, database: database, password: password, transport: transport)
+	}
 
     /// Creates a `PostgreSQLDatabaseConfig` frome a connection string.
     public init(url urlString: String, transport: PostgreSQLTransportConfig = .cleartext) throws {
@@ -54,8 +65,7 @@ public struct PostgreSQLDatabaseConfig {
                 source: .capture()
             )
         }
-        self.hostname = hostname
-        self.port = port
+        self.serverAddress = .tcp(hostname: hostname, port: port)
         self.username = username
         let database = url.path
         if database.hasPrefix("/") {

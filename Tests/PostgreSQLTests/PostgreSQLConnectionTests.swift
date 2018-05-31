@@ -433,8 +433,12 @@ class PostgreSQLConnectionTests: XCTestCase {
     func testURLParsing() throws {
         let databaseURL = "postgres://username:password@hostname.com:5432/database"
         let config = try PostgreSQLDatabaseConfig(url: databaseURL)
-        XCTAssertEqual(config.hostname, "hostname.com")
-        XCTAssertEqual(config.port, 5432)
+		if case let .tcp(hostname, port) = config.serverAddress {
+			XCTAssertEqual(hostname, "hostname.com")
+			XCTAssertEqual(port, 5432)
+		} else {
+			XCTFail("unexpected server address \(config.serverAddress)")
+		}
         XCTAssertEqual(config.username, "username")
         XCTAssertEqual(config.password, "password")
         XCTAssertEqual(config.database, "database")
@@ -489,18 +493,18 @@ extension PostgreSQLConnection {
     /// Creates a test event loop and psql client over ssl.
     static func makeTest(transport: PostgreSQLTransportConfig) throws -> PostgreSQLConnection {
         #if os(macOS)
-        return try _makeTest(hostname: "192.168.99.100", password: "vapor_password", port: transport.isTLS ? 5433 : 5432, transport: transport)
+        return try _makeTest(serverAddress: .tcp(hostname: "192.168.99.100", port: transport.isTLS ? 5433 : 5432), password: "vapor_password", transport: transport)
         #else
-        return try _makeTest(hostname: transport.isTLS ? "tls" : "cleartext", password: "vapor_password", transport: transport)
+        return try _makeTest(serverAddress: .tcp(hostname: transport.isTLS ? "tls" : "cleartext", port: 5432), password: "vapor_password", transport: transport)
         #endif
     }
 
     /// Creates a test connection.
-    private static func _makeTest(hostname: String, password: String? = nil, port: Int = 5432, transport: PostgreSQLTransportConfig = .cleartext) throws -> PostgreSQLConnection {
+    private static func _makeTest(serverAddress: PostgreSQLDatabaseConfig.ServerAddress, password: String? = nil, transport: PostgreSQLTransportConfig = .cleartext) throws -> PostgreSQLConnection {
         let group = MultiThreadedEventLoopGroup(numThreads: 1)
-        let client = try PostgreSQLConnection.connect(hostname: hostname, port: port, transport: transport, on: group) { error in
+        let client = try PostgreSQLConnection.connect(to: serverAddress, transport: transport, on: group) { error in
             XCTFail("\(error)")
-        }.wait()
+            }.wait()
         _ = try client.authenticate(username: "vapor_username", database: "vapor_database", password: password).wait()
         return client
     }
