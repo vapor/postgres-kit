@@ -1,48 +1,65 @@
 import Foundation
 
 /// Supported `PostgreSQLData` data types.
-public struct PostgreSQLData {
+public struct PostgreSQLData: Equatable {
     /// The data's type.
     public var type: PostgreSQLDataType
 
+    enum Storage: Equatable {
+        case text(String)
+        case binary(Data)
+        case null
+    }
+    
+    
     /// The data's format.
-    public var format: PostgreSQLFormatCode
+    let storage: Storage
 
     /// If `true`, this data is null.
     public var isNull: Bool {
-        return data == nil
+        switch storage {
+        case .null: return true
+        default: return false
+        }
     }
 
-    /// The actual data.
-    public var data: Data?
+    public var binary: Data? {
+        switch storage {
+        case .binary(let data): return data
+        default: return nil
+        }
+    }
+    
+    public var text: String? {
+        switch storage {
+        case .text(let string): return string
+        default: return nil
+        }
+    }
 
-    public init(type: PostgreSQLDataType, format: PostgreSQLFormatCode = .binary, data: Data? = nil) {
+    public init(_ type: PostgreSQLDataType, binary: Data) {
         self.type = type
-        self.format = format
-        self.data = data
+        self.storage = .binary(binary)
+    }
+    
+    public init(_ type: PostgreSQLDataType, text: String) {
+        self.type = type
+        self.storage = .text(text)
+    }
+    
+    public init(null: PostgreSQLDataType) {
+        self.type = null
+        self.storage = .null
     }
 }
 
 extension PostgreSQLData: CustomStringConvertible {
-    /// See `CustomStringConvertible.description`
+    /// See `CustomStringConvertible`.
     public var description: String {
-        if let data = data {
-            switch type {
-            case .text, .varchar: return "\(type) (\(format)) \(String(data: data, encoding: .ascii) ?? "<non-ascii>"))"
-            default: return "\(type) (\(format)) 0x\(data.hexEncodedString())"
-            }
-            
-        } else {
-            return "\(type) (\(format)) <null>"
+        switch storage {
+        case .binary(let data): return type.description + " 0x\(data.hexEncodedString())"
+        case .text(let string): return type.description + " " + string
+        case .null:  return type.description + " <null>"
         }
-    }
-}
-
-/// MARK: Equatable
-
-extension PostgreSQLData: Equatable {
-    /// See Equatable.==
-    public static func ==(lhs: PostgreSQLData, rhs: PostgreSQLData) -> Bool {
-        return lhs.format == rhs.format && lhs.type == rhs.type && lhs.data == rhs.data
     }
 }

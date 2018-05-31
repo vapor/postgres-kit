@@ -1,6 +1,4 @@
 import Crypto
-import NIO
-import NIOOpenSSL
 
 /// A PostgreSQL frontend client.
 public final class PostgreSQLConnection: DatabaseConnection, BasicWorker {
@@ -12,12 +10,6 @@ public final class PostgreSQLConnection: DatabaseConnection, BasicWorker {
         return channel.eventLoop
     }
 
-    /// Handles enqueued PostgreSQL commands and responses.
-    internal let queue: QueueHandler<PostgreSQLMessage, PostgreSQLMessage>
-
-    /// The channel
-    private let channel: Channel
-
     /// If non-nil, will log queries.
     public var logger: DatabaseLogger?
 
@@ -26,6 +18,12 @@ public final class PostgreSQLConnection: DatabaseConnection, BasicWorker {
 
     /// See `Extendable`.
     public var extend: Extend
+    
+    /// Handles enqueued PostgreSQL commands and responses.
+    internal let queue: QueueHandler<PostgreSQLMessage, PostgreSQLMessage>
+    
+    /// The channel
+    internal let channel: Channel
 
     /// In-flight `send(...)` futures.
     private var currentSend: Promise<Void>?
@@ -56,6 +54,7 @@ public final class PostgreSQLConnection: DatabaseConnection, BasicWorker {
             }
         }
     }
+    
     /// Sends `PostgreSQLMessage` to the server.
     func send(_ message: [PostgreSQLMessage]) -> Future<[PostgreSQLMessage]> {
         var responses: [PostgreSQLMessage] = []
@@ -115,24 +114,6 @@ public final class PostgreSQLConnection: DatabaseConnection, BasicWorker {
         /// return the newly enqueued work's future result
         return new
     }
-    
-    /// Ask the server if it supports SSL and adds a new OpenSSLClientHandler to pipeline if it does
-    /// This will throw an error if the server does not support SSL
-    internal func addSSLClientHandler(using tlsConfiguration: TLSConfiguration) -> Future<Void> {
-        return queue.enqueue([.sslSupportRequest(PostgreSQLSSLSupportRequest())]) { message in
-            guard case .sslSupportResponse(let response) = message else {
-                throw PostgreSQLError(identifier: "SSL support check", reason: "Unsupported message encountered during SSL support check: \(message).", source: .capture())
-            }
-            guard response == .supported else {
-                throw PostgreSQLError(identifier: "SSL support check", reason: "tlsConfiguration given in PostgresSQLConfiguration, but SSL connection not supported by PostgreSQL server.", source: .capture())
-            }
-            return true
-        }.flatMap {
-            let sslContext = try SSLContext(configuration: tlsConfiguration)
-            let handler = try OpenSSLClientHandler(context: sslContext)
-            return self.channel.pipeline.add(handler: handler, first: true)
-        }
-    }
 
     /// Authenticates the `PostgreSQLClient` using a username with no password.
     public func authenticate(username: String, database: String? = nil, password: String? = nil) -> Future<Void> {
@@ -140,42 +121,42 @@ public final class PostgreSQLConnection: DatabaseConnection, BasicWorker {
             "user": username,
             "database": database ?? username
         ])
-        var authRequest: PostgreSQLAuthenticationRequest?
+        var authRequest: PostgreSQLMessage.AuthenticationRequest?
         return queue.enqueue([.startupMessage(startup)]) { message in
             switch message {
             case .authenticationRequest(let a):
                 authRequest = a
                 return true
-            default: throw PostgreSQLError(identifier: "auth", reason: "Unsupported message encountered during auth: \(message).", source: .capture())
+            default: throw PostgreSQLError(identifier: "auth", reason: "Unsupported message encountered during auth: \(message).")
             }
         }.flatMap(to: Void.self) {
             guard let auth = authRequest else {
-                throw PostgreSQLError(identifier: "authRequest", reason: "No authorization request / status sent.", source: .capture())
+                throw PostgreSQLError(identifier: "authRequest", reason: "No authorization request / status sent.")
             }
 
             let input: [PostgreSQLMessage]
             switch auth {
             case .ok:
                 guard password == nil else {
-                    throw PostgreSQLError(identifier: "trust", reason: "No password is required", source: .capture())
+                    throw PostgreSQLError(identifier: "trust", reason: "No password is required")
                 }
                 input = []
             case .plaintext:
                 guard let password = password else {
-                    throw PostgreSQLError(identifier: "password", reason: "Password is required", source: .capture())
+                    throw PostgreSQLError(identifier: "password", reason: "Password is required")
                 }
                 let passwordMessage = PostgreSQLPasswordMessage(password: password)
                 input = [.password(passwordMessage)]
             case .md5(let salt):
                 guard let password = password else {
-                    throw PostgreSQLError(identifier: "password", reason: "Password is required", source: .capture())
+                    throw PostgreSQLError(identifier: "password", reason: "Password is required")
                 }
                 guard let passwordData = password.data(using: .utf8) else {
-                    throw PostgreSQLError(identifier: "passwordUTF8", reason: "Could not convert password to UTF-8 encoded Data.", source: .capture())
+                    throw PostgreSQLError(identifier: "passwordUTF8", reason: "Could not convert password to UTF-8 encoded Data.")
                 }
 
                 guard let usernameData = username.data(using: .utf8) else {
-                    throw PostgreSQLError(identifier: "usernameUTF8", reason: "Could not convert username to UTF-8 encoded Data.", source: .capture())
+                    throw PostgreSQLError(identifier: "usernameUTF8", reason: "Could not convert username to UTF-8 encoded Data.")
                 }
 
                 // pwdhash = md5(password + username).hexdigest()
@@ -193,7 +174,7 @@ public final class PostgreSQLConnection: DatabaseConnection, BasicWorker {
                 case .readyForQuery: return true
                 case .authenticationRequest: return false
                 case .parameterStatus, .backendKeyData: return false
-                default: throw PostgreSQLError(identifier: "authenticationMessage", reason: "Unexpected authentication message: \(message)", source: .capture())
+                default: throw PostgreSQLError(identifier: "authenticationMessage", reason: "Unexpected authentication message: \(message)")
                 }
             }
         }
@@ -224,4 +205,4 @@ public final class PostgreSQLConnection: DatabaseConnection, BasicWorker {
 
 }
 
-private let closeError = PostgreSQLError(identifier: "closed", reason: "Connection is closed.", source: .capture())
+private let closeError = PostgreSQLError(identifier: "closed", reason: "Connection is closed.")

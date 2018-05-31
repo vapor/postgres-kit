@@ -53,7 +53,7 @@ extension RawRepresentable where RawValue: PostgreSQLDataConvertible {
     public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> Self {
         let aRawValue = try RawValue.convertFromPostgreSQLData(data)
         guard let enumValue = Self(rawValue: aRawValue) else {
-            throw PostgreSQLError(identifier: "invalidRawValue", reason: "Unable to decode RawRepresentable from the database value.", source: .capture())
+            throw PostgreSQLError(identifier: "invalidRawValue", reason: "Unable to decode RawRepresentable from the database value.")
         }
         return enumValue
     }

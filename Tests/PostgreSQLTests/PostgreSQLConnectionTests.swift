@@ -431,14 +431,9 @@ class PostgreSQLConnectionTests: XCTestCase {
 //    }
 
     func testURLParsing() throws {
-        let databaseURL = "postgres://username:password@hostname.com:5432/database"
+        let databaseURL = "postgres://username:password@localhost:5432/database"
         let config = try PostgreSQLDatabaseConfig(url: databaseURL)
-		if case let .tcp(hostname, port) = config.serverAddress {
-			XCTAssertEqual(hostname, "hostname.com")
-			XCTAssertEqual(port, 5432)
-		} else {
-			XCTFail("unexpected server address \(config.serverAddress)")
-		}
+        XCTAssertEqual("\(config.serverAddress)", "ServerAddress(storage: PostgreSQL.PostgreSQLConnection.ServerAddress.Storage.tcp(hostname: \"localhost\", port: 5432))")
         XCTAssertEqual(config.username, "username")
         XCTAssertEqual(config.password, "password")
         XCTAssertEqual(config.database, "database")
@@ -473,15 +468,17 @@ class PostgreSQLConnectionTests: XCTestCase {
     
     func testDML() throws {
         let conn = try PostgreSQLConnection.makeTest(transport: .cleartext)
-        _ = try conn.simpleQuery("DROP TABLE IF EXISTS users").wait()
-        _ = try conn.simpleQuery("CREATE TABLE users (id INT, name TEXT)").wait()
-        defer { _ = try? conn.simpleQuery("DROP TABLE users").wait() }
+        _ = try conn.simpleQuery(.drop(ifExists: true, "users")).wait()
+        _ = try conn.simpleQuery(.create("users", columns: [
+            .column("id", .init(.int8, primaryKey: true, generatedIdentity: true)),
+            .column("name", .text)
+        ])).wait()
+        defer { _ = try? conn.simpleQuery(.drop("users")).wait() }
         
         let save = try conn.query(.dml(
             statement: .insert,
             table: "users",
             columns: [
-                "id": .bind(42),
                 "name": .bind("vapor")
             ]
         )).wait()
@@ -494,7 +491,6 @@ class PostgreSQLConnectionTests: XCTestCase {
             predicate: .predicate("name", .equal, .bind("vapor"))
         )).wait()
         XCTAssertEqual(search.count, 1)
-        
         
         try conn.query(.select(["id", "name"], from: "users")) { row in
             print(row)
@@ -521,18 +517,18 @@ class PostgreSQLConnectionTests: XCTestCase {
 
 extension PostgreSQLConnection {
     /// Creates a test event loop and psql client over ssl.
-    static func makeTest(transport: PostgreSQLTransportConfig) throws -> PostgreSQLConnection {
+    static func makeTest(transport: PostgreSQLConnection.TransportConfig) throws -> PostgreSQLConnection {
         #if Xcode
-        return try _makeTest(serverAddress: .tcp(hostname: "localhost", port: transport.isTLS ? 5433 : 5432), password: "vapor_password", transport: transport)
+        return try _makeTest(hostname: "localhost", port: transport.isTLS ? 5433 : 5432, password: "vapor_password", transport: transport)
         #else
-        return try _makeTest(serverAddress: .tcp(hostname: transport.isTLS ? "tls" : "cleartext", port: 5432), password: "vapor_password", transport: transport)
+        return try _makeTest(hostname: transport.isTLS ? "tls" : "cleartext", port: 5432, password: "vapor_password", transport: transport)
         #endif
     }
 
     /// Creates a test connection.
-    private static func _makeTest(serverAddress: PostgreSQLDatabaseConfig.ServerAddress, password: String? = nil, transport: PostgreSQLTransportConfig = .cleartext) throws -> PostgreSQLConnection {
+    private static func _makeTest(hostname: String, port: Int, password: String? = nil, transport: PostgreSQLConnection.TransportConfig = .cleartext) throws -> PostgreSQLConnection {
         let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-        let client = try PostgreSQLConnection.connect(to: serverAddress, transport: transport, on: group) { error in
+        let client = try PostgreSQLConnection.connect(hostname: hostname, port: port, transport: transport, on: group) { error in
             XCTFail("\(error)")
         }.wait()
         _ = try client.authenticate(username: "vapor_username", database: "vapor_database", password: password).wait()

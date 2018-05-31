@@ -1,38 +1,34 @@
 import Foundation
 
 extension UUID: PostgreSQLDataConvertible {
-    /// See `PostgreSQLDataCustomConvertible.postgreSQLDataType`
+    /// See `PostgreSQLDataConvertible`.
     public static var postgreSQLDataType: PostgreSQLDataType { return .uuid }
 
 
-    /// See `PostgreSQLDataCustomConvertible.postgreSQLDataArrayType`
+    /// See `PostgreSQLDataConvertible`.
     public static var postgreSQLDataArrayType: PostgreSQLDataType { return ._uuid }
 
-    /// See `PostgreSQLDataCustomConvertible.convertFromPostgreSQLData(_:)`
+    /// See `PostgreSQLDataConvertible`.
     public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> UUID {
-        guard let value = data.data else {
-            throw PostgreSQLError(identifier: "data", reason: "Could not decode UUID from `null` data.", source: .capture())
+        guard case .uuid = data.type else {
+            throw PostgreSQLError(identifier: "uuid", reason: "Could not decode UUID from data type: \(data.type)")
         }
-        switch data.type {
-        case .uuid:
-            switch data.format {
-            case .text:
-                let string = try value.makeString()
-                guard let uuid = UUID(uuidString: string) else {
-                    throw PostgreSQLError(identifier: "uuid", reason: "Could not decode UUID from string: \(string)", source: .capture())
-                }
-                return uuid
-            case .binary: return UUID(uuid: value.unsafeCast())
+        switch data.storage {
+        case .text(let string):
+            guard let uuid = UUID(uuidString: string) else {
+                throw PostgreSQLError(identifier: "uuid", reason: "Could not decode UUID from string: \(string)")
             }
-        default: throw PostgreSQLError(identifier: "uuid", reason: "Could not decode UUID from data type: \(data.type)", source: .capture())
+            return uuid
+        case .binary(let value): return UUID(uuid: value.unsafeCast())
+        case .null: throw PostgreSQLError(identifier: "uuid", reason: "Could not decode UUID from null data.")
         }
     }
 
-    /// See `PostgreSQLDataCustomConvertible.convertToPostgreSQLData()`
+    /// See `PostgreSQLDataConvertible`.
     public func convertToPostgreSQLData() throws -> PostgreSQLData {
         var uuid = self.uuid
         let size = MemoryLayout.size(ofValue: uuid)
-        return PostgreSQLData(type: .uuid, format: .binary, data: withUnsafePointer(to: &uuid) {
+        return PostgreSQLData(.uuid, binary: withUnsafePointer(to: &uuid) {
             Data(bytes: $0, count: size)
         })
     }

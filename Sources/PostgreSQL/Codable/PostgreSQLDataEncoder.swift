@@ -22,7 +22,7 @@ public struct PostgreSQLDataEncoder {
             let context = _PostgreSQLDataEncoderContext()
             try encodable.encode(to: _PostgreSQLDataEncoder(context))
             guard let data = context.data else {
-                throw PostgreSQLError(identifier: "dataEncode", reason: "Could not convert to `PostgreSQLData`: \(encodable)", source: .capture())
+                throw PostgreSQLError(identifier: "dataEncode", reason: "Could not convert to `PostgreSQLData`: \(encodable)")
             }
             return data
         }
@@ -87,7 +87,7 @@ private struct _PostgreSQLDataSingleValueEncoder: SingleValueEncodingContainer {
     
     /// See `SingleValueEncodingContainer`.
     mutating func encodeNil() throws {
-        context.data = PostgreSQLData(type: .void, format: .binary, data: nil)
+        context.data = PostgreSQLData(null: .void)
     }
     
     /// See `SingleValueEncodingContainer`.

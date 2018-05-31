@@ -60,7 +60,7 @@ private struct _PostgreSQLRowKeyedEncodingContainer<K>: KeyedEncodingContainerPr
         self.encoder.data[col] = try value.convertToPostgreSQLData()
     }
     
-    mutating func encodeNil(forKey key: K) throws { try set(key, to: PostgreSQLData(type: .void, data: nil)) }
+    mutating func encodeNil(forKey key: K) throws { try set(key, to: PostgreSQLData(null: .void)) }
     mutating func encode(_ value: Bool, forKey key: K) throws { try set(key, to: value) }
     mutating func encode(_ value: Int, forKey key: K) throws { try set(key, to: value) }
     mutating func encode(_ value: Int16, forKey key: K) throws { try set(key, to: value) }
@@ -96,7 +96,7 @@ private struct _PostgreSQLRowKeyedEncodingContainer<K>: KeyedEncodingContainerPr
             try encode(value, forKey: key)
         } else {
             if let convertibleType = T.self as? PostgreSQLDataConvertible.Type {
-                try set(key, to: PostgreSQLData(type: convertibleType.postgreSQLDataType, data: nil))
+                try set(key, to: PostgreSQLData(null: convertibleType.postgreSQLDataType))
             } else {
                 try encodeNil(forKey: key)
             }
@@ -111,8 +111,7 @@ private struct _PostgreSQLRowKeyedEncodingContainer<K>: KeyedEncodingContainerPr
                 reason: "Unsupported encodable type: \(type)",
                 suggestedFixes: [
                     "Conform \(type) to PostgreSQLDataCustomConvertible"
-                ],
-                source: .capture()
+                ]
             )
         }
         try set(key, to: convertible)

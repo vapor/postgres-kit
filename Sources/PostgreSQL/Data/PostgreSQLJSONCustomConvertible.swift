@@ -13,26 +13,23 @@ extension PostgreSQLJSONCustomConvertible {
 
     /// See `PostgreSQLDataConvertible`.
     public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> Self {
-        guard let value = data.data else {
-            throw PostgreSQLError(identifier: "data", reason: "Unable to decode PostgreSQL JSON from `null` data.", source: .capture())
+        guard case .jsonb = data.type else {
+            throw PostgreSQLError(identifier: "json", reason: "Could not decode \(Self.self) from data type: \(data.type).")
         }
 
         guard let decodable = Self.self as? Decodable.Type else {
             fatalError("`\(Self.self)` is not `Decodable`.")
         }
 
-        switch data.type {
-        case .jsonb:
-            switch data.format {
-            case .text:
-                let decoder = try JSONDecoder().decode(DecoderUnwrapper.self, from: value).decoder
-                return try decodable.init(from: decoder) as! Self
-            case .binary:
-                assert(value[0] == 0x01)
-                let decoder = try JSONDecoder().decode(DecoderUnwrapper.self, from: value[value.index(after: value.startIndex)...]).decoder
-                return try decodable.init(from: decoder) as! Self
-            }
-        default: throw PostgreSQLError(identifier: "json", reason: "Could not decode \(Self.self) from data type: \(data.type).", source: .capture())
+        switch data.storage {
+        case .text(let value):
+            let decoder = try JSONDecoder().decode(DecoderUnwrapper.self, from: value).decoder
+            return try decodable.init(from: decoder) as! Self
+        case .binary(let value):
+            assert(value[value.startIndex] == 0x01)
+            let decoder = try JSONDecoder().decode(DecoderUnwrapper.self, from: value[value.index(after: value.startIndex)...]).decoder
+            return try decodable.init(from: decoder) as! Self
+        case .null: throw PostgreSQLError(identifier: "data", reason: "Unable to decode \(Self.self) JSON from null.")
         }
     }
 
@@ -42,11 +39,8 @@ extension PostgreSQLJSONCustomConvertible {
             fatalError("`\(Self.self)` is not `Encodable`.")
         }
         
-        return try PostgreSQLData(
-            type: .jsonb,
-            format: .binary,
-            data: [0x01] + JSONEncoder().encode(EncoderWrapper(encodable)) // JSONB requires version number in a first byte
-        )
+        // JSONB requires version number in a first byte
+        return try PostgreSQLData(.jsonb, binary: [0x01] + JSONEncoder().encode(EncoderWrapper(encodable)))
     }
 }
 

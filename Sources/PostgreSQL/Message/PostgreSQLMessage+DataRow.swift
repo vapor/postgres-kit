@@ -29,8 +29,19 @@ struct PostgreSQLDataRowColumn: Decodable {
     var value: Data?
 
     /// Parses this column to the specified data type and format code.
-    func parse(dataType: PostgreSQLDataType, format: PostgreSQLFormatCode) throws -> PostgreSQLData {
-        return PostgreSQLData(type: dataType, format: format, data: value)
+    func parse(dataType: PostgreSQLDataType, format: PostgreSQLMessage.FormatCode) throws -> PostgreSQLData {
+        guard let value = value else {
+            return PostgreSQLData(null: dataType)
+        }
+        
+        switch format {
+        case .binary: return PostgreSQLData(dataType, binary: value)
+        case .text:
+            guard let string = String(data: value, encoding: .utf8) else {
+                throw PostgreSQLError(identifier: "utf8", reason: "Invalid UTF8 string: \(value)")
+            }
+            return PostgreSQLData(dataType, text: string)
+        }
     }
 }
 

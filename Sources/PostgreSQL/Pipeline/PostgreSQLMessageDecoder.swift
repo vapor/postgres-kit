@@ -30,10 +30,10 @@ final class PostgreSQLMessageDecoder: ByteToMessageDecoder {
         guard let messageSize: Int32 = buffer.peekInteger(skipping: MemoryLayout<Byte>.size) else {
             // Response from a PostgreSQLSSLSupportRequest will only return a single byte, so we need to handle that case
             if (messageType == .S || messageType == .N), let data = buffer.readSlice(length: MemoryLayout<Byte>.size) {
-                let decoder = _PostgreSQLMessageDecoder(data: data)
-                let message = try PostgreSQLMessage.sslSupportResponse(decoder.decode())
-                ctx.fireChannelRead(wrapInboundOut(message))
-                VERBOSE("   [message=\(message)]")
+                fatalError()
+//                let message = try PostgreSQLMessage.sslSupportResponse(decoder.decode())
+//                ctx.fireChannelRead(wrapInboundOut(message))
+//                VERBOSE("   [message=\(message)]")
                 return .continue
             } else {
                 VERBOSE("   [needMoreData: messageSize=nil]")
@@ -51,35 +51,33 @@ final class PostgreSQLMessageDecoder: ByteToMessageDecoder {
         buffer.moveReaderIndex(forwardBy: MemoryLayout<Byte>.size + MemoryLayout<Int32>.size)
 
         /// read messageData
-        guard let messageData = buffer.readSlice(length: Int(messageSize) - MemoryLayout<Int32>.size) else {
-            fatalError("buffer.readSlice returned nil even though length was checked.")
-        }
+//        guard let messageData = buffer.readSlice(length: Int(messageSize) - MemoryLayout<Int32>.size) else {
+//            fatalError("buffer.readSlice returned nil even though length was checked.")
+//        }
 
-        let decoder = _PostgreSQLMessageDecoder(data: messageData)
         let message: PostgreSQLMessage
         switch messageType {
-        case .A: message = try .notificationResponse(decoder.decode())
-        case .E: message = try .error(decoder.decode())
-        case .N: message = try .notice(decoder.decode())
-        case .R: message = try .authenticationRequest(decoder.decode())
-        case .S: message = try .parameterStatus(decoder.decode())
-        case .K: message = try .backendKeyData(decoder.decode())
-        case .Z: message = try .readyForQuery(decoder.decode())
-        case .T: message = try .rowDescription(decoder.decode())
-        case .D: message = try .dataRow(decoder.decode())
-        case .C: message = try .close(decoder.decode())
+//        case .A: message = try .notificationResponse(decoder.decode())
+//        case .E: message = try .error(decoder.decode())
+//        case .N: message = try .notice(decoder.decode())
+        case .R: message = try .authenticationRequest(.parse(from: &buffer))
+//        case .S: message = try .parameterStatus(decoder.decode())
+        case .K: message = try .backendKeyData(.parse(from: &buffer))
+//        case .Z: message = try .readyForQuery(decoder.decode())
+//        case .T: message = try .rowDescription(decoder.decode())
+//        case .D: message = try .dataRow(decoder.decode())
+//        case .C: message = try .close(decoder.decode())
         case .one: message = .parseComplete
         case .two: message = .bindComplete
         case .n: message = .noData
-        case .t: message = try .parameterDescription(decoder.decode())
+//        case .t: message = try .parameterDescription(decoder.decode())
         default:
             let string = String(bytes: [messageType], encoding: .ascii) ?? "n/a"
             throw PostgreSQLError(
                 identifier: "decoder",
                 reason: "Unrecognized message type: \(string) (\(messageType))",
                 possibleCauses: ["Connected to non-PostgreSQL database"],
-                suggestedFixes: ["Connect to PostgreSQL database"],
-                source: .capture()
+                suggestedFixes: ["Connect to PostgreSQL database"]
             )
         }
         VERBOSE("   [message=\(message)]")

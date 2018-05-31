@@ -8,7 +8,7 @@ extension PostgreSQLConnection {
     /// - parameters:
     ///     - query: `Query` to execute.
     /// - returns: A future array of results.
-    public func query(_ q: Query) -> Future<[[PostgreSQLColumn: PostgreSQLData]]> {
+    public func query(_ q: Query<PostgreSQLDatabase>) -> Future<[[PostgreSQLColumn: PostgreSQLData]]> {
         var rows: [[PostgreSQLColumn: PostgreSQLData]] = []
         return query(q) { row in
             rows.append(row)
@@ -30,7 +30,7 @@ extension PostgreSQLConnection {
     ///     - resultFormat: Desired `PostgreSQLResultFormat` to request from PostgreSQL. Defaults to `.binary`.
     ///     - onRow: PostgreSQL row accepting closure to handle results, if any.
     /// - returns: A future that signals query completion.
-    public func query(_ q: Query, resultFormat: PostgreSQLResultFormat = .binary, onRow: @escaping ([PostgreSQLColumn: PostgreSQLData]) throws -> ()) -> Future<Void> {
+    public func query(_ q: Query<PostgreSQLDatabase>, resultFormat: PostgreSQLResultFormat = .binary, onRow: @escaping ([PostgreSQLColumn: PostgreSQLData]) throws -> ()) -> Future<Void> {
         var binds = Binds()
         let sql = PostgreSQLSerializer().serialize(query: q, binds: &binds)
         do {
@@ -101,11 +101,22 @@ extension PostgreSQLConnection {
 
         let parse = PostgreSQLParseRequest(statementName: "", query: string, parameterTypes: parameters.map { $0.type })
         let describe = PostgreSQLDescribeRequest(type: .statement, name: "")
-        let bind = PostgreSQLBindRequest(
+        let bind = PostgreSQLMessage.BindRequest(
             portalName: "",
             statementName: "",
-            parameterFormatCodes: parameters.map { $0.format },
-            parameters: parameters.map { .init(data: $0.data) },
+            parameterFormatCodes: parameters.map {
+                switch $0.storage {
+                case .text: return .text
+                case .binary, .null: return .binary
+                }
+            },
+            parameters: parameters.map {
+                switch $0.storage {
+                case .text(let string):  return .init(data: Data(string.utf8))
+                case .binary(let data): return .init(data: data)
+                case .null: return .init(data: nil)
+                }
+            },
             resultFormatCodes: resultFormat.formatCodes
         )
         let execute = PostgreSQLExecuteRequest(portalName: "", maxRows: 0)
@@ -121,12 +132,12 @@ extension PostgreSQLConnection {
             case .rowDescription(let row): currentRow = row
             case .dataRow(let data):
                 guard let row = currentRow else {
-                    throw PostgreSQLError(identifier: "query", reason: "Unexpected `PostgreSQLDataRow` without preceding `PostgreSQLRowDescription`.", source: .capture())
+                    throw PostgreSQLError(identifier: "query", reason: "Unexpected `PostgreSQLDataRow` without preceding `PostgreSQLRowDescription`.")
                 }
                 let parsed = try row.parse(data: data, formatCodes: resultFormat.formatCodes)
                 try onRow(parsed)
             case .close: break
-            default: throw PostgreSQLError(identifier: "query", reason: "Unexpected message during `PostgreSQLParseRequest`: \(message)", source: .capture())
+            default: throw PostgreSQLError(identifier: "query", reason: "Unexpected message during `PostgreSQLParseRequest`: \(message)")
             }
         }
     }

@@ -6,7 +6,7 @@ extension BinaryFloatingPoint {
         return exponentBitCount + significandBitCount + 1
     }
 
-    /// See `PostgreSQLDataCustomConvertible.postgreSQLDataType`
+    /// See `PostgreSQLDataConvertible`.
     public static var postgreSQLDataType: PostgreSQLDataType {
         switch Self.bitWidth {
         case 32: return .float4
@@ -16,7 +16,7 @@ extension BinaryFloatingPoint {
     }
 
 
-    /// See `PostgreSQLDataCustomConvertible.postgreSQLDataArrayType`
+    /// See `PostgreSQLDataConvertible`.
     public static var postgreSQLDataArrayType: PostgreSQLDataType {
         switch Self.bitWidth {
         case 32: return ._float4
@@ -25,13 +25,10 @@ extension BinaryFloatingPoint {
         }
     }
 
-    /// See `PostgreSQLDataCustomConvertible.convertFromPostgreSQLData(_:)`
+    /// See `PostgreSQLDataConvertible`.
     public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> Self {
-        guard let value = data.data else {
-            throw PostgreSQLError(identifier: "binaryFloatingPoint", reason: "Could not decode \(Self.self) from `null` data.", source: .capture())
-        }
-        switch data.format {
-        case .binary:
+        switch data.storage {
+        case .binary(let value):
             switch data.type {
             case .float4: return Self.init(value.makeFloatingPoint(Float.self))
             case .float8: return Self.init(value.makeFloatingPoint(Double.self))
@@ -45,22 +42,21 @@ extension BinaryFloatingPoint {
             default:
                 throw PostgreSQLError(
                     identifier: "binaryFloatingPoint",
-                    reason: "Could not decode \(Self.self) from binary data type: \(data.type).",
-                    source: .capture()
+                    reason: "Could not decode \(Self.self) from binary data type: \(data.type)."
                 )
             }
-        case .text:
-            let string = try data.decode(String.self)
+        case .text(let string):
             guard let converted = Double(string) else {
-                throw PostgreSQLError(identifier: "binaryFloatingPoint", reason: "Could not decode \(Self.self) from string: \(string).", source: .capture())
+                throw PostgreSQLError(identifier: "binaryFloatingPoint", reason: "Could not decode \(Self.self) from string: \(string).")
             }
             return Self(converted)
+        case .null: throw PostgreSQLError(identifier: "binaryFloatingPoint", reason: "Could not decode \(Self.self) from `null` data.")
         }
     }
 
-    /// See `PostgreSQLDataCustomConvertible.convertToPostgreSQLData()`
+    /// See `PostgreSQLDataConvertible`.
     public func convertToPostgreSQLData() throws -> PostgreSQLData {
-        return PostgreSQLData(type: Self.postgreSQLDataType, format: .binary, data: data)
+        return PostgreSQLData(Self.postgreSQLDataType, binary: data)
     }
 }
 

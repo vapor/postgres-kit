@@ -56,7 +56,7 @@ private final class _PostgreSQLRowDecoder: Decoder {
     
     func require(key: CodingKey) throws -> PostgreSQLData {
         guard let data = get(key: key) else {
-            throw PostgreSQLError(identifier: "decode", reason: "No value found at key: \(key)", source: .capture())
+            throw PostgreSQLError(identifier: "decode", reason: "No value found at key: \(key)")
         }
         return data
     }
@@ -110,8 +110,7 @@ private struct PostgreSQLRowKeyedDecodingContainer<K>: KeyedDecodingContainerPro
                 reason: "Unsupported decodable type: \(type)",
                 suggestedFixes: [
                     "Conform \(type) to PostgreSQLDataCustomConvertible"
-                ],
-                source: .capture()
+                ]
             )
         }
         return try convertible.convertFromPostgreSQLData(decoder.require(key: key)) as! T
@@ -135,7 +134,6 @@ private func unsupported() -> PostgreSQLError {
         reason: "PostgreSQL rows only support a flat, keyed structure `[String: T]`",
         suggestedFixes: [
             "You can conform nested types to `PostgreSQLJSONType` or `PostgreSQLArrayType`. (Nested types must be `PostgreSQLDataCustomConvertible`.)"
-        ],
-        source: .capture()
+        ]
     )
 }

@@ -1,31 +1,28 @@
 import Foundation
 
 extension Data: PostgreSQLDataConvertible {
-    /// See `PostgreSQLDataCustomConvertible.postgreSQLDataType`
+    /// See `PostgreSQLDataConvertible`.
     public static var postgreSQLDataType: PostgreSQLDataType { return .bytea }
 
-    /// See `PostgreSQLDataCustomConvertible.postgreSQLDataArrayType`
+    /// See `PostgreSQLDataConvertible`.
     public static var postgreSQLDataArrayType: PostgreSQLDataType { return ._bytea }
     
-    /// See `PostgreSQLDataCustomConvertible.convertFromPostgreSQLData(_:)`
+    /// See `PostgreSQLDataConvertible`.
     public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> Data {
-        guard let value = data.data else {
-            throw PostgreSQLError(identifier: "data", reason: "Could not decode Data from `null` data.", source: .capture())
+        guard case .bytea = data.type else {
+            throw PostgreSQLError(identifier: "data", reason: "Could not decode Data from data type: \(data.type)")
         }
-
-        switch data.type {
-        case .bytea:
-            switch data.format {
-            case .text: return try Data(hexString: value[2...].makeString())
-            case .binary: return value
-            }
-        default: throw PostgreSQLError(identifier: "data", reason: "Could not decode Data from data type: \(data.type)", source: .capture())
+        
+        switch data.storage{
+        case .text(let string): return Data(hexString: .init(string.dropFirst(2)))
+        case .binary(let value): return value
+        case .null: throw PostgreSQLError(identifier: "data", reason: "Could not decode Data from null.")
         }
     }
 
-    /// See `PostgreSQLDataCustomConvertible.convertToPostgreSQLData()`
+    /// See `PostgreSQLDataConvertible`.
     public func convertToPostgreSQLData() throws -> PostgreSQLData {
-        return PostgreSQLData(type: .bytea, format: .binary, data: self)
+        return PostgreSQLData(.bytea, binary: self)
     }
 }
 

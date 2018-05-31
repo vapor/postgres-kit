@@ -3,9 +3,6 @@ import Service
 
 /// Provides base `PostgreSQL` services such as database and connection.
 public final class PostgreSQLProvider: Provider {
-    /// See `Provider.repositoryName`
-    public static let repositoryName = "fluent-postgresql"
-
     /// Creates a new `PostgreSQLProvider`.
     public init() {}
 
@@ -30,7 +27,7 @@ public final class PostgreSQLProvider: Provider {
 extension PostgreSQLDatabaseConfig: ServiceType {
     /// See `ServiceType.makeService(for:)`
     public static func makeService(for worker: Container) throws -> PostgreSQLDatabaseConfig {
-        return .default()
+        return try .default()
     }
 }
 extension PostgreSQLDatabase: ServiceType {

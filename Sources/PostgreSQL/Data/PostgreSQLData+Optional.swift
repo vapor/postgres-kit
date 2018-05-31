@@ -13,7 +13,7 @@ extension OptionalType {
         if let wrapped = self.wrapped {
             return try requirePostgreSQLDataCustomConvertible(wrapped).convertToPostgreSQLData()
         } else {
-            return PostgreSQLData(type: .void, format: .binary, data: nil)
+            return PostgreSQLData(null: .void)
         }
     }
 }
