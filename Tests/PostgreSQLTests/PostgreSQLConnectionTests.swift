@@ -478,7 +478,7 @@ class PostgreSQLConnectionTests: XCTestCase {
         defer { _ = try? conn.simpleQuery("DROP TABLE users").wait() }
         
         let save = try conn.query(.dml(
-            statement: .insert(),
+            statement: .insert,
             table: "users",
             columns: [
                 "id": .bind(42),
@@ -488,15 +488,15 @@ class PostgreSQLConnectionTests: XCTestCase {
         XCTAssertEqual(save.count, 0)
 
         let search = try conn.query(.dml(
-            statement: .select(),
+            statement: .select,
             table: "users",
             keys: [.all],
-            predicates: [.predicate("name", .equal, .bind("vapor"))]
+            predicate: .predicate("name", .equal, .bind("vapor"))
         )).wait()
         XCTAssertEqual(search.count, 1)
         
         
-        try conn.query(.select("id", "name", from: "users")) { row in
+        try conn.query(.select(["id", "name"], from: "users")) { row in
             print(row)
         }.wait()
     }
@@ -522,7 +522,7 @@ class PostgreSQLConnectionTests: XCTestCase {
 extension PostgreSQLConnection {
     /// Creates a test event loop and psql client over ssl.
     static func makeTest(transport: PostgreSQLTransportConfig) throws -> PostgreSQLConnection {
-        #if os(macOS)
+        #if Xcode
         return try _makeTest(serverAddress: .tcp(hostname: "localhost", port: transport.isTLS ? 5433 : 5432), password: "vapor_password", transport: transport)
         #else
         return try _makeTest(serverAddress: .tcp(hostname: transport.isTLS ? "tls" : "cleartext", port: 5432), password: "vapor_password", transport: transport)
@@ -531,10 +531,10 @@ extension PostgreSQLConnection {
 
     /// Creates a test connection.
     private static func _makeTest(serverAddress: PostgreSQLDatabaseConfig.ServerAddress, password: String? = nil, transport: PostgreSQLTransportConfig = .cleartext) throws -> PostgreSQLConnection {
-        let group = MultiThreadedEventLoopGroup(numThreads: 1)
+        let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
         let client = try PostgreSQLConnection.connect(to: serverAddress, transport: transport, on: group) { error in
             XCTFail("\(error)")
-            }.wait()
+        }.wait()
         _ = try client.authenticate(username: "vapor_username", database: "vapor_database", password: password).wait()
         return client
     }

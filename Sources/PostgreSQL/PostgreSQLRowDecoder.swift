@@ -8,13 +8,13 @@ public struct PostgreSQLRowDecoder {
     /// - parameters:
     ///     - decodable: Type to decode.
     ///     - row: PostgreSQL row to decode.
-    ///     - tableName: Optional table name to use when decoding. If supplied, columns with table names
-    ///                  can be matched while decoding. Columns without table names will always match if the column name matches.
+    ///     - tableName: Optional table OID to use when decoding. If supplied, columns with table OIDs
+    ///                  can be matched while decoding. Columns without table OIDs will always match if the column name matches.
     /// - returns: Instance of Decodable type.
-    public func decode<D>(_ decodable: D.Type, from row: [DataManipulationQuery.Column: PostgreSQLData], tableName: String? = nil) throws -> D
+    public func decode<D>(_ decodable: D.Type, from row: [PostgreSQLColumn: PostgreSQLData], tableOID: UInt32? = nil) throws -> D
         where D: Decodable
     {
-        let decoder = _PostgreSQLRowDecoder(row: row, tableName: tableName)
+        let decoder = _PostgreSQLRowDecoder(row: row, tableOID: tableOID)
         return try D.init(from: decoder)
     }
 }
@@ -24,11 +24,11 @@ public struct PostgreSQLRowDecoder {
 private final class _PostgreSQLRowDecoder: Decoder {
     let codingPath: [CodingKey] = []
     let userInfo: [CodingUserInfoKey: Any] = [:]
-    let data: [DataManipulationQuery.Column: PostgreSQLData]
-    let tableName: String?
-    init(row: [DataManipulationQuery.Column: PostgreSQLData], tableName: String?) {
+    let data: [PostgreSQLColumn: PostgreSQLData]
+    let tableOID: UInt32?
+    init(row: [PostgreSQLColumn: PostgreSQLData], tableOID: UInt32?) {
         self.data = row
-        self.tableName = tableName
+        self.tableOID = tableOID
     }
     
     func container<Key>(keyedBy type: Key.Type) throws -> KeyedDecodingContainer<Key> where Key : CodingKey {
@@ -45,8 +45,8 @@ private final class _PostgreSQLRowDecoder: Decoder {
     }
     
     func get(key: CodingKey) -> PostgreSQLData? {
-        guard let value = data[.init(table: tableName, name: key.stringValue)] else {
-            guard let value = data[.init(table: nil, name: key.stringValue)], tableName != nil else {
+        guard let value = data[.init(tableOID: tableOID ?? 0, name: key.stringValue)] else {
+            guard let value = data[.init(tableOID: 0, name: key.stringValue)], tableOID != 0 else {
                 return nil
             }
             return value
@@ -73,7 +73,7 @@ private struct PostgreSQLRowKeyedDecodingContainer<K>: KeyedDecodingContainerPro
     init(decoder: _PostgreSQLRowDecoder) {
         self.decoder = decoder
         allKeys = self.decoder.data.keys.compactMap {
-            if $0.table == decoder.tableName {
+            if $0.tableOID == decoder.tableOID || $0.tableOID == 0 {
                 return K(stringValue: $0.name)
             } else {
                 return nil

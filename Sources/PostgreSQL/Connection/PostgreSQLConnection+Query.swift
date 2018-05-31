@@ -1,14 +1,14 @@
 extension PostgreSQLConnection {
-    /// Runs a parameterized `DataQuery`, returning the results as an array of rows.
+    /// Runs a parameterized `Query`, returning the results as an array of rows.
     ///
     ///     let users = conn.query(.select(.all, from: "users"))
     ///
     /// Any values bound to the `DataQuery` as placeholders will be sent as query parameters.
     ///
     /// - parameters:
-    ///     - query: `DataQuery` to execute.
+    ///     - query: `Query` to execute.
     /// - returns: A future array of results.
-    public func query(_ q: DataQuery) -> Future<[[PostgreSQLColumn: PostgreSQLData]]> {
+    public func query(_ q: Query) -> Future<[[PostgreSQLColumn: PostgreSQLData]]> {
         var rows: [[PostgreSQLColumn: PostgreSQLData]] = []
         return query(q) { row in
             rows.append(row)
@@ -17,7 +17,7 @@ extension PostgreSQLConnection {
         }
     }
     
-    /// Runs a parameterized `DataQuery`, returning each row of the results to the supplied handler one at a time.
+    /// Runs a parameterized `Query`, returning each row of the results to the supplied handler one at a time.
     ///
     ///     try conn.query(.select(.all, from: "users")) { row in
     ///         print(row)
@@ -26,11 +26,11 @@ extension PostgreSQLConnection {
     /// Any values bound to the `DataQuery` as placeholders will be sent as query parameters.
     ///
     /// - parameters:
-    ///     - query: `DataQuery` to execute.
+    ///     - query: `Query` to execute.
     ///     - resultFormat: Desired `PostgreSQLResultFormat` to request from PostgreSQL. Defaults to `.binary`.
     ///     - onRow: PostgreSQL row accepting closure to handle results, if any.
     /// - returns: A future that signals query completion.
-    public func query(_ q: DataQuery, resultFormat: PostgreSQLResultFormat = .binary, onRow: @escaping ([PostgreSQLColumn: PostgreSQLData]) throws -> ()) -> Future<Void> {
+    public func query(_ q: Query, resultFormat: PostgreSQLResultFormat = .binary, onRow: @escaping ([PostgreSQLColumn: PostgreSQLData]) throws -> ()) -> Future<Void> {
         var binds = Binds()
         let sql = PostgreSQLSerializer().serialize(query: q, binds: &binds)
         do {

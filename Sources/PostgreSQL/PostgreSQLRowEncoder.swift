@@ -3,15 +3,15 @@ public struct PostgreSQLRowEncoder {
     /// Creates a new `PostgreSQLRowEncoder`.
     public init() { }
     
-    /// Encodes an `Encodable` object to `[DataColumn: PostgreSQLData]`.
+    /// Encodes an `Encodable` object to `[PostgreSQLColumn: PostgreSQLData]`.
     ///
     /// - parameters:
     ///     - encodable: Item to encode.
-    ///     - tableName: Optional table name to use when encoding.
-    public func encode<E>(_ encodable: E, tableName: String? = nil) throws -> [DataManipulationQuery.Column: PostgreSQLData]
+    ///     - tableOID: Optional table OID to use when encoding.
+    public func encode<E>(_ encodable: E, tableOID: UInt32? = nil) throws -> [PostgreSQLColumn: PostgreSQLData]
         where E: Encodable
     {
-        let encoder = _PostgreSQLRowEncoder(tableName: tableName)
+        let encoder = _PostgreSQLRowEncoder(tableOID: tableOID)
         try encodable.encode(to: encoder)
         return encoder.data
     }
@@ -23,11 +23,11 @@ public struct PostgreSQLRowEncoder {
 private final class _PostgreSQLRowEncoder: Encoder {
     let codingPath: [CodingKey] = []
     let userInfo: [CodingUserInfoKey: Any] = [:]
-    var data: [DataManipulationQuery.Column: PostgreSQLData]
-    let tableName: String?
-    init(tableName: String?) {
+    var data: [PostgreSQLColumn: PostgreSQLData]
+    let tableOID: UInt32?
+    init(tableOID: UInt32?) {
         self.data = [:]
-        self.tableName = tableName
+        self.tableOID = tableOID
     }
     
     func container<Key>(keyedBy type: Key.Type) -> KeyedEncodingContainer<Key> where Key : CodingKey {
@@ -56,7 +56,7 @@ private struct _PostgreSQLRowKeyedEncodingContainer<K>: KeyedEncodingContainerPr
     }
     
     func set(_ key: CodingKey, to value: PostgreSQLDataConvertible) throws {
-        let col = DataManipulationQuery.Column(table: encoder.tableName, name: key.stringValue)
+        let col = PostgreSQLColumn(tableOID: encoder.tableOID ?? 0, name: key.stringValue)
         self.encoder.data[col] = try value.convertToPostgreSQLData()
     }
     
