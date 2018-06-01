@@ -95,6 +95,7 @@ struct PostgreSQLNumericMetadata {
     var dscale: Int16
 }
 
+
 extension Data {
     /// Convert the row's data into a string, throwing if invalid encoding.
     internal func makeString(encoding: String.Encoding = .utf8) throws -> String {

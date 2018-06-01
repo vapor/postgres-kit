@@ -94,8 +94,6 @@ extension PostgreSQLConnection {
 
     /// Non-operation bounded query.
     private func _query(_ string: String, _ parameters: [PostgreSQLDataConvertible] = [], resultFormat: PostgreSQLResultFormat, onRow: @escaping ([PostgreSQLColumn: PostgreSQLData]) throws -> ()) throws -> Future<Void> {
-        print(string)
-        print(parameters)
         let parameters = try parameters.map { try $0.convertToPostgreSQLData() }
         logger?.record(query: string, values: parameters.map { $0.description })
 

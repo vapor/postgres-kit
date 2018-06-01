@@ -8,7 +8,6 @@ extension PostgreSQLConnection {
             "user": username,
             "database": database ?? username
         ]))]) { message in
-            print("👈 \(message)")
             switch message {
             case .authenticationRequest(let a):
                 authRequest = a
@@ -53,7 +52,6 @@ extension PostgreSQLConnection {
             }
             
             return self.queue.enqueue(input) { message in
-                print("👈 \(message)")
                 switch message {
                 case .error(let error): throw PostgreSQLError.errorResponse(error)
                 case .readyForQuery: return true

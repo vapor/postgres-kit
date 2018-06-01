@@ -48,6 +48,16 @@ public struct PostgreSQLError: Debuggable {
     }
 }
 
+/// Only includes the supplied closure in non-release builds.
+internal func debugOnly(_ body: () -> Void) {
+    assert({ body(); return true }())
+}
+
+/// Logs a runtime warning.
+internal func WARNING(_ string: @autoclosure () -> String) {
+    print("[WARNING] [PostgreSQL] \(string())")
+}
+
 func VERBOSE(_ string: @autoclosure () -> (String)) {
     #if VERBOSE
     print("[VERBOSE] [PostgreSQL] \(string())")
