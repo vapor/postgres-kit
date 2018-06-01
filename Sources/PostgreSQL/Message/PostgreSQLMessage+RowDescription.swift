@@ -92,7 +92,7 @@ extension PostgreSQLMessage.DataRow.Column {
     /// Parses this column to the specified data type and format code.
     func parse(dataType: PostgreSQLDataType, format: PostgreSQLMessage.FormatCode) throws -> PostgreSQLData {
         guard let value = value else {
-            return PostgreSQLData(null: dataType)
+            return .null
         }
         
         switch format {

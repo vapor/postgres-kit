@@ -1,5 +1,8 @@
 /// Supported `PostgreSQLData` data types.
-public struct PostgreSQLData: Equatable {
+public struct PostgreSQLData: Equatable, Encodable {
+    /// `NULL` data.
+    public static let null: PostgreSQLData = PostgreSQLData(type: .null, storage: .null)
+    
     /// The data's type.
     public var type: PostgreSQLDataType
 
@@ -12,14 +15,6 @@ public struct PostgreSQLData: Equatable {
     
     /// The data's format.
     let storage: Storage
-
-    /// If `true`, this data is null.
-    public var isNull: Bool {
-        switch storage {
-        case .null: return true
-        default: return false
-        }
-    }
 
     /// Binary-formatted `Data`. `nil` if this data is null or not binary formatted.
     public var binary: Data? {
@@ -35,6 +30,20 @@ public struct PostgreSQLData: Equatable {
         case .text(let string): return string
         default: return nil
         }
+    }
+    
+    /// If `true`, this data is null.
+    public var isNull: Bool {
+        switch storage {
+        case .null: return true
+        default: return false
+        }
+    }
+    
+    /// Internal init.
+    internal init(type: PostgreSQLDataType, storage: Storage) {
+        self.type = type
+        self.storage = storage
     }
 
     /// Creates a new binary-formatted `PostgreSQLData`.
@@ -58,13 +67,20 @@ public struct PostgreSQLData: Equatable {
         self.storage = .text(text)
     }
     
-    /// Creates a new `NULL` `PostgreSQLData`.
-    ///
-    /// - parameters:
-    ///     - null: Type of null. PostgreSQL requires this to function correctly.
-    public init(null: PostgreSQLDataType) {
-        self.type = null
-        self.storage = .null
+    /// See `Decodable`.
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        try self.init(.void, binary: container.decode(Data.self))
+    }
+    
+    /// See `Encodable`.
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch storage {
+        case .binary(let binary): try container.encode(binary)
+        case .text(let text): try container.encode(text)
+        case .null: try container.encodeNil()
+        }
     }
 }
 

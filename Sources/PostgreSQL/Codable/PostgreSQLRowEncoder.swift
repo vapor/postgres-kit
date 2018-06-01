@@ -50,7 +50,7 @@ public struct PostgreSQLRowEncoder {
         }
         
         mutating func encodeNil(forKey key: Key) throws {
-            encoder.row[.init(tableOID: encoder.tableOID, name: key.stringValue)] = PostgreSQLData(null: .null)
+            encoder.row[.init(tableOID: encoder.tableOID, name: key.stringValue)] = .null
         }
         
         mutating func encode<T>(_ value: T, forKey key: Key) throws where T : Encodable {

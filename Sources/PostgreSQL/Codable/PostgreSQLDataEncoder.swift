@@ -79,7 +79,7 @@ public struct PostgreSQLDataEncoder {
         }
         
         mutating func encodeNil() throws {
-            encoder.data = PostgreSQLData(null: .null)
+            encoder.data = .null
         }
 
         mutating func encode<T>(_ value: T) throws where T : Encodable {
