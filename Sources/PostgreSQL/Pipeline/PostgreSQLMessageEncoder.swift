@@ -17,44 +17,33 @@ final class PostgreSQLMessageEncoder: MessageToByteEncoder {
         VERBOSE("PostgreSQLMessageSerializer.encode(ctx: \(ctx), data: \(message), out: \(buffer))")
 
         switch message {
-        case .bind: buffer.write(integer: Byte.B)
+        case .bind: buffer.write(integer: .B, as: Byte.self)
+        case .describe: buffer.write(integer: .D, as: Byte.self)
+        case .execute: buffer.write(integer: .E, as: Byte.self)
+        case .parse: buffer.write(integer: .P, as: Byte.self)
+        case .password: buffer.write(integer: .p, as: Byte.self)
+        case .query: buffer.write(integer: .Q, as: Byte.self)
+        case .sync: buffer.write(integer: .S, as: Byte.self)
         default: break // no identifier
         }
         
         // leave room for size
         let messageSizeIndex = buffer.writerIndex
         buffer.moveWriterIndex(forwardBy: 4)
-        let messageStartIndex = buffer.writerIndex
         
-        let identifier: Byte?
         switch message {
-//        case .sslSupportRequest(let request):
-//            identifier = nil
-//            try request.encode(to: encoder)
-//        case .startupMessage(let message):
-//            identifier = nil
-//            try message.encode(to: encoder)
-//        case .query(let query):
-//            identifier = .Q
-//            try query.encode(to: encoder)
-//        case .parse(let parseRequest):
-//            identifier = .P
-//            try parseRequest.encode(to: encoder)
-//        case .sync:
-//            identifier = .S
         case .bind(let bind): bind.serialize(into: &buffer)
-//        case .describe(let describe):
-//            identifier = .D
-//            try describe.encode(to: encoder)
-//        case .execute(let execute):
-//            identifier = .E
-//            try execute.encode(to: encoder)
-//        case .password(let password):
-//            identifier = .p
-//            try password.encode(to: encoder)
-        default: throw PostgreSQLError(identifier: "encoder", reason: "Unsupported encodable type: \(type(of: message))")
+        case .describe(let describe): describe.serialize(into: &buffer)
+        case .execute(let execute): execute.serialize(into: &buffer)
+        case .parse(let parse): parse.serialize(into: &buffer)
+        case .password(let password): password.serialize(into: &buffer)
+        case .query(let query): query.serialize(into: &buffer)
+        case .sslSupportRequest(let request): buffer.write(integer: request.code)
+        case .startupMessage(let message): message.serialize(into: &buffer)
+        case .sync: break
+        default:
+            throw PostgreSQLError(identifier: "encoder", reason: "Unsupported encodable type: \(type(of: message))")
         }
-        
-        buffer.set(integer: Int32(buffer.writerIndex - messageStartIndex), at: messageSizeIndex)
+        buffer.set(integer: Int32(buffer.writerIndex - messageSizeIndex), at: messageSizeIndex)
     }
 }

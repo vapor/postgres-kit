@@ -8,6 +8,14 @@ final class PostgreSQLMessageDecoder: ByteToMessageDecoder {
 
     /// The cumulationBuffer which will be used to buffer any data.
     var cumulationBuffer: ByteBuffer?
+    
+    /// If `true`, the server has asked for authentication.
+    var hasRequestedAuthentication: Bool
+    
+    /// Creates a new `PostgreSQLMessageDecoder`.
+    init() {
+        self.hasRequestedAuthentication = false
+    }
 
     /// Decode from a `ByteBuffer`. This method will be called till either the input
     /// `ByteBuffer` has nothing to read left or `DecodingState.needMoreData` is returned.
@@ -18,59 +26,55 @@ final class PostgreSQLMessageDecoder: ByteToMessageDecoder {
     /// - returns: `DecodingState.continue` if we should continue calling this method or `DecodingState.needMoreData` if it should be called
     //             again once more data is present in the `ByteBuffer`.
     func decode(ctx: ChannelHandlerContext, buffer: inout ByteBuffer) throws -> DecodingState {
-        VERBOSE("PostgreSQLMessageDecoder.decode(ctx: \(ctx), buffer: \(buffer)")
-
-        /// peek at messageType
+        // peek at messageType
         guard let messageType: Byte = buffer.peekInteger() else {
-            VERBOSE("   [needMoreData: messageType=nil]")
             return .needMoreData
         }
-
-        /// peek at messageSize
-        guard let messageSize: Int32 = buffer.peekInteger(skipping: MemoryLayout<Byte>.size) else {
-            // Response from a PostgreSQLSSLSupportRequest will only return a single byte, so we need to handle that case
-            if (messageType == .S || messageType == .N), let data = buffer.readSlice(length: MemoryLayout<Byte>.size) {
-                fatalError()
-//                let message = try PostgreSQLMessage.sslSupportResponse(decoder.decode())
-//                ctx.fireChannelRead(wrapInboundOut(message))
-//                VERBOSE("   [message=\(message)]")
-                return .continue
-            } else {
-                VERBOSE("   [needMoreData: messageSize=nil]")
-                return .needMoreData
+        
+        // check to see if this is a special-case ssl response
+        guard hasRequestedAuthentication || buffer.readableBytes != 1 || (messageType != .N && messageType != .S) else {
+            // the connection has not yet authenticated, and there is only one byte in the response,
+            // this must be an SSL support response
+            buffer.moveReaderIndex(forwardBy: 1)
+            switch messageType {
+            case .S: ctx.fireChannelRead(wrapInboundOut(.sslSupportResponse(.supported)))
+            case .N: ctx.fireChannelRead(wrapInboundOut(.sslSupportResponse(.unsupported)))
+            default: fatalError() // not hittable
             }
+            return .continue
         }
 
-        /// ensure message is large enough or reject
-        guard buffer.readableBytes - MemoryLayout<Byte>.size >= Int(messageSize) else {
-            VERBOSE("   [needMoreData: readableBytes=\(buffer.readableBytes), messageSize=\(messageSize)]")
+        /// peek at message size, skipping message type.
+        guard let messageSize: Int = buffer.peekInteger(skipping: 1, as: Int32.self).flatMap(numericCast) else {
             return .needMoreData
         }
 
-        /// skip messageType and messageSize
-        buffer.moveReaderIndex(forwardBy: MemoryLayout<Byte>.size + MemoryLayout<Int32>.size)
+        /// ensure message is large enough (skipping message type) or reject
+        guard buffer.readableBytes - 1 >= Int(messageSize) else {
+            return .needMoreData
+        }
 
-        /// read messageData
-//        guard let messageData = buffer.readSlice(length: Int(messageSize) - MemoryLayout<Int32>.size) else {
-//            fatalError("buffer.readSlice returned nil even though length was checked.")
-//        }
+        // skip messageType and messageSize
+        buffer.moveReaderIndex(forwardBy: 1 + 4)
 
         let message: PostgreSQLMessage
         switch messageType {
-//        case .A: message = try .notificationResponse(decoder.decode())
-//        case .E: message = try .error(decoder.decode())
-//        case .N: message = try .notice(decoder.decode())
-        case .R: message = try .authenticationRequest(.parse(from: &buffer))
-//        case .S: message = try .parameterStatus(decoder.decode())
+        case .R:
+            message = try .authenticationRequest(.parse(from: &buffer))
+            hasRequestedAuthentication = true
         case .K: message = try .backendKeyData(.parse(from: &buffer))
-//        case .Z: message = try .readyForQuery(decoder.decode())
-//        case .T: message = try .rowDescription(decoder.decode())
-//        case .D: message = try .dataRow(decoder.decode())
-//        case .C: message = try .close(decoder.decode())
-        case .one: message = .parseComplete
         case .two: message = .bindComplete
+        case .C: message = try .close(.parse(from: &buffer))
+        case .D: message = try .dataRow(.parse(from: &buffer))
+        case .E: message = try .error(.parse(from: &buffer))
         case .n: message = .noData
-//        case .t: message = try .parameterDescription(decoder.decode())
+        case .N: message = try .notice(.parse(from: &buffer))
+        case .A: message = try .notificationResponse(.parse(from: &buffer))
+        case .t: message = try .parameterDescription(.parse(from: &buffer))
+        case .S: message = try .parameterStatus(.parse(from: &buffer))
+        case .one: message = .parseComplete
+        case .Z: message = try .readyForQuery(.parse(from: &buffer))
+        case .T: message = try .rowDescription(.parse(from: &buffer))
         default:
             let string = String(bytes: [messageType], encoding: .ascii) ?? "n/a"
             throw PostgreSQLError(
@@ -80,7 +84,6 @@ final class PostgreSQLMessageDecoder: ByteToMessageDecoder {
                 suggestedFixes: ["Connect to PostgreSQL database"]
             )
         }
-        VERBOSE("   [message=\(message)]")
         ctx.fireChannelRead(wrapInboundOut(message))
         return .continue
     }
@@ -94,15 +97,11 @@ final class PostgreSQLMessageDecoder: ByteToMessageDecoder {
     ///
     /// - parameters:
     ///     - ctx: The `ChannelHandlerContext` which this `ByteToMessageDecoder` belongs to.
-    func decoderRemoved(ctx: ChannelHandlerContext) {
-        VERBOSE("PostgreSQLMessageDecoder.decoderRemoved(ctx: \(ctx))")
-    }
+    func decoderRemoved(ctx: ChannelHandlerContext) { }
 
     /// Called when this `ByteToMessageDecoder` is added to the `ChannelPipeline`.
     ///
     /// - parameters:
     ///     - ctx: The `ChannelHandlerContext` which this `ByteToMessageDecoder` belongs to.
-    func decoderAdded(ctx: ChannelHandlerContext) {
-        VERBOSE("PostgreSQLMessageDecoder.decoderAdded(ctx: \(ctx))")
-    }
+    func decoderAdded(ctx: ChannelHandlerContext) { }
 }

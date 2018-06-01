@@ -62,7 +62,7 @@ extension PostgreSQLConnection {
     /// Ask the server if it supports SSL and adds a new OpenSSLClientHandler to pipeline if it does
     /// This will throw an error if the server does not support SSL
     internal func addSSLClientHandler(using tlsConfiguration: TLSConfiguration) -> Future<Void> {
-        return queue.enqueue([.sslSupportRequest(PostgreSQLSSLSupportRequest())]) { message in
+        return queue.enqueue([.sslSupportRequest(.init())]) { message in
             guard case .sslSupportResponse(let response) = message else {
                 throw PostgreSQLError(identifier: "SSL support check", reason: "Unsupported message encountered during SSL support check: \(message).")
             }
@@ -70,10 +70,10 @@ extension PostgreSQLConnection {
                 throw PostgreSQLError(identifier: "SSL support check", reason: "tlsConfiguration given in PostgresSQLConfiguration, but SSL connection not supported by PostgreSQL server.")
             }
             return true
-            }.flatMap {
-                let sslContext = try SSLContext(configuration: tlsConfiguration)
-                let handler = try OpenSSLClientHandler(context: sslContext)
-                return self.channel.pipeline.add(handler: handler, first: true)
+        }.flatMap {
+            let sslContext = try SSLContext(configuration: tlsConfiguration)
+            let handler = try OpenSSLClientHandler(context: sslContext)
+            return self.channel.pipeline.add(handler: handler, first: true)
         }
     }
 }

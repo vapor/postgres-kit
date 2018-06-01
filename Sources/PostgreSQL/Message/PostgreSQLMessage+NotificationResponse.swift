@@ -1,13 +1,30 @@
-import Foundation
+extension PostgreSQLMessage {
+    struct NotificationResponse {
+        /// The message coming from PSQL
+        let processID: Int32
+        
+        /// The name of the channel that the notify has been raised on.
+        let channel: String
+        
+        /// The "payload" string passed from the notifying process.
+        let message: String
+    }
+}
 
-struct PostgreSQLNotificationResponse: Decodable {
-    /// The message coming from PSQL
-    let channel: String
-    let message: String
-    init(from decoder: Decoder) throws {
-        let container = try decoder.singleValueContainer()
-        _ = try container.decode(Int32.self)
-        channel = try container.decode(String.self)
-        message = try container.decode(String.self)
+// MARK: Parse
+
+extension PostgreSQLMessage.NotificationResponse {
+    /// Parses an instance of this message type from a byte buffer.
+    static func parse(from buffer: inout ByteBuffer) throws -> PostgreSQLMessage.NotificationResponse {
+        guard let processID = buffer.readInteger(as: Int32.self) else {
+            throw PostgreSQLError.protocol(reason: "Could not read process ID from notification response.")
+        }
+        guard let channel = buffer.readNullTerminatedString() else {
+            throw PostgreSQLError.protocol(reason: "Could not read channel from notification response.")
+        }
+        guard let message = buffer.readNullTerminatedString() else {
+            throw PostgreSQLError.protocol(reason: "Could not read message from notification response.")
+        }
+        return .init(processID: processID, channel: channel, message: message)
     }
 }

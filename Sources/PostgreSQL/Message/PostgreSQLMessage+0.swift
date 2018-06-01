@@ -1,16 +1,7 @@
 // note: Please list enum cases alphabetically.
 
 /// A frontend or backend PostgreSQL message.
-enum PostgreSQLMessage {
-    /// The format code being used for the field.
-    /// Currently will be zero (text) or one (binary).
-    /// In a RowDescription returned from the statement variant of Describe,
-    /// the format code is not yet known and will always be zero.
-    enum FormatCode: Int16, Codable {
-        case text = 0
-        case binary = 1
-    }
-    
+enum PostgreSQLMessage {    
     /// One of the various authentication request message formats.
     case authenticationRequest(AuthenticationRequest)
     
@@ -25,61 +16,61 @@ enum PostgreSQLMessage {
     case bindComplete
     
     /// Identifies the message as a command-completed response.
-    case close(PostgreSQLCloseResponse)
+    case close(CloseResponse)
     
     /// Identifies the message as a data row.
-    case dataRow(PostgreSQLDataRow)
+    case dataRow(DataRow)
     
     /// Identifies the message as a Describe command.
-    case describe(PostgreSQLDescribeRequest)
+    case describe(DescribeRequest)
     
     /// Identifies the message as an error.
-    case error(PostgreSQLDiagnosticResponse)
+    case error(ErrorResponse)
     
     /// Identifies the message as an Execute command.
-    case execute(PostgreSQLExecuteRequest)
+    case execute(ExecuteRequest)
     
     /// Identifies the message as a no-data indicator.
     case noData
     
     /// Identifies the message as a notice.
-    case notice(PostgreSQLDiagnosticResponse)
+    case notice(ErrorResponse)
     
     /// Identifies the message as a notification response.
-    case notificationResponse(PostgreSQLNotificationResponse)
+    case notificationResponse(NotificationResponse)
     
     /// Identifies the message as a parameter description.
-    case parameterDescription(PostgreSQLParameterDescription)
+    case parameterDescription(ParameterDescription)
     
     /// Identifies the message as a run-time parameter status report.
-    case parameterStatus(PostgreSQLParameterStatus)
+    case parameterStatus(ParameterStatus)
     
     /// Identifies the message as a Parse command.
-    case parse(PostgreSQLParseRequest)
+    case parse(ParseRequest)
     
     /// Identifies the message as a Parse-complete indicator.
     case parseComplete
     
     /// Identifies the message as a password response.
-    case password(PostgreSQLPasswordMessage)
+    case password(PasswordMessage)
     
     /// Identifies the message as a simple query.
-    case query(PostgreSQLQuery)
+    case query(Query)
     
     /// Identifies the message type. ReadyForQuery is sent whenever the backend is ready for a new query cycle.
-    case readyForQuery(PostgreSQLReadyForQuery)
+    case readyForQuery(ReadyForQuery)
     
     /// Identifies the message as a row description.
-    case rowDescription(PostgreSQLRowDescription)
+    case rowDescription(RowDescription)
     
     /// Response after sending an sslSupportRequest message.
-    case sslSupportResponse(PostgreSQLSSLSupportResponse)
+    case sslSupportResponse(SupportResponse)
     
     /// Asks the server if it supports SSL.
-    case sslSupportRequest(PostgreSQLSSLSupportRequest)
+    case sslSupportRequest(SSLSupportRequest)
     
     /// Startup message
-    case startupMessage(PostgreSQLStartupMessage)
+    case startupMessage(StartupMessage)
     
     /// Identifies the message as a Sync command.
     case sync

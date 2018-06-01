@@ -39,9 +39,8 @@ extension PostgreSQLConnection {
     /// Non-operation bounded simple query.
     private func _simpleQuery(_ string: String, onRow: @escaping ([PostgreSQLColumn: PostgreSQLData]) -> ()) -> Future<Void> {
         logger?.record(query: string)
-        var currentRow: PostgreSQLRowDescription?
-        let query = PostgreSQLQuery(query: string)
-        return send([.query(query)]) { message in
+        var currentRow: PostgreSQLMessage.RowDescription?
+        return send([.query(.init(query: string))]) { message in
             switch message {
             case .rowDescription(let row):
                 currentRow = row

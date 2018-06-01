@@ -1,5 +1,3 @@
-import Crypto
-
 /// A PostgreSQL frontend client.
 public final class PostgreSQLConnection: DatabaseConnection, BasicWorker {
     /// See `DatabaseConnection`.
@@ -86,7 +84,7 @@ public final class PostgreSQLConnection: DatabaseConnection, BasicWorker {
             case .readyForQuery:
                 if let e = error { throw e }
                 return true
-            case .error(let e): error = e
+            case .error(let e): error = PostgreSQLError.errorResponse(e)
             case .notice(let n): print(n)
             default: try onResponse(message)
             }
@@ -115,78 +113,12 @@ public final class PostgreSQLConnection: DatabaseConnection, BasicWorker {
         return new
     }
 
-    /// Authenticates the `PostgreSQLClient` using a username with no password.
-    public func authenticate(username: String, database: String? = nil, password: String? = nil) -> Future<Void> {
-        let startup = PostgreSQLStartupMessage.versionThree(parameters: [
-            "user": username,
-            "database": database ?? username
-        ])
-        var authRequest: PostgreSQLMessage.AuthenticationRequest?
-        return queue.enqueue([.startupMessage(startup)]) { message in
-            switch message {
-            case .authenticationRequest(let a):
-                authRequest = a
-                return true
-            default: throw PostgreSQLError(identifier: "auth", reason: "Unsupported message encountered during auth: \(message).")
-            }
-        }.flatMap(to: Void.self) {
-            guard let auth = authRequest else {
-                throw PostgreSQLError(identifier: "authRequest", reason: "No authorization request / status sent.")
-            }
-
-            let input: [PostgreSQLMessage]
-            switch auth {
-            case .ok:
-                guard password == nil else {
-                    throw PostgreSQLError(identifier: "trust", reason: "No password is required")
-                }
-                input = []
-            case .plaintext:
-                guard let password = password else {
-                    throw PostgreSQLError(identifier: "password", reason: "Password is required")
-                }
-                let passwordMessage = PostgreSQLPasswordMessage(password: password)
-                input = [.password(passwordMessage)]
-            case .md5(let salt):
-                guard let password = password else {
-                    throw PostgreSQLError(identifier: "password", reason: "Password is required")
-                }
-                guard let passwordData = password.data(using: .utf8) else {
-                    throw PostgreSQLError(identifier: "passwordUTF8", reason: "Could not convert password to UTF-8 encoded Data.")
-                }
-
-                guard let usernameData = username.data(using: .utf8) else {
-                    throw PostgreSQLError(identifier: "usernameUTF8", reason: "Could not convert username to UTF-8 encoded Data.")
-                }
-
-                // pwdhash = md5(password + username).hexdigest()
-                let pwdhash = try MD5.hash(passwordData + usernameData).hexEncodedString()
-                // hash = "md5" + md 5(pwdhash + salt).hexdigest()
-                let hash = try "md5" + MD5.hash(Data(pwdhash.utf8) + salt).hexEncodedString()
-
-                let passwordMessage = PostgreSQLPasswordMessage(password: hash)
-                input = [.password(passwordMessage)]
-            }
-
-            return self.queue.enqueue(input) { message in
-                switch message {
-                case .error(let error): throw error
-                case .readyForQuery: return true
-                case .authenticationRequest: return false
-                case .parameterStatus, .backendKeyData: return false
-                default: throw PostgreSQLError(identifier: "authenticationMessage", reason: "Unexpected authentication message: \(message)")
-                }
-            }
-        }
-    }
-
-
     /// Closes this client.
     public func close() {
         _ = executeCloseHandlersThenClose()
     }
 
-
+    /// Executes close handlers before closing.
     private  func executeCloseHandlersThenClose() -> Future<Void> {
         if let beforeClose = closeHandlers.popLast() {
             return beforeClose(self).then { _ in
@@ -197,12 +129,13 @@ public final class PostgreSQLConnection: DatabaseConnection, BasicWorker {
         }
     }
 
-
     /// Called when this class deinitializes.
     deinit {
         close()
     }
 
 }
+
+// MARK: Private
 
 private let closeError = PostgreSQLError(identifier: "closed", reason: "Connection is closed.")

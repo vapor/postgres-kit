@@ -99,30 +99,30 @@ extension PostgreSQLConnection {
         let parameters = try parameters.map { try $0.convertToPostgreSQLData() }
         logger?.record(query: string, values: parameters.map { $0.description })
 
-        let parse = PostgreSQLParseRequest(statementName: "", query: string, parameterTypes: parameters.map { $0.type })
-        let describe = PostgreSQLDescribeRequest(type: .statement, name: "")
-        let bind = PostgreSQLMessage.BindRequest(
-            portalName: "",
-            statementName: "",
-            parameterFormatCodes: parameters.map {
-                switch $0.storage {
-                case .text: return .text
-                case .binary, .null: return .binary
-                }
-            },
-            parameters: parameters.map {
-                switch $0.storage {
-                case .text(let string):  return .init(data: Data(string.utf8))
-                case .binary(let data): return .init(data: data)
-                case .null: return .init(data: nil)
-                }
-            },
-            resultFormatCodes: resultFormat.formatCodes
-        )
-        let execute = PostgreSQLExecuteRequest(portalName: "", maxRows: 0)
-        var currentRow: PostgreSQLRowDescription?
+        var currentRow: PostgreSQLMessage.RowDescription?
         return self.send([
-            .parse(parse), .describe(describe), .bind(bind), .execute(execute), .sync
+            .parse(.init(statementName: "", query: string, parameterTypes: parameters.map { $0.type })),
+            .describe(.init(command: .statement, name: "")),
+            .bind(.init(
+                portalName: "",
+                statementName: "",
+                parameterFormatCodes: parameters.map {
+                    switch $0.storage {
+                    case .text: return .text
+                    case .binary, .null: return .binary
+                    }
+                },
+                parameters: parameters.map {
+                    switch $0.storage {
+                    case .text(let string):  return .init(data: Data(string.utf8))
+                    case .binary(let data): return .init(data: data)
+                    case .null: return .init(data: nil)
+                    }
+                },
+                resultFormatCodes: resultFormat.formatCodes
+            )),
+            .execute(.init(portalName: "", maxRows: 0)),
+            .sync
         ]) { message in
             switch message {
             case .parseComplete: break

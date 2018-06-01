@@ -9,6 +9,50 @@ extension ByteBuffer {
         write(integer: 0, as: Byte.self)
     }
     
+    mutating func readEnum<E>(_ type: E.Type) -> E? where E: RawRepresentable, E.RawValue: FixedWidthInteger {
+        guard let rawValue = readInteger(as: E.RawValue.self) else {
+            return nil
+        }
+        return E.init(rawValue: rawValue)
+    }
+    
+    mutating func readNullableData() -> Data? {
+        guard let count: Int = readInteger(as: Int32.self).flatMap(numericCast) else {
+            return nil
+        }
+        switch count {
+        case -1:
+            // As a special case, -1 indicates a NULL parameter value. No value bytes follow in the NULL case.
+            return nil
+        default: return readData(length: count)
+        }
+    }
+    
+    mutating func write(nullableData: Data?) {
+        if let data = nullableData {
+            // The length of the parameter value, in bytes (this count does not include itself). Can be zero.
+            write(integer: numericCast(data.count), as: Int32.self)
+            // The value of the parameter, in the format indicated by the associated format code. n is the above length.
+            write(bytes: data)
+        } else {
+            // As a special case, -1 indicates a NULL parameter value. No value bytes follow in the NULL case.
+            write(integer: -1, as: Int32.self)
+        }
+    }
+    
+    mutating func readArray<T>(_ type: T.Type, _ closure: (inout ByteBuffer) throws -> (T)) rethrows -> [T]? {
+        guard let count: Int = readInteger(as: Int16.self).flatMap(numericCast) else {
+            return nil
+        }
+        var array: [T] = []
+        array.reserveCapacity(count)
+        for _ in 0..<count {
+            try array.append(closure(&self))
+        }
+        return array
+    }
+    
+    
     mutating func write<T>(array: [T], closure: (inout ByteBuffer, T) -> ()) {
         write(integer: numericCast(array.count), as: Int16.self)
         for el in array {

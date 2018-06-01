@@ -287,8 +287,8 @@ class PostgreSQLConnectionTests: XCTestCase {
         let createResult = try client.query("create table nulltest (i integer not null, d timestamp);").wait()
         XCTAssertEqual(createResult.count, 0)
         let insertResult = try client.query("insert into nulltest  (i, d) VALUES ($1, $2)", [
-            PostgreSQLData(type: .int2, format: .binary, data: Data([0x00, 0x01])),
-            PostgreSQLData(type: .timestamp, format: .binary, data: nil),
+            PostgreSQLData(.int2, binary: Data([0x00, 0x01])),
+            PostgreSQLData(null: .timestamp),
         ]).wait()
         XCTAssertEqual(insertResult.count, 0)
         let parameterizedResult = try client.query("select * from nulltest").wait()
