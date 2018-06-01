@@ -1,11 +1,5 @@
 extension Date: PostgreSQLDataConvertible {
     /// See `PostgreSQLDataConvertible`.
-    public static var postgreSQLDataType: PostgreSQLDataType { return .timestamp }
-
-    /// See `PostgreSQLDataConvertible`.
-    public static var postgreSQLDataArrayType: PostgreSQLDataType { return ._timestamp }
-
-    /// See `PostgreSQLDataConvertible`.
     public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> Date {
         switch data.storage {
         case .text(let value):
@@ -18,11 +12,11 @@ extension Date: PostgreSQLDataConvertible {
         case .binary(let value):
             switch data.type {
             case .timestamp, .time:
-                let microseconds = try value.as(Int64.self)
+                let microseconds = value.as(Int64.self, default: 0).bigEndian
                 let seconds = Double(microseconds) / Double(_microsecondsPerSecond)
                 return Date(timeInterval: seconds, since: _psqlDateStart)
             case .date:
-                let days = try value.as(Int32.self)
+                let days = value.as(Int32.self, default: 0).bigEndian
                 let seconds = days * _secondsInDay
                 return Date(timeInterval: Double(seconds), since: _psqlDateStart)
             default: throw PostgreSQLError(identifier: "date", reason: "Could not parse Date from binary data type: \(data.type).")
@@ -33,7 +27,7 @@ extension Date: PostgreSQLDataConvertible {
 
     /// See `PostgreSQLDataConvertible`.
     public func convertToPostgreSQLData() throws -> PostgreSQLData {
-        return PostgreSQLData(.timestamp, binary: Int64(self.timeIntervalSince(_psqlDateStart) * Double(_microsecondsPerSecond)).data)
+        return PostgreSQLData(.timestamp, binary: Data.of(Int64(self.timeIntervalSince(_psqlDateStart) * Double(_microsecondsPerSecond)).bigEndian))
     }
 }
 

@@ -67,6 +67,104 @@ extension ByteBuffer {
     }
 }
 
+public struct Char: Codable, CustomStringConvertible {
+    public let value: UInt8
+    public var description: String {
+        if let string = String(data: Data([value]), encoding: .utf8) {
+            return "\"" + string + "\""
+        } else {
+            return "\\" + value.description
+        }
+    }
+    public init(_ value: UInt8) {
+        self.value = value
+    }
+    
+    public init(from decoder: Decoder) throws {
+        let single = try decoder.singleValueContainer()
+        self.value = try single.decode(UInt8.self)
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        var single = encoder.singleValueContainer()
+        try single.encode(value)
+    }
+}
+
+public enum Regproc: PostgreSQLDataConvertible, Codable {
+    public func convertToPostgreSQLData() throws -> PostgreSQLData {
+        switch self {
+        case .function(let string): return try string.convertToPostgreSQLData()
+        case .functionID(let id): return try id.convertToPostgreSQLData()
+        }
+    }
+    public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> Regproc {
+        if data.binary != nil {
+            return try .functionID(.convertFromPostgreSQLData(data))
+        } else {
+            return try .function(.convertFromPostgreSQLData(data))
+        }
+    }
+    
+    public init(from decoder: Decoder) throws {
+        let single = try decoder.singleValueContainer()
+        self = try .function(single.decode(String.self))
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        var single = encoder.singleValueContainer()
+        switch self {
+        case .function(let string): try single.encode(string)
+        case .functionID(let int): try single.encode(int)
+        }
+    }
+    
+    case function(String)
+    case functionID(UInt32)
+}
+
+extension Data {
+    static func of<T>(_ value: T) -> Data {
+        var copy = value
+        return .init(bytes: &copy, count:  MemoryLayout<T>.size)
+    }
+    
+    func `as`<T>(_ type: T.Type, default: T) -> T {
+        return withUnsafeBytes { ptr -> T in
+            var copy = `default`
+            Swift.withUnsafeMutableBytes(of: &copy) { valuePtr -> Void in
+                valuePtr.copyMemory(from: UnsafeRawBufferPointer(start: ptr.baseAddress!, count: MemoryLayout<T>.size))
+            }
+            return copy
+        }
+    }
+}
+
+extension BinaryFloatingPoint {
+    /// Return's this floating point's bit width.
+    static var bitWidth: Int {
+        return exponentBitCount + significandBitCount + 1
+    }
+    
+    /// Bytes for this integer.
+    internal var data: Data {
+        var copy = self
+        return .init(bytes: &copy, count:  MemoryLayout<Self>.size)
+    }
+}
+
+extension FixedWidthInteger {
+    public func cast<T>(to value: T.Type) -> T? where T: FixedWidthInteger {
+        if let existing = self as? T {
+            return existing
+        }
+        guard self <= T.max, self >= T.min else {
+            return nil
+        }
+        return T(self)
+    }
+}
+
 extension Data {
     mutating func skip(_ n: Int) {
         guard n < count else {

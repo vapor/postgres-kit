@@ -53,7 +53,7 @@ public struct PostgreSQLRowDecoder {
             self.row = row
             self.tableOID = tableOID
             self.allKeys = row.keys.compactMap { col in
-                if col.tableOID == 0 || col.tableOID == tableOID {
+                if tableOID == 0 || col.tableOID == tableOID || col.tableOID == 0 {
                     return col.name
                 } else {
                     return nil
@@ -66,7 +66,7 @@ public struct PostgreSQLRowDecoder {
         }
         
         func decodeNil(forKey key: Key) throws -> Bool {
-            guard let data = row[.init(tableOID: tableOID, name: key.stringValue)] else {
+            guard let data = row.firstValue(tableOID: tableOID, name: key.stringValue) else {
                 return true
             }
             switch data.storage {
@@ -76,7 +76,7 @@ public struct PostgreSQLRowDecoder {
         }
         
         func decode<T>(_ type: T.Type, forKey key: Key) throws -> T where T : Decodable {
-            guard let data = row[.init(tableOID: tableOID, name: key.stringValue)] else {
+            guard let data = row.firstValue(tableOID: tableOID, name: key.stringValue) else {
                 throw DecodingError.valueNotFound(T.self, .init(codingPath: codingPath + [key], debugDescription: "Could not decode \(T.self)."))
             }
             return try PostgreSQLDataDecoder().decode(T.self, from: data)

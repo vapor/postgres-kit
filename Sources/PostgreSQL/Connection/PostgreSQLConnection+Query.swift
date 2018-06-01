@@ -1,4 +1,10 @@
 extension PostgreSQLConnection {
+    public func query<D>(_ query: Query<PostgreSQLDatabase>, resultFormat: PostgreSQLResultFormat = .binary, decoding: D.Type) -> Future<[D]> where D: Decodable {
+        var binds = Binds()
+        let sql = PostgreSQLSerializer().serialize(query: query, binds: &binds)
+        return self.query(sql, binds.values, resultFormat: resultFormat, decoding: D.self)
+    }
+    
     /// Runs a parameterized `Query`, returning the results as an array of rows.
     ///
     ///     let users = conn.query(.select(.all, from: "users"))
@@ -8,13 +14,21 @@ extension PostgreSQLConnection {
     /// - parameters:
     ///     - query: `Query` to execute.
     /// - returns: A future array of results.
-    public func query(_ q: Query<PostgreSQLDatabase>) -> Future<[[PostgreSQLColumn: PostgreSQLData]]> {
-        var rows: [[PostgreSQLColumn: PostgreSQLData]] = []
-        return query(q) { row in
-            rows.append(row)
-        }.map {
-            return rows
-        }
+    public func query(_ query: Query<PostgreSQLDatabase>, resultFormat: PostgreSQLResultFormat = .binary) -> Future<[[PostgreSQLColumn: PostgreSQLData]]> {
+        var binds = Binds()
+        let sql = PostgreSQLSerializer().serialize(query: query, binds: &binds)
+        return self.query(sql, binds.values, resultFormat: resultFormat)
+    }
+    
+    public func query<D>(
+        _ query: Query<PostgreSQLDatabase>,
+        resultFormat: PostgreSQLResultFormat = .binary,
+        decoding: D.Type,
+        onRow: @escaping (D) throws -> ()
+    ) -> Future<Void> where D: Decodable {
+        var binds = Binds()
+        let sql = PostgreSQLSerializer().serialize(query: query, binds: &binds)
+        return self.query(sql, binds.values, resultFormat: resultFormat, decoding: D.self, onRow: onRow)
     }
     
     /// Runs a parameterized `Query`, returning each row of the results to the supplied handler one at a time.
@@ -30,14 +44,28 @@ extension PostgreSQLConnection {
     ///     - resultFormat: Desired `PostgreSQLResultFormat` to request from PostgreSQL. Defaults to `.binary`.
     ///     - onRow: PostgreSQL row accepting closure to handle results, if any.
     /// - returns: A future that signals query completion.
-    public func query(_ q: Query<PostgreSQLDatabase>, resultFormat: PostgreSQLResultFormat = .binary, onRow: @escaping ([PostgreSQLColumn: PostgreSQLData]) throws -> ()) -> Future<Void> {
+    public func query(
+        _ query: Query<PostgreSQLDatabase>,
+        resultFormat: PostgreSQLResultFormat = .binary,
+        onRow: @escaping ([PostgreSQLColumn: PostgreSQLData]) throws -> ()
+    ) -> Future<Void> {
         var binds = Binds()
-        let sql = PostgreSQLSerializer().serialize(query: q, binds: &binds)
-        do {
-            let parameters = try binds.values.map { try PostgreSQLDataEncoder().encode($0) }
-            return query(sql, parameters, resultFormat: resultFormat, onRow: onRow)
-        } catch {
-            return future(error: error)
+        let sql = PostgreSQLSerializer().serialize(query: query, binds: &binds)
+        return self.query(sql, binds.values, resultFormat: resultFormat, onRow: onRow)
+    }
+    
+    // MARK: String
+    
+    public func query<D>(
+        _ string: String,
+        _ parameters: [Encodable] = [],
+        resultFormat: PostgreSQLResultFormat = .binary,
+        decoding: D.Type
+    ) -> Future<[D]> where D: Decodable {
+        return query(string, parameters, resultFormat: resultFormat).map { rows in
+            return try rows.map { row in
+                return try PostgreSQLRowDecoder().decode(D.self, from: row)
+            }
         }
     }
     
@@ -51,14 +79,30 @@ extension PostgreSQLConnection {
     ///
     /// - parameters:
     ///     - query: SQL `String` to execute.
-    ///     - parameters: Array of `PostgreSQLDataConvertible` to bind.
+    ///     - parameters: Array of `Encodable` values to bind.
     /// - returns: A future array of results.
-    public func query(_ string: String, _ parameters: [PostgreSQLDataConvertible] = []) -> Future<[[PostgreSQLColumn: PostgreSQLData]]> {
+    public func query(
+        _ string: String,
+        _ parameters: [Encodable] = [],
+        resultFormat: PostgreSQLResultFormat = .binary
+    ) -> Future<[[PostgreSQLColumn: PostgreSQLData]]> {
         var rows: [[PostgreSQLColumn: PostgreSQLData]] = []
-        return query(string, parameters) { row in
+        return query(string, parameters, resultFormat: resultFormat) { row in
             rows.append(row)
         }.map {
             return rows
+        }
+    }
+    
+    public func query<D>(
+        _ string: String,
+        _ parameters: [Encodable] = [],
+        resultFormat: PostgreSQLResultFormat = .binary,
+        decoding: D.Type,
+        onRow: @escaping (D) throws -> ()
+    ) -> Future<Void> where D: Decodable {
+        return query(string, parameters, resultFormat: resultFormat) { row in
+            try onRow(PostgreSQLRowDecoder().decode(D.self, from: row))
         }
     }
 
@@ -76,11 +120,16 @@ extension PostgreSQLConnection {
     ///
     /// - parameters:
     ///     - query: SQL `String` to execute.
-    ///     - parameters: Array of `PostgreSQLDataConvertible` to bind.
+    ///     - parameters: Array of `Encodable` values to bind.
     ///     - resultFormat: Desired `PostgreSQLResultFormat` to request from PostgreSQL. Defaults to `.binary`.
     ///     - onRow: PostgreSQL row accepting closure to handle results, if any.
     /// - returns: A future array of results.
-    public func query(_ string: String, _ parameters: [PostgreSQLDataConvertible] = [], resultFormat: PostgreSQLResultFormat = .binary, onRow: @escaping ([PostgreSQLColumn: PostgreSQLData]) throws -> ()) -> Future<Void> {
+    public func query(
+        _ string: String,
+        _ parameters: [Encodable] = [],
+        resultFormat: PostgreSQLResultFormat = .binary,
+        onRow: @escaping ([PostgreSQLColumn: PostgreSQLData]) throws -> ()
+    ) -> Future<Void> {
         return operation {
             do {
                 return try self._query(string, parameters, resultFormat: resultFormat, onRow: onRow)
@@ -93,8 +142,8 @@ extension PostgreSQLConnection {
     // MARK: Private
 
     /// Non-operation bounded query.
-    private func _query(_ string: String, _ parameters: [PostgreSQLDataConvertible] = [], resultFormat: PostgreSQLResultFormat, onRow: @escaping ([PostgreSQLColumn: PostgreSQLData]) throws -> ()) throws -> Future<Void> {
-        let parameters = try parameters.map { try $0.convertToPostgreSQLData() }
+    private func _query(_ string: String, _ parameters: [Encodable] = [], resultFormat: PostgreSQLResultFormat, onRow: @escaping ([PostgreSQLColumn: PostgreSQLData]) throws -> ()) throws -> Future<Void> {
+        let parameters = try parameters.map { try PostgreSQLDataEncoder().encode($0) }
         logger?.record(query: string, values: parameters.map { $0.description })
 
         var currentRow: PostgreSQLMessage.RowDescription?

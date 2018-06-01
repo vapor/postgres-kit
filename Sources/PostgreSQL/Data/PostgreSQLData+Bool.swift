@@ -10,23 +10,23 @@ extension Bool: PostgreSQLDataConvertible {
         switch data.storage {
         case .text(let value):
             guard value.count == 1 else {
-                throw PostgreSQLError(identifier: "bool", reason: "Could not decode Bool from value: \(value)")
+                throw PostgreSQLError.decode(Bool.self, from: data)
             }
             switch value[value.startIndex] {
             case "t": return true
             case "f": return false
-            default: throw PostgreSQLError(identifier: "bool", reason: "Could not decode Bool from text: \(value)")
+            default: throw PostgreSQLError.decode(Bool.self, from: data)
             }
         case .binary(let value):
             guard value.count == 1 else {
-                throw PostgreSQLError(identifier: "bool", reason: "Could not decode Bool from value: \(value)")
+                throw PostgreSQLError.decode(Bool.self, from: data)
             }
             switch value[0] {
             case 1: return true
             case 0: return false
-            default: throw PostgreSQLError(identifier: "bool", reason: "Could not decode Bool from binary: \(value)")
+            default: throw PostgreSQLError.decode(Bool.self, from: data)
             }
-        case .null: throw PostgreSQLError(identifier: "bool", reason: "Could not decode Bool from null data.")
+        case .null: throw PostgreSQLError.decode(Bool.self, from: data)
         }
 
     }

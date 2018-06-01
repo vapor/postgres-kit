@@ -16,26 +16,20 @@ extension PostgreSQLColumn: CustomStringConvertible {
     /// See `CustomStringConvertible`.
     public var description: String {
         switch tableOID {
-        case 0: return tableOID.description + "." + name
-        default: return name
+        case 0: return name
+        default: return tableOID.description + "." + name
         }
     }
 }
 
 extension Dictionary where Key == PostgreSQLColumn {
     /// Accesses the _first_ value from this dictionary with a matching field name.
-    public func firstValue(forColumn columnName: String) -> Value? {
-        for (field, value) in self {
-            if field.name == columnName {
-                return value
+    public func firstValue(tableOID: UInt32 = 0, name: String) -> Value? {
+        for (column, data) in self {
+            if (tableOID == 0 || column.tableOID == tableOID) && column.name == name {
+                return data
             }
         }
         return nil
-    }
-    
-    /// Access a `Value` from this dictionary keyed by `PostgreSQLColumn`s
-    /// using a field (column) name and entity (table) name.
-    public func value(forTableOID tableOID: UInt32, atColumn column: String) -> Value? {
-        return self[PostgreSQLColumn(tableOID: tableOID, name: column)]
     }
 }

@@ -16,6 +16,10 @@ public struct PostgreSQLDataEncoder {
     ///     - encodable: `Encodable` object to encode.
     /// - returns: Encoded `PostgreSQLData`.
     public func encode(_ encodable: Encodable) throws -> PostgreSQLData {
+        if let convertible = encodable as? PostgreSQLDataConvertible {
+            return try convertible.convertToPostgreSQLData()
+        }
+        
         do {
             let encoder = _Encoder()
             try encodable.encode(to: encoder)
@@ -63,6 +67,8 @@ public struct PostgreSQLDataEncoder {
         }
     }
     
+    static let _true = Data([0x01])
+    static let _false = Data([0x00])
     
     private struct _SingleValueEncodingContainer: SingleValueEncodingContainer {
         let codingPath: [CodingKey] = []
@@ -75,63 +81,7 @@ public struct PostgreSQLDataEncoder {
         mutating func encodeNil() throws {
             encoder.data = PostgreSQLData(null: .null)
         }
-        
-        mutating func encode(_ value: Bool) throws {
-            fatalError()
-        }
-        
-        mutating func encode(_ value: String) throws {
-            encoder.data = PostgreSQLData(.text, binary: Data(value.utf8))
-        }
-        
-        mutating func encode(_ value: Double) throws {
-            fatalError()
-        }
-        
-        mutating func encode(_ value: Float) throws {
-            fatalError()
-        }
-        
-        mutating func encode(_ value: Int) throws {
-            fatalError()
-        }
-        
-        mutating func encode(_ value: Int8) throws {
-            fatalError()
-        }
-        
-        mutating func encode(_ value: Int16) throws {
-            fatalError()
-        }
-        
-        mutating func encode(_ value: Int32) throws {
-            fatalError()
-        }
-        
-        mutating func encode(_ value: Int64) throws {
-            fatalError()
-        }
-        
-        mutating func encode(_ value: UInt) throws {
-            fatalError()
-        }
-        
-        mutating func encode(_ value: UInt8) throws {
-            fatalError()
-        }
-        
-        mutating func encode(_ value: UInt16) throws {
-            fatalError()
-        }
-        
-        mutating func encode(_ value: UInt32) throws {
-            fatalError()
-        }
-        
-        mutating func encode(_ value: UInt64) throws {
-            fatalError()
-        }
-        
+
         mutating func encode<T>(_ value: T) throws where T : Encodable {
             if let convertible = value as? PostgreSQLDataConvertible {
                 encoder.data = try convertible.convertToPostgreSQLData()

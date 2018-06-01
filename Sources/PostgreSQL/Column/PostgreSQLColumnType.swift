@@ -5,6 +5,11 @@ extension Query where Database == PostgreSQLDatabase {
             return .init(name: "BOOL")
         }
         
+        /// `CHAR`
+        public static var char: ColumnType {
+            return .init(name: "CHAR")
+        }
+        
         /// `CHAR(n)`
         ///
         /// - parameters:
@@ -62,7 +67,7 @@ extension Query where Database == PostgreSQLDatabase {
         }
         
         /// `DOUBLE PRECISION`
-        public static var double: ColumnType {
+        public static var doublePrecision: ColumnType {
             return .init(name: "DOUBLE PRECISION")
         }
         
@@ -76,9 +81,19 @@ extension Query where Database == PostgreSQLDatabase {
             return .init(name: "TIMESTAMP")
         }
         
+        /// `TIMESTAMP`
+        public static func timestamp(nullable: Bool = false) -> ColumnType {
+            return .init(name: "TIMESTAMP", nullable: nullable)
+        }
+        
         /// `JSON`
         public static var json: ColumnType {
             return .init(name: "JSON")
+        }
+        
+        /// `JSONB`
+        public static var jsonb: ColumnType {
+            return .init(name: "JSONB")
         }
         
         public enum Default {

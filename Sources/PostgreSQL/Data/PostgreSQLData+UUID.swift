@@ -1,26 +1,17 @@
-import Foundation
-
 extension UUID: PostgreSQLDataConvertible {
-    /// See `PostgreSQLDataConvertible`.
-    public static var postgreSQLDataType: PostgreSQLDataType { return .uuid }
-
-
-    /// See `PostgreSQLDataConvertible`.
-    public static var postgreSQLDataArrayType: PostgreSQLDataType { return ._uuid }
-
     /// See `PostgreSQLDataConvertible`.
     public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> UUID {
         guard case .uuid = data.type else {
-            throw PostgreSQLError(identifier: "uuid", reason: "Could not decode UUID from data type: \(data.type)")
+            throw PostgreSQLError.decode(self, from: data)
         }
         switch data.storage {
         case .text(let string):
             guard let uuid = UUID(uuidString: string) else {
-                throw PostgreSQLError(identifier: "uuid", reason: "Could not decode UUID from string: \(string)")
+                throw PostgreSQLError.decode(self, from: data)
             }
             return uuid
         case .binary(let value): return UUID(uuid: value.unsafeCast())
-        case .null: throw PostgreSQLError(identifier: "uuid", reason: "Could not decode UUID from null data.")
+        case .null: throw PostgreSQLError.decode(self, from: data)
         }
     }
 

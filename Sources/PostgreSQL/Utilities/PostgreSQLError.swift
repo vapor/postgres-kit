@@ -10,6 +10,11 @@ public struct PostgreSQLError: Debuggable {
         return .init(identifier: "protocol", reason: reason)
     }
     
+    /// Error communicating with PostgreSQL wire-protocol
+    static func decode<T>(_ type: T.Type, from data: PostgreSQLData) -> PostgreSQLError {
+        return .init(identifier: "decode", reason: "Could not decode \(T.self): \(data).")
+    }
+    
     /// See `Debuggable`.
     public let identifier: String
     

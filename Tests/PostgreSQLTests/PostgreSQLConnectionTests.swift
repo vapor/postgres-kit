@@ -1,346 +1,191 @@
-import Foundation
-import XCTest
-import NIO
-import NIOOpenSSL
 import PostgreSQL
-import Core
+import XCTest
 
 class PostgreSQLConnectionTests: XCTestCase {
-//    let defaultTimeout = 5.0
-//    func testVersion() throws {
-//        let client = try PostgreSQLConnection.makeTest(transport: .cleartext)
-//        let results = try client.simpleQuery("SELECT version();").wait()
-//        try XCTAssert(results[0].firstValue(forColumn: "version")?.decode(String.self).contains("10.") == true)
-//    }
-//
-//    func testUnverifiedSSLConnection() throws {
-//        let client = try PostgreSQLConnection.makeTest(transport: .unverifiedTLS)
-//        let results = try client.simpleQuery("SELECT version();").wait()
-//        try XCTAssert(results[0].firstValue(forColumn: "version")?.decode(String.self).contains("10.") == true)
-//    }
-//
-//    func testSelectTypes() throws {
-//        let client = try PostgreSQLConnection.makeTest(transport: .cleartext)
-//        let results = try client.query("select * from pg_type;").wait()
-//        if results.count > 350 {
-//            let name = try results[128].firstValue(forColumn: "typname")?.decode(String.self)
-//            XCTAssert(name != "")
-//        } else {
-//            XCTFail("Results count not large enough: \(results.count)")
-//        }
-//    }
-
-//    func testParse() throws {
-//        let client = try PostgreSQLConnection.makeTest(transport: .cleartext)
-//        let query = """
-//        select * from "pg_type" where "typlen" = $1 or "typlen" = $2
-//        """
-//        let rows = try client.query(query, [1, 2]).wait()
-//
-//        for row in rows {
-//            try XCTAssert(
-//                row.firstValue(forColumn: "typlen")?.decode(Int.self) == 1 ||
-//                row.firstValue(forColumn: "typlen")?.decode(Int.self) == 2
-//            )
-//        }
-//    }
-
-//    func testTypes() throws {
-//        let client = try PostgreSQLConnection.makeTest(transport: .cleartext)
-//        let createQuery = """
-//        create table kitchen_sink (
-//            "smallint" smallint,
-//            "integer" integer,
-//            "bigint" bigint,
-//            "decimal" decimal,
-//            "numeric" numeric,
-//            "real" real,
-//            "double" double precision,
-//            "varchar" varchar(64),
-//            "char" char(4),
-//            "text" text,
-//            "bytea" bytea,
-//            "timestamp" timestamp,
-//            "date" date,
-//            "time" time,
-//            "boolean" boolean,
-//            "point" point
-//            -- "line" line,
-//            -- "lseg" lseg,
-//            -- "box" box,
-//            -- "path" path,
-//            -- "polygon" polygon,
-//            -- "circle" circle,
-//            -- "cidr" cidr,
-//            -- "inet" inet,
-//            -- "macaddr" macaddr,
-//            -- "bit" bit(16),
-//            -- "uuid" uuid
-//        );
-//        """
-//        let createResult = try client.query(createQuery).wait()
-//        defer { _ = try? client.simpleQuery(.drop("kitchen_sink")).wait() }
-//        XCTAssertEqual(createResult.count, 0)
-//
-//        let insertQuery = """
-//        insert into kitchen_sink values (
-//            1, -- "smallint" smallint
-//            2, -- "integer" integer
-//            3, -- "bigint" bigint
-//            4, -- "decimal" decimal
-//            5.3, -- "numeric" numeric
-//            6, -- "real" real
-//            7, -- "double" double precision
-//            '9', -- "varchar" varchar(64)
-//            '10', -- "char" char(4)
-//            '11', -- "text" text
-//            '12', -- "bytea" bytea
-//            now(), -- "timestamp" timestamp
-//            current_date, -- "date" date
-//            localtime, -- "time" time
-//            true, -- "boolean" boolean
-//            point(13.5,14) -- "point" point,
-//            -- "line" line,
-//            -- "lseg" lseg,
-//            -- "box" box,
-//            -- "path" path,
-//            -- "polygon" polygon,
-//            -- "circle" circle,
-//            -- "cidr" cidr,
-//            -- "inet" inet,
-//            -- "macaddr" macaddr,
-//            -- "bit" bit(16),
-//            -- "uuid" uuid
-//        );
-//        """
-//        let insertResult = try client.query(insertQuery).wait()
-//        XCTAssertEqual(insertResult.count, 0)
-//        let queryResult = try client.query("select * from kitchen_sink").wait()
-//        if queryResult.count == 1 {
-//            let row = queryResult[0]
-//            try XCTAssertEqual(row.firstValue(forColumn: "smallint")?.decode(Int16.self), 1)
-//            try XCTAssertEqual(row.firstValue(forColumn: "integer")?.decode(Int32.self), 2)
-//            try XCTAssertEqual(row.firstValue(forColumn: "bigint")?.decode(Int64.self), 3)
-//            try XCTAssertEqual(row.firstValue(forColumn: "decimal")?.decode(String.self), "4")
-//            try XCTAssertEqual(row.firstValue(forColumn: "real")?.decode(Float.self), 6)
-//            try XCTAssertEqual(row.firstValue(forColumn: "double")?.decode(Double.self), 7)
-//            try XCTAssertEqual(row.firstValue(forColumn: "varchar")?.decode(String.self), "9")
-//            try XCTAssertEqual(row.firstValue(forColumn: "char")?.decode(String.self), "10  ")
-//            try XCTAssertEqual(row.firstValue(forColumn: "text")?.decode(String.self), "11")
-//            try XCTAssertEqual(row.firstValue(forColumn: "bytea")?.decode(Data.self), Data([0x31, 0x32]))
-//            try XCTAssertEqual(row.firstValue(forColumn: "boolean")?.decode(Bool.self), true)
-//            try XCTAssertNotNil(row.firstValue(forColumn: "timestamp")?.decode(Date.self))
-//            try XCTAssertNotNil(row.firstValue(forColumn: "date")?.decode(Date.self))
-//            try XCTAssertNotNil(row.firstValue(forColumn: "time")?.decode(Date.self))
-//            try XCTAssertEqual(row.firstValue(forColumn: "point")?.decode(PostgreSQLPoint.self), PostgreSQLPoint(x: 13.5, y: 14))
-//        } else {
-//            XCTFail("query result count is: \(queryResult.count)")
-//        }
-//    }
-
-    func testParameterizedTypes() throws {
+    struct VersionMetadata: Decodable {
+        var version: String
+    }
+    
+    func testVersion() throws {
         let client = try PostgreSQLConnection.makeTest(transport: .cleartext)
-        let createQuery = """
-        create table kitchen_sink (
-            "smallint" smallint,
-            "integer" integer,
-            "bigint" bigint,
-            "decimal" decimal,
-            "numeric" numeric,
-            "real" real,
-            "double" double precision,
-            "varchar" varchar(64),
-            "char" char(4),
-            "text" text,
-            "bytea" bytea,
-            "timestamp" timestamp,
-            "date" date,
-            "time" time,
-            "boolean" boolean,
-            "point" point,
-            "uuid" uuid,
-            "array" point[]
-            -- "line" line,
-            -- "lseg" lseg,
-            -- "box" box,
-            -- "path" path,
-            -- "polygon" polygon,
-            -- "circle" circle,
-            -- "cidr" cidr,
-            -- "inet" inet,
-            -- "macaddr" macaddr,
-            -- "bit" bit(16),
-        );
-        """
-        let createResult = try client.query(createQuery).wait()
-        defer { _ = try? client.simpleQuery(.drop("kitchen_sink")).wait() }
-        XCTAssertEqual(createResult.count, 0)
-
-        let insertQuery = """
-        insert into kitchen_sink values (
-            $1, -- "smallint" smallint
-            $2, -- "integer" integer
-            $3, -- "bigint" bigint
-            $4::numeric, -- "decimal" decimal
-            $5, -- "numeric" numeric
-            $6, -- "real" real
-            $7, -- "double" double precision
-            $8, -- "varchar" varchar(64)
-            $9, -- "char" char(4)
-            $10, -- "text" text
-            $11, -- "bytea" bytea
-            $12, -- "timestamp" timestamp
-            $13, -- "date" date
-            $14, -- "time" time
-            $15, -- "boolean" boolean
-            $16, -- "point" point
-            $17, -- "uuid" uuid
-            '{"(1,2)","(3,4)"}' -- "array" point[]
-            -- "line" line,
-            -- "lseg" lseg,
-            -- "box" box,
-            -- "path" path,
-            -- "polygon" polygon,
-            -- "circle" circle,
-            -- "cidr" cidr,
-            -- "inet" inet,
-            -- "macaddr" macaddr,
-            -- "bit" bit(16),
-        );
-        """
-//
-//        var params: [PostgreSQLDataConvertible] = []
-//        params += Int16(1) // smallint
-//        params += Int32(2) // integer
-//        params += Int64(3) // bigint
-//        params += String("123456789.0123456789") // decimal
-//        params += Double(5) // numeric
-//        params += Float(6) // real
-//        params += Double(7) // double
-//        params += String("8") // varchar
-//        params += String("9") // char
-//        params += String("10") // text
-//        params += Data([0x31, 0x32]) // bytea
-//        params += Date() // timestamp
-//        params += Date() // date
-//        params += Date() // time
-//        params += Bool(true) // boolean
-//        params += PostgreSQLPoint(x: 11.4, y: 12) // point
-//        params += UUID() // new uuid
-//        // params.append([1,2,3] as [Int]) // new array
-
-//        let insertResult = try client.query(insertQuery, params).wait()
-//        XCTAssertEqual(insertResult.count, 0)
-//
-//        let parameterizedResult = try client.query("select * from kitchen_sink").wait()
-//        if parameterizedResult.count == 1 {
-//            let row = parameterizedResult[0]
-//            try XCTAssertEqual(row.firstValue(forColumn: "smallint")?.decode(Int16.self), 1)
-//            try XCTAssertEqual(row.firstValue(forColumn: "integer")?.decode(Int32.self), 2)
-//            try XCTAssertEqual(row.firstValue(forColumn: "bigint")?.decode(Int64.self), 3)
-//            try XCTAssertEqual(row.firstValue(forColumn: "decimal")?.decode(String.self), "123456789.0123456789")
-//            try XCTAssertEqual(row.firstValue(forColumn: "real")?.decode(Float.self), 6)
-//            try XCTAssertEqual(row.firstValue(forColumn: "double")?.decode(Double.self), 7)
-//            try XCTAssertEqual(row.firstValue(forColumn: "varchar")?.decode(String.self), "8")
-//            try XCTAssertEqual(row.firstValue(forColumn: "char")?.decode(String.self), "9   ")
-//            try XCTAssertEqual(row.firstValue(forColumn: "text")?.decode(String.self), "10")
-//            try XCTAssertEqual(row.firstValue(forColumn: "bytea")?.decode(Data.self), Data([0x31, 0x32]))
-//            try XCTAssertEqual(row.firstValue(forColumn: "boolean")?.decode(Bool.self), true)
-//            try XCTAssertNotNil(row.firstValue(forColumn: "timestamp")?.decode(Date.self))
-//            try XCTAssertNotNil(row.firstValue(forColumn: "date")?.decode(Date.self))
-//            try XCTAssertNotNil(row.firstValue(forColumn: "time")?.decode(Date.self))
-//            try XCTAssertEqual(row.firstValue(forColumn: "point")?.decode(String.self), "(11.4,12.0)")
-//            try XCTAssertNotNil(row.firstValue(forColumn: "uuid")?.decode(UUID.self))
-//            try XCTAssertEqual(row.firstValue(forColumn: "array")?.decode([PostgreSQLPoint].self).first?.x, 1.0)
-//        } else {
-//            XCTFail("parameterized result count is: \(parameterizedResult.count)")
-//        }
+        let results = try client.simpleQuery("SELECT version();", decoding: VersionMetadata.self).wait()
+        XCTAssertTrue(results[0].version.contains("10."))
     }
 
-//    func testStruct() throws {
-//        struct Hello: PostgreSQLJSONCustomConvertible, Codable {
-//            var message: String
-//        }
-//
-//        let client = try PostgreSQLConnection.makeTest(transport: .cleartext)
-//        let createResult = try client.query("create table foo (id integer, dict jsonb);").wait()
-//        defer { _ = try? client.simpleQuery(.drop("foo")).wait() }
-//        XCTAssertEqual(createResult.count, 0)
-//        let insertResult = try client.query("insert into foo values ($1, $2);", [
-//            Int32(1), Hello(message: "hello, world")
-//        ]).wait()
-//
-//        XCTAssertEqual(insertResult.count, 0)
-//        let parameterizedResult = try client.query("select * from foo").wait()
-//        if parameterizedResult.count == 1 {
-//            let row = parameterizedResult[0]
-//            try XCTAssertEqual(row.firstValue(forColumn: "id")?.decode(Int.self), 1)
-//            try XCTAssertEqual(row.firstValue(forColumn: "dict")?.decode(Hello.self).message, "hello, world")
-//        } else {
-//            XCTFail("parameterized result count is: \(parameterizedResult.count)")
-//        }
-//    }
+    func testUnverifiedSSLConnection() throws {
+        let client = try PostgreSQLConnection.makeTest(transport: .unverifiedTLS)
+        let results = try client.simpleQuery("SELECT version();", decoding: VersionMetadata.self).wait()
+        XCTAssertTrue(results[0].version.contains("10."))
+    }
+
+    func testSelectTypes() throws {
+        // 1247.typisdefined: 0x01 (BOOLEAN)
+        // 1247.typbasetype: 0x00000000 (OID)
+        // 1247.typnotnull: 0x00 (BOOLEAN)
+        // 1247.typcategory: 0x42 (CHAR)
+        // 1247.typname: 0x626f6f6c (NAME)
+        // 1247.typbyval: 0x01 (BOOLEAN)
+        // 1247.typrelid: 0x00000000 (OID)
+        // 1247.typalign: 0x63 (CHAR)
+        // 1247.typndims: 0x00000000 (INTEGER)
+        // 1247.typacl: null
+        // 1247.typsend: 0x00000985 (REGPROC)
+        // 1247.typmodout: 0x00000000 (REGPROC)
+        // 1247.typstorage: 0x70 (CHAR)
+        // 1247.typispreferred: 0x01 (BOOLEAN)
+        // 1247.typinput: 0x000004da (REGPROC)
+        // 1247.typoutput: 0x000004db (REGPROC)
+        // 1247.typlen: 0x0001 (SMALLINT)
+        // 1247.typcollation: 0x00000000 (OID)
+        // 1247.typdefaultbin: null
+        // 1247.typelem: 0x00000000 (OID)
+        // 1247.typnamespace: 0x0000000b (OID)
+        // 1247.typtype: 0x62 (CHAR)
+        // 1247.typowner: 0x0000000a (OID)
+        // 1247.typdefault: null
+        // 1247.typtypmod: 0xffffffff (INTEGER)
+        // 1247.typarray: 0x000003e8 (OID)
+        // 1247.typreceive: 0x00000984 (REGPROC)
+        // 1247.typmodin: 0x00000000 (REGPROC)
+        // 1247.typanalyze: 0x00000000 (REGPROC)
+        // 1247.typdelim: 0x2c (CHAR)
+        struct PGType: Decodable {
+            var typname: String
+            var typnamespace: UInt32
+            var typowner: UInt32
+            var typlen: Int16
+            var typbyval: Bool
+            var typtype: Char
+            var typcategory: Char
+            var typispreferred: Bool
+            var typisdefined: Bool
+            var typdelim: Char
+            var typrelid: UInt32
+            var typelem: UInt32
+            var typarray: UInt32
+            var typinput: Regproc
+            var typoutput: Regproc
+            var typreceive: Regproc
+            var typsend: Regproc
+            var typmodin: Regproc
+            var typmodout: Regproc
+            var typanalyze: Regproc
+            var typalign: Char
+            var typstorage: Char
+            var typnotnull: Bool
+            var typbasetype: UInt32
+            var typtypmod: Int
+            var typndims: Int
+            var typcollation: UInt32
+//            var typdefaultbin: String?
+//            var typdefault: String?
+//            var typacl: String?
+        }
+        let client = try PostgreSQLConnection.makeTest(transport: .cleartext)
+        do {
+            // simple query
+            let results = try client.simpleQuery(.select([.all], from: "pg_type"), decoding: PGType.self).wait()
+            XCTAssert(results.count >= 350, "Results count not large enough: \(results.count)")
+        }
+        do {
+            // query: default
+            let results = try client.query(.select([.all], from: "pg_type"), decoding: PGType.self).wait()
+            XCTAssert(results.count >= 350, "Results count not large enough: \(results.count)")
+        }
+        do {
+            // query: binary
+            let results = try client.query(.select([.all], from: "pg_type"), resultFormat: .binary, decoding: PGType.self).wait()
+            XCTAssert(results.count >= 350, "Results count not large enough: \(results.count)")
+        }
+        do {
+            // query: text
+            let results = try client.query(.select([.all], from: "pg_type"), resultFormat: .text, decoding: PGType.self).wait()
+            XCTAssert(results.count >= 350, "Results count not large enough: \(results.count)")
+        }
+    }
+    
+    struct Foo: Codable {
+        var id: Int?
+        var dict: Hello
+    }
+    
+    struct Hello: Codable {
+        var message: String
+    }
+
+    func testStruct() throws {
+        let client = try PostgreSQLConnection.makeTest(transport: .cleartext)
+
+        _ = try client.query(.create("foo", columns: [.column("id", .int), .column("dict", .jsonb)])).wait()
+        defer { _ = try? client.simpleQuery(.drop("foo")).wait() }
+
+        let hello = Hello(message: "Hello, world!")
+        _ = try client.query(.insert(into: "foo", values: ["id": .bind(1), "dict": .bind(hello)])).wait()
+
+        let fetch = try client.query(.select([.all], from: "foo"), decoding: Foo.self).wait()
+        switch fetch.count {
+        case 1:
+            XCTAssertEqual(fetch[0].id, 1)
+            XCTAssertEqual(fetch[0].dict.message, "Hello, world!")
+        default: XCTFail("invalid row count")
+        }
+    }
 
     func testNull() throws {
-        let client = try PostgreSQLConnection.makeTest(transport: .cleartext)
-        let createResult = try client.query("create table nulltest (i integer not null, d timestamp);").wait()
-        XCTAssertEqual(createResult.count, 0)
-        defer { _ = try? client.simpleQuery(.drop("nulltest")).wait() }
-        let insertResult = try client.query("insert into nulltest  (i, d) VALUES ($1, $2)", [
-            PostgreSQLData(.int2, binary: Data([0x00, 0x01])),
-            PostgreSQLData(null: .null),
-        ]).wait()
-        XCTAssertEqual(insertResult.count, 0)
-        let parameterizedResult = try client.query("select * from nulltest").wait()
-        XCTAssertEqual(parameterizedResult.count, 1)
+        let conn = try PostgreSQLConnection.makeTest(transport: .cleartext)
+        
+        _ = try conn.query(.create("nulltest", columns: [.column("i", .int), .column("d", .timestamp(nullable: true))])).wait()
+        defer { _ = try? conn.simpleQuery(.drop("nulltest")).wait() }
+        
+        _ = try conn.query(.insert(into: "nulltest", values: ["i": .bind(1), "d": .bind(Date?.none)])).wait()
     }
 
-//    func testGH24() throws {
-//        /// PREPARE
-//        let client = try PostgreSQLConnection.makeTest(transport: .cleartext)
-//
-//        /// CREATE
-//        let _ = try client.query("""
-//        CREATE TABLE "users" ("id" UUID PRIMARY KEY, "name" TEXT NOT NULL, "username" TEXT NOT NULL)
-//        """).wait()
-//        defer { _ = try! client.simpleQuery(.drop("users")).wait() }
-//        let _ = try client.query("""
-//        CREATE TABLE "acronyms" ("id" BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, "short" TEXT NOT NULL, "long" TEXT NOT NULL, "userID" UUID NOT NULL, FOREIGN KEY ("userID") REFERENCES "users" ("id"), FOREIGN KEY ("userID") REFERENCES "users" ("id"))
-//        """).wait()
-//        defer { _ = try! client.simpleQuery(.drop("acronyms")).wait() }
-//        let _ = try client.query("""
-//        CREATE TABLE "categories" ("id" BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, "name" TEXT NOT NULL)
-//        """).wait()
-//        defer { _ = try! client.simpleQuery(.drop("categories")).wait() }
-//        let _ = try client.query("""
-//        CREATE TABLE "acronym+category" ("id" UUID PRIMARY KEY, "acronymID" BIGINT NOT NULL, "categoryID" BIGINT NOT NULL, FOREIGN KEY ("acronymID") REFERENCES "acronyms" ("id"), FOREIGN KEY ("categoryID") REFERENCES "categories" ("id"), FOREIGN KEY ("acronymID") REFERENCES "acronyms" ("id"), FOREIGN KEY ("categoryID") REFERENCES "categories" ("id"))
-//        """).wait()
-//        defer { _ = try! client.simpleQuery(.drop("acronym+category")).wait() }
-//
-//        /// INSERT
-//        let userUUID = UUID()
-//        let _ = try client.query("""
-//        INSERT INTO "users" ("id", "name", "username") VALUES ($1, $2, $3)
-//        """, [userUUID, "Vapor Test", "vapor"]).wait()
-//        let _ = try client.query("""
-//        INSERT INTO "acronyms" ("id", "userID", "short", "long") VALUES ($1, $2, $3, $4)
-//        """, [1, userUUID, "ilv", "i love vapor"]).wait()
-//        let _ = try client.query("""
-//        INSERT INTO "categories" ("id", "name") VALUES ($1, $2);
-//        """, [1, "all"]).wait()
-//
-//
-//        /// SELECT
-//        let acronyms = client.query("""
-//        SELECT "acronyms".* FROM "acronyms" WHERE ("acronyms"."id" = $1) LIMIT 1 OFFSET 0
-//        """, [1])
-//        let categories = client.query("""
-//        SELECT "categories".* FROM "categories" WHERE ("categories"."id" = $1) LIMIT 1 OFFSET 0
-//        """, [1])
-//
-//        _ = try acronyms.wait()
-//        _ = try categories.wait()
-//    }
+    func testGH24() throws {
+        /// PREPARE
+        let client = try PostgreSQLConnection.makeTest(transport: .cleartext)
+
+        /// CREATE
+        let _ = try client.query("""
+        CREATE TABLE "users" ("id" UUID PRIMARY KEY, "name" TEXT NOT NULL, "username" TEXT NOT NULL)
+        """).wait()
+        defer { _ = try! client.simpleQuery(.drop("users")).wait() }
+        let _ = try client.query("""
+        CREATE TABLE "acronyms" ("id" BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, "short" TEXT NOT NULL, "long" TEXT NOT NULL, "userID" UUID NOT NULL, FOREIGN KEY ("userID") REFERENCES "users" ("id"), FOREIGN KEY ("userID") REFERENCES "users" ("id"))
+        """).wait()
+        defer { _ = try! client.simpleQuery(.drop("acronyms")).wait() }
+        let _ = try client.query("""
+        CREATE TABLE "categories" ("id" BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, "name" TEXT NOT NULL)
+        """).wait()
+        defer { _ = try! client.simpleQuery(.drop("categories")).wait() }
+        let _ = try client.query("""
+        CREATE TABLE "acronym+category" ("id" UUID PRIMARY KEY, "acronymID" BIGINT NOT NULL, "categoryID" BIGINT NOT NULL, FOREIGN KEY ("acronymID") REFERENCES "acronyms" ("id"), FOREIGN KEY ("categoryID") REFERENCES "categories" ("id"), FOREIGN KEY ("acronymID") REFERENCES "acronyms" ("id"), FOREIGN KEY ("categoryID") REFERENCES "categories" ("id"))
+        """).wait()
+        defer { _ = try! client.simpleQuery(.drop("acronym+category")).wait() }
+
+        /// INSERT
+        let userUUID = UUID()
+        let _ = try client.query("""
+        INSERT INTO "users" ("id", "name", "username") VALUES ($1, $2, $3)
+        """, [userUUID, "Vapor Test", "vapor"]).wait()
+        let _ = try client.query("""
+        INSERT INTO "acronyms" ("id", "userID", "short", "long") VALUES ($1, $2, $3, $4)
+        """, [1, userUUID, "ilv", "i love vapor"]).wait()
+        let _ = try client.query("""
+        INSERT INTO "categories" ("id", "name") VALUES ($1, $2);
+        """, [1, "all"]).wait()
+
+
+        /// SELECT
+        let acronyms = client.query("""
+        SELECT "acronyms".* FROM "acronyms" WHERE ("acronyms"."id" = $1) LIMIT 1 OFFSET 0
+        """, [1])
+        let categories = client.query("""
+        SELECT "categories".* FROM "categories" WHERE ("categories"."id" = $1) LIMIT 1 OFFSET 0
+        """, [1])
+
+        _ = try acronyms.wait()
+        _ = try categories.wait()
+    }
 
 //    func testNotifyAndListen() throws {
 //        let completionHandlerExpectation1 = expectation(description: "first completion handler called")
@@ -431,32 +276,24 @@ class PostgreSQLConnectionTests: XCTestCase {
         XCTAssertEqual(config.database, "database")
     }
 
-//    // https://github.com/vapor/postgresql/issues/46
-//    func testGH46() throws {
-//        struct Overview {
-//            var platform: String
-//            var identifier: String
-//            var count: Int
-//        }
-//
-//        let connection = try PostgreSQLConnection.makeTest(transport: .cleartext)
-//        _ = try connection.simpleQuery("CREATE TABLE apps (id INT, platform TEXT, identifier TEXT)").wait()
-//        defer { _ = try? connection.simpleQuery(.drop("apps")).wait() }
-//        _ = try connection.simpleQuery("INSERT INTO apps VALUES (1, 'a', 'b')").wait()
-//        _ = try connection.simpleQuery("INSERT INTO apps VALUES (2, 'c', 'd')").wait()
-//        _ = try connection.simpleQuery("INSERT INTO apps VALUES (3, 'a', 'd')").wait()
-//        _ = try connection.simpleQuery("INSERT INTO apps VALUES (4, 'a', 'b')").wait()
-//        let overviews = try connection.query("SELECT platform, identifier, COUNT(id) as count FROM apps GROUP BY platform, identifier").map(to: [Overview].self) { data in
-//            return try data.map { row in
-//                return try Overview(
-//                    platform: row.firstValue(forColumn: "platform")!.decode(String.self),
-//                    identifier: row.firstValue(forColumn: "identifier")!.decode(String.self),
-//                    count: row.firstValue(forColumn: "count")!.decode(Int.self)
-//                )
-//            }
-//        }.wait()
-//        XCTAssertEqual(overviews.count, 3)
-//    }
+    struct Overview: Codable {
+        var platform: String
+        var identifier: String
+        var count: Int
+    }
+    
+    // https://github.com/vapor/postgresql/issues/46
+    func testGH46() throws {
+        let conn = try PostgreSQLConnection.makeTest(transport: .cleartext)
+        _ = try conn.simpleQuery("CREATE TABLE apps (id INT, platform TEXT, identifier TEXT)").wait()
+        defer { _ = try? conn.simpleQuery(.drop("apps")).wait() }
+        _ = try conn.simpleQuery("INSERT INTO apps VALUES (1, 'a', 'b')").wait()
+        _ = try conn.simpleQuery("INSERT INTO apps VALUES (2, 'c', 'd')").wait()
+        _ = try conn.simpleQuery("INSERT INTO apps VALUES (3, 'a', 'd')").wait()
+        _ = try conn.simpleQuery("INSERT INTO apps VALUES (4, 'a', 'b')").wait()
+        let overviews = try conn.query("SELECT platform, identifier, COUNT(id) as count FROM apps GROUP BY platform, identifier", decoding: Overview.self).wait()
+        XCTAssertEqual(overviews.count, 3)
+    }
     
     func testDataDecoder() throws {
         enum Toy: String, Codable {
@@ -502,7 +339,7 @@ class PostgreSQLConnectionTests: XCTestCase {
         print(user)
     }
     
-    func testRowCodable() throws {
+    func testRowCodableNested() throws {
         enum Toy: String, Codable {
             case bologna, plasticBag
         }
@@ -530,35 +367,70 @@ class PostgreSQLConnectionTests: XCTestCase {
         print(userB)
     }
     
-    func testRowEncoder() throws {
-        enum Toy: Int16, Codable {
-            case bologna, plasticBag
+    func testRowCodableTypes() throws {
+        let conn = try PostgreSQLConnection.makeTest(transport: .cleartext)
+        _ = try! conn.simpleQuery(.drop(ifExists: true, "types")).wait()
+        _ = try conn.simpleQuery(.create("types", columns: [
+            .column("id", .init(.int8, primaryKey: true, generatedIdentity: true)),
+            .column("bool", .bool),
+            .column("string", .text),
+            .column("int", .bigint),
+            .column("int8", .char),
+            .column("int16", .smallint),
+            .column("int32", .int),
+            .column("int64", .bigint),
+            .column("uint", .bigint),
+            .column("uint8", .char),
+            .column("uint16", .smallint),
+            .column("uint32", .int),
+            .column("uint64", .bigint),
+            .column("double", .doublePrecision),
+            .column("float", .real),
+            .column("date", .timestamp)
+        ])).wait()
+        //defer { _ = try! conn.simpleQuery(.drop("types")).wait() }
+        
+        struct Types: Codable {
+            var bool: Bool
+            var string: String
+            var int: Int
+            var int8: Int8
+            var int16: Int16
+            var int32: Int32
+            var int64: Int64
+            var uint: UInt
+            var uint8: UInt8
+            var uint16: UInt16
+            var uint32: UInt32
+            var uint64: UInt64
+            var double: Double
+            var float: Float
+            var date: Date
         }
         
-        struct Pet: Codable {
-            var name: String
-//            var toys: [Toy]
+        let typesA = Types(bool: true, string: "hello", int: 1, int8: 2, int16: 3, int32: 4, int64: 5, uint: 6, uint8: 7, uint16: 8, uint32: 9, uint64: 10, double: 13.37, float: 3.14, date: Date())
+        _ = try conn.query(.insert(into: "types", values: SQLRowEncoder<PostgreSQLDatabase>().encode(typesA))).wait()
+        let rows = try conn.query(.select([.all], from: "types")).wait()
+        switch rows.count {
+        case 1:
+            let typesB = try PostgreSQLRowDecoder().decode(Types.self, from: rows[0])
+            XCTAssertEqual(typesA.bool, typesB.bool)
+            XCTAssertEqual(typesA.string, typesB.string)
+            XCTAssertEqual(typesA.int, typesB.int)
+            XCTAssertEqual(typesA.int8, typesB.int8)
+            XCTAssertEqual(typesA.int16, typesB.int16)
+            XCTAssertEqual(typesA.int32, typesB.int32)
+            XCTAssertEqual(typesA.int64, typesB.int64)
+            XCTAssertEqual(typesA.uint, typesB.uint)
+            XCTAssertEqual(typesA.uint8, typesB.uint8)
+            XCTAssertEqual(typesA.uint16, typesB.uint16)
+            XCTAssertEqual(typesA.uint32, typesB.uint32)
+            XCTAssertEqual(typesA.uint64, typesB.uint64)
+            XCTAssertEqual(typesA.double, typesB.double)
+            XCTAssertEqual(typesA.float, typesB.float)
+            XCTAssertEqual(typesA.date, typesB.date)
+        default: XCTFail("Invalid row count")
         }
-        
-        struct User: Codable {
-            var id: UUID?
-            var name: String
-            var pet: Pet
-            var toy: Toy?
-        }
-        
-        let tanner = User(id: UUID(), name: "tanner", pet: Pet(name: "Zizek"), toy: .plasticBag)
-        let row = try! PostgreSQLRowEncoder().encode(tanner, tableOID: 5)
-        print(row)
-        
-        let user = try! PostgreSQLRowDecoder().decode(User.self, from: [
-            PostgreSQLColumn(tableOID: 5, name: "id"): PostgreSQLData(.uuid, binary: Data([0x54, 0xd6, 0xfc, 0x55, 0x82, 0x9b, 0x48, 0x29, 0x87, 0xc9, 0x50, 0xe4, 0xd4, 0xd9, 0x5c, 0x3b])),
-            PostgreSQLColumn(tableOID: 5, name: "name"): PostgreSQLData(.text, binary: Data("tanner".utf8)),
-            PostgreSQLColumn(tableOID: 5, name: "pet"): PostgreSQLData(.text, binary: Data("""
-            {"name":"Zizek"}
-            """.utf8)),
-        ], tableOID: 5)
-        print(user)
     }
     
     func testDML() throws {
@@ -627,22 +499,9 @@ class PostgreSQLConnectionTests: XCTestCase {
         }.wait()
     }
 
-//    static var allTests = [
-//        ("testUnverifiedSSLConnection", testUnverifiedSSLConnection),
-//        ("testVersion", testVersion),
-//        ("testSelectTypes", testSelectTypes),
-//        ("testParse", testParse),
-//        ("testTypes", testTypes),
-//        ("testParameterizedTypes", testParameterizedTypes),
-//        ("testStruct", testStruct),
-//        ("testNull", testNull),
-//        ("testGH24", testGH24),
-//        ("testNotifyAndListen", testNotifyAndListen),
-//        ("testNotifyAndListenOnMultipleChannels", testNotifyAndListenOnMultipleChannels),
-//        ("testUnlisten", testUnlisten),
-//        ("testURLParsing", testURLParsing),
-//        ("testGH46", testGH46),
-//    ]
+    static var allTests = [
+        ("testVersion", testVersion),
+    ]
 }
 
 extension PostgreSQLConnection {
