@@ -54,13 +54,39 @@ extension PostgreSQLPoint: PostgreSQLDataConvertible {
         case .binary(let value):
             let x = value[0..<8]
             let y = value[8..<16]
-            return .init(x: x.makeFloatingPoint(), y: y.makeFloatingPoint())
+            return .init(x: x.as(Double.self), y: y.as(Double.self))
         case .null: throw PostgreSQLError(identifier: "data", reason: "Could not decode Point from null data.")
         }
     }
 
     /// See `PostgreSQLDataConvertible`.
     public func convertToPostgreSQLData() throws -> PostgreSQLData {
-        return PostgreSQLData(.point, binary: x.data + y.data)
+        return PostgreSQLData(.point, binary: Data.of(x) + Data.of(y))
+    }
+}
+
+extension Data {
+    static func of<T>(_ value: T) -> Data {
+        var copy = value
+        return .init(bytes: &copy, count:  MemoryLayout<T>.size)
+    }
+    
+    func `as`<T>(_ type: T.Type) -> T where T: BinaryFloatingPoint {
+        return withUnsafeBytes { ptr -> T in
+            var value: T = 0
+            Swift.withUnsafeMutableBytes(of: &value) { valuePtr -> Void in
+                valuePtr.copyMemory(from: UnsafeRawBufferPointer(start: ptr.baseAddress!, count: MemoryLayout<T>.size))
+            }
+            return value
+        }
+    }
+    func `as`<T>(_ type: T.Type) -> T where T: FixedWidthInteger {
+        return withUnsafeBytes { ptr -> T in
+            var value: T = 0
+            Swift.withUnsafeMutableBytes(of: &value) { valuePtr -> Void in
+                valuePtr.copyMemory(from: UnsafeRawBufferPointer(start: ptr.baseAddress!, count: MemoryLayout<T>.size))
+            }
+            return value
+        }
     }
 }

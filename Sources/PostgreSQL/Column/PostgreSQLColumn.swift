@@ -5,6 +5,11 @@ public struct PostgreSQLColumn: Hashable, Equatable {
     
     /// The column's name.
     public var name: String
+    
+    public init(tableOID: UInt32 = 0, name: String) {
+        self.tableOID = tableOID
+        self.name = name
+    }
 }
 
 extension PostgreSQLColumn: CustomStringConvertible {

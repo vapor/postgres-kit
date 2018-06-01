@@ -18,11 +18,11 @@ extension Date: PostgreSQLDataConvertible {
         case .binary(let value):
             switch data.type {
             case .timestamp, .time:
-                let microseconds = try value.makeFixedWidthInteger(Int64.self)
+                let microseconds = try value.as(Int64.self)
                 let seconds = Double(microseconds) / Double(_microsecondsPerSecond)
                 return Date(timeInterval: seconds, since: _psqlDateStart)
             case .date:
-                let days = try value.makeFixedWidthInteger(Int32.self)
+                let days = try value.as(Int32.self)
                 let seconds = days * _secondsInDay
                 return Date(timeInterval: Double(seconds), since: _psqlDateStart)
             default: throw PostgreSQLError(identifier: "date", reason: "Could not parse Date from binary data type: \(data.type).")

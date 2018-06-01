@@ -73,10 +73,7 @@ extension Data {
             self = Data()
             return
         }
-        for _ in 0..<n {
-            let first = popFirst()
-            assert(first != nil)
-        }
+        self = suffix(from: n)
     }
     
     mutating func skip<T>(sizeOf: T.Type) {
@@ -86,19 +83,14 @@ extension Data {
     /// Casts data to a supplied type.
     mutating func extract<T>(_ type: T.Type = T.self) -> T {
         assert(MemoryLayout<T>.size <= count, "Insufficient data to exctract: \(T.self)")
-        defer { skip(sizeOf: T.self) }
-        return withUnsafeBytes { (pointer: UnsafePointer<T>) -> T in
-            return pointer.pointee
-        }
+        defer { skip(MemoryLayout<T>.size) }
+        return unsafeCast(to: T.self)
     }
     
     mutating func extract(count: Int) -> Data {
         assert(self.count >= count, "Insufficient data to extract bytes.")
         defer { skip(count) }
-        return withUnsafeBytes({ (pointer: UnsafePointer<UInt8>) -> Data in
-            let buffer = UnsafeBufferPointer(start: pointer, count: count)
-            return Data(buffer)
-        })
+        return prefix(upTo: count)
     }
     
     /// Casts data to a supplied type.
