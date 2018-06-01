@@ -74,9 +74,7 @@ extension Data {
 extension FloatingPoint {
     /// Big-endian bytes for this floating-point number.
     internal var data: Data {
-        var bytes = [UInt8](repeating: 0, count: MemoryLayout<Self>.size)
         var copy = self
-        memcpy(&bytes, &copy, bytes.count)
-        return Data(bytes.reversed())
+        return .init(bytes: &copy, count:  MemoryLayout<Self>.size)
     }
 }

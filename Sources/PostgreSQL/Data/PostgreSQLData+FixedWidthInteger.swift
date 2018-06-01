@@ -86,16 +86,14 @@ extension Data {
         guard count >= (I.bitWidth / 8) else {
             throw PostgreSQLError(identifier: "fixedWidthData", reason: "Not enough bytes to decode \(I.self): \(count)/\(I.bitWidth / 8)")
         }
-        return unsafeCast(to: I.self).bigEndian
+        return unsafeCast(to: I.self)
     }
 }
 
 extension FixedWidthInteger {
-    /// Big-endian bytes for this integer.
+    /// Bytes for this integer.
     internal var data: Data {
-        var bytes = [UInt8](repeating: 0, count: Self.bitWidth / 8)
-        var intNetwork = bigEndian
-        memcpy(&bytes, &intNetwork, bytes.count)
-        return Data(bytes)
+        var copy = self
+        return .init(bytes: &copy, count:  MemoryLayout<Self>.size)
     }
 }

@@ -8,8 +8,12 @@ public struct PostgreSQLColumn: Hashable, Equatable {
 }
 
 extension PostgreSQLColumn: CustomStringConvertible {
+    /// See `CustomStringConvertible`.
     public var description: String {
-        return "<\(tableOID)>.(\(name))"
+        switch tableOID {
+        case 0: return tableOID.description + "." + name
+        default: return name
+        }
     }
 }
 

@@ -76,6 +76,11 @@ extension Query where Database == PostgreSQLDatabase {
             return .init(name: "TIMESTAMP")
         }
         
+        /// `JSON`
+        public static var json: ColumnType {
+            return .init(name: "JSON")
+        }
+        
         public enum Default {
             case computed(Query.DML.ComputedColumn)
             case unescaped(String)

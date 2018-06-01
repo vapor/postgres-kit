@@ -1,6 +1,6 @@
 extension PostgreSQLMessage {
     /// Identifies the message as a Bind command.
-    struct BindRequest: Encodable {
+    struct BindRequest {
         /// The name of the destination portal (an empty string selects the unnamed portal).
         var portalName: String
         
@@ -27,7 +27,7 @@ extension PostgreSQLMessage {
 // MARK: Parameter
 
 extension PostgreSQLMessage.BindRequest {
-    struct Parameter: Encodable {
+    struct Parameter {
         /// The value of the parameter, in the format indicated by the associated format code. n is the above length.
         var data: Data?
     }

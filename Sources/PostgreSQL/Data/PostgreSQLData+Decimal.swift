@@ -1,5 +1,3 @@
-import Core
-
 extension Decimal: PostgreSQLDataConvertible {
     /// See `PostgreSQLDataConvertible`
     public static var postgreSQLDataType: PostgreSQLDataType {

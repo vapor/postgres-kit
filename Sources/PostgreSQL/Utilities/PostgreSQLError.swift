@@ -58,6 +58,11 @@ internal func WARNING(_ string: @autoclosure () -> String) {
     print("[WARNING] [PostgreSQL] \(string())")
 }
 
+/// Logs a runtime error.
+internal func ERROR(_ string: @autoclosure () -> String) {
+    print("[Error] [PostgreSQL] \(string())")
+}
+
 func VERBOSE(_ string: @autoclosure () -> (String)) {
     #if VERBOSE
     print("[VERBOSE] [PostgreSQL] \(string())")

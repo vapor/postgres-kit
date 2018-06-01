@@ -16,7 +16,7 @@ public struct PostgreSQLPoint: Codable {
 }
 
 extension PostgreSQLPoint: CustomStringConvertible {
-    /// See `CustomStringConvertible.description`
+    /// See `CustomStringConvertible`.
     public var description: String {
         return "(\(x),\(y))"
     }

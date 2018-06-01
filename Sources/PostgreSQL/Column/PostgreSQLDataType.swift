@@ -4,6 +4,7 @@ import Foundation
 /// Use `select * from pg_type where oid = <idhere>;` to lookup more information.
 public struct PostgreSQLDataType: Codable, Equatable, ExpressibleByIntegerLiteral {
     /// Recognized types
+    public static let null = PostgreSQLDataType(0)
     public static let bool = PostgreSQLDataType(16)
     public static let bytea = PostgreSQLDataType(17)
     public static let char = PostgreSQLDataType(18)

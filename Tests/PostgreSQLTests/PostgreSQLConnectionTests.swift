@@ -288,7 +288,7 @@ class PostgreSQLConnectionTests: XCTestCase {
         defer { _ = try? client.simpleQuery(.drop("nulltest")).wait() }
         let insertResult = try client.query("insert into nulltest  (i, d) VALUES ($1, $2)", [
             PostgreSQLData(.int2, binary: Data([0x00, 0x01])),
-            PostgreSQLData(null: .timestamp),
+            PostgreSQLData(null: .null),
         ]).wait()
         XCTAssertEqual(insertResult.count, 0)
         let parameterizedResult = try client.query("select * from nulltest").wait()
@@ -458,6 +458,28 @@ class PostgreSQLConnectionTests: XCTestCase {
         XCTAssertEqual(overviews.count, 3)
     }
     
+    func testRowEncoder() throws {
+        enum Toy: Int16, Encodable {
+            case bologna, plasticBag
+        }
+        
+        struct Pet: Encodable {
+            var name: String
+            var toys: [Toy]
+        }
+        
+        struct User: Encodable {
+            var id: UUID?
+            var name: String
+            var pet: Pet
+            var toy: Toy?
+        }
+        
+        let tanner = User(id: UUID(), name: "tanner", pet: Pet(name: "Zizek", toys: [.bologna]), toy: .plasticBag)
+        let row = try PostgreSQLRowEncoder().encode(tanner, tableOID: 5)
+        print(row)
+    }
+    
     func testDML() throws {
         let conn = try PostgreSQLConnection.makeTest(transport: .cleartext)
         _ = try conn.simpleQuery(.create("users", columns: [
@@ -484,6 +506,42 @@ class PostgreSQLConnectionTests: XCTestCase {
         XCTAssertEqual(search.count, 1)
         
         try conn.query(.select(["id", "name"], from: "users")) { row in
+            print(row)
+        }.wait()
+    }
+    
+    func testDMLNestedType() throws {
+        let conn = try PostgreSQLConnection.makeTest(transport: .cleartext)
+        _ = try conn.simpleQuery(.create("users", columns: [
+            .column("id", .init(.int8, primaryKey: true, generatedIdentity: true)),
+            .column("name", .text),
+            .column("pet", .json),
+        ])).wait()
+        defer { _ = try? conn.simpleQuery(.drop("users")).wait() }
+        
+        struct Pet: Encodable {
+            var name: String
+        }
+        
+        let save = try conn.query(.dml(
+            statement: .insert,
+            table: "users",
+            columns: [
+                "name": .bind("vapor"),
+                "pet": .bind(Pet(name: "Zizek"))
+            ]
+        )).wait()
+        XCTAssertEqual(save.count, 0)
+        
+        let search = try conn.query(.dml(
+            statement: .select,
+            table: "users",
+            keys: [.all],
+            predicate: .predicate("name", .equal, .bind("vapor"))
+            )).wait()
+        XCTAssertEqual(search.count, 1)
+        
+        try conn.query(.select(["id", "name", "pet"], from: "users")) { row in
             print(row)
         }.wait()
     }

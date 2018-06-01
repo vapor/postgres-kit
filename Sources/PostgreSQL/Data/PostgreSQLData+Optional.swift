@@ -1,14 +1,11 @@
-import Async
-import Core
-
 extension OptionalType {
-    /// See `PostgreSQLDataCustomConvertible.convertFromPostgreSQLData(_:)`
+    /// See `PostgreSQLDataConvertible`.
     public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> Self {
         let wrapped = try requirePostgreSQLDataCustomConvertible(WrappedType.self).convertFromPostgreSQLData(data)
         return Self.makeOptionalType(wrapped as? WrappedType)
     }
 
-    /// See `PostgreSQLDataCustomConvertible.convertToPostgreSQLData()`
+    /// See `PostgreSQLDataConvertible`.
     public func convertToPostgreSQLData() throws -> PostgreSQLData {
         if let wrapped = self.wrapped {
             return try requirePostgreSQLDataCustomConvertible(wrapped).convertToPostgreSQLData()
@@ -19,13 +16,12 @@ extension OptionalType {
 }
 
 extension Optional: PostgreSQLDataConvertible {
-    /// See `PostgreSQLDataCustomConvertible.postgreSQLDataType`
+    /// See `PostgreSQLDataConvertible`.
     public static var postgreSQLDataType: PostgreSQLDataType {
         return requirePostgreSQLDataCustomConvertible(Wrapped.self).postgreSQLDataType
     }
 
-
-    /// See `PostgreSQLDataCustomConvertible.postgreSQLDataArrayType`
+    /// See `PostgreSQLDataConvertible`.
     public static var postgreSQLDataArrayType: PostgreSQLDataType {
         return requirePostgreSQLDataCustomConvertible(Wrapped.self).postgreSQLDataArrayType
     }

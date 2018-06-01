@@ -1,3 +1,4 @@
+/// Specifies result format of `PostgreSQLConnection.query(...)`.
 public struct PostgreSQLResultFormat {
     /// The format codes
     internal let formatCodes: [PostgreSQLMessage.FormatCode]

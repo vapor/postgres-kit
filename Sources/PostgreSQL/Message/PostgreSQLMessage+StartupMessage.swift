@@ -25,7 +25,6 @@ extension PostgreSQLMessage {
     }
 }
 
-
 // MARK: Serialize
 
 extension PostgreSQLMessage.StartupMessage {

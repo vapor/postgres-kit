@@ -1,5 +1,3 @@
-import Foundation
-
 extension Date: PostgreSQLDataConvertible {
     /// See `PostgreSQLDataConvertible`.
     public static var postgreSQLDataType: PostgreSQLDataType { return .timestamp }
@@ -38,6 +36,8 @@ extension Date: PostgreSQLDataConvertible {
         return PostgreSQLData(.timestamp, binary: Int64(self.timeIntervalSince(_psqlDateStart) * Double(_microsecondsPerSecond)).data)
     }
 }
+
+// MARK: Private
 
 private let _microsecondsPerSecond: Int64 = 1_000_000
 private let _secondsInDay: Int32 = 24 * 60 * 60

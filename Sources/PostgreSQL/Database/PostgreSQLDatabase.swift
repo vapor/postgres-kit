@@ -21,7 +21,7 @@ public final class PostgreSQLDatabase: Database, LogSupporting, SQLSupporting {
         let config = self.config
         return Future.flatMap(on: worker) {
             return try PostgreSQLConnection.connect(to: config.serverAddress, transport: config.transportConfig, on: worker) { error in
-                print("[PostgreSQL] \(error)")
+                ERROR(error.localizedDescription)
             }.flatMap(to: PostgreSQLConnection.self) { client in
                 return client.authenticate(
                     username: config.username,

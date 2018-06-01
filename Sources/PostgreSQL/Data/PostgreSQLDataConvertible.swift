@@ -21,35 +21,35 @@ extension PostgreSQLData {
 }
 
 extension PostgreSQLData: PostgreSQLDataConvertible {
-    /// See `PostgreSQLDataCustomConvertible.postgreSQLDataType`
+    /// See `PostgreSQLDataConvertible`.
     public static var postgreSQLDataType: PostgreSQLDataType { return .void }
 
-    /// See `PostgreSQLDataCustomConvertible.postgreSQLDataArrayType`
+    /// See `PostgreSQLDataConvertible`.
     public static var postgreSQLDataArrayType: PostgreSQLDataType { return .void }
 
-    /// See `PostgreSQLDataCustomConvertible.convertFromPostgreSQLData(_:)`
+    /// See `PostgreSQLDataConvertible`.
     public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> PostgreSQLData {
         return data
     }
 
-    /// See `PostgreSQLDataCustomConvertible.convertToPostgreSQLData()`
+    /// See `PostgreSQLDataConvertible`.
     public func convertToPostgreSQLData() throws -> PostgreSQLData {
         return self
     }
 }
 
 extension RawRepresentable where RawValue: PostgreSQLDataConvertible {
-    /// See `PostgreSQLDataCustomConvertible.postgreSQLDataType`
+    /// See `PostgreSQLDataConvertible`.
     public static var postgreSQLDataType: PostgreSQLDataType {
         return RawValue.postgreSQLDataType
     }
 
-    /// See `PostgreSQLDataCustomConvertible.postgreSQLDataArrayType`
+    /// See `PostgreSQLDataConvertible`.
     public static var postgreSQLDataArrayType: PostgreSQLDataType {
         return RawValue.postgreSQLDataArrayType
     }
 
-    /// See `PostgreSQLDataCustomConvertible.convertFromPostgreSQLData(_:)`
+    /// See `PostgreSQLDataConvertible`.
     public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> Self {
         let aRawValue = try RawValue.convertFromPostgreSQLData(data)
         guard let enumValue = Self(rawValue: aRawValue) else {
@@ -58,7 +58,7 @@ extension RawRepresentable where RawValue: PostgreSQLDataConvertible {
         return enumValue
     }
 
-    /// See `PostgreSQLDataCustomConvertible.convertToPostgreSQLData()`
+    /// See `PostgreSQLDataConvertible`.
     public func convertToPostgreSQLData() throws -> PostgreSQLData {
         return try self.rawValue.convertToPostgreSQLData()
     }

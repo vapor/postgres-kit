@@ -7,5 +7,4 @@ extension PostgreSQLMessage {
         /// The server does not support SSL (char N).
         case unsupported = 0x4E
     }
-
 }
