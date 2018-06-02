@@ -536,6 +536,20 @@ class PostgreSQLConnectionTests: XCTestCase {
         }
         try done.wait()
     }
+    
+    // https://github.com/vapor/postgresql/issues/56
+    func testSum() throws {
+        let conn = try PostgreSQLConnection.makeTest(transport: .cleartext)
+        struct Sum: Decodable {
+            var sum: Double
+        }
+        let rows = try conn.query("SELECT SUM(3.14) as sum", decoding: Sum.self).wait()
+        switch rows.count {
+        case 1:
+            XCTAssertEqual(rows[0].sum, 3.14)
+        default: XCTFail("invalid row count")
+        }
+    }
 
     static var allTests = [
         ("testVersion", testVersion),

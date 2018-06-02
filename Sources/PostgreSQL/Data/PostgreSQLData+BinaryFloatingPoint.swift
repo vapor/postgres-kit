@@ -11,6 +11,9 @@ extension BinaryFloatingPoint where Self: LosslessStringConvertible {
             case .int8: f = Self(value.as(Int64.self, default: 0).bigEndian)
             case .float4: f = Self(Data(value.reversed()).as(Float.self, default: 0))
             case .float8: f = Self(Data(value.reversed()).as(Double.self, default: 0))
+            case .numeric:
+                let string = try String.convertFromPostgreSQLData(data)
+                f = Self(string)
             default: throw PostgreSQLError.decode(self, from: data)
             }
             guard let value = f else {
