@@ -35,7 +35,7 @@ extension String: PostgreSQLDataConvertible {
                 var fractional = ""
                 for offset in 0..<metadata.ndigits.bigEndian {
                     /// extract current char and advance memory
-                    let char = value.extract(Int16.self).bigEndian
+                    let char = value.as(Int16.self, default: 0).bigEndian
                     
                     /// conver the current char to its string form
                     let string: String
@@ -55,9 +55,11 @@ extension String: PostgreSQLDataConvertible {
                     }
                 }
                 
-                /// use the dscale to remove extraneous zeroes at the end of the fractional part
-                let lastSignificantIndex = fractional.index(fractional.startIndex, offsetBy: Int(metadata.dscale.bigEndian))
-                fractional = String(fractional[..<lastSignificantIndex])
+                if fractional.count > metadata.dscale.bigEndian {
+                    /// use the dscale to remove extraneous zeroes at the end of the fractional part
+                    let lastSignificantIndex = fractional.index(fractional.startIndex, offsetBy: Int(metadata.dscale.bigEndian))
+                    fractional = String(fractional[..<lastSignificantIndex])
+                }
                 
                 /// determine whether fraction is empty and dynamically add `.`
                 let numeric: String
