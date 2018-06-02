@@ -389,7 +389,8 @@ class PostgreSQLConnectionTests: XCTestCase {
             .column("uint64", .columnType("BIGINT")),
             .column("double", .columnType("DOUBLE PRECISION")),
             .column("float", .columnType("FLOAT")),
-            .column("date", .columnType("TIMESTAMP"))
+            .column("date", .columnType("TIMESTAMP")),
+            .column("decimal", .columnType("JSONB")),
         ])).wait()
         //defer { _ = try! conn.simpleQuery(.drop("types")).wait() }
         
@@ -409,9 +410,10 @@ class PostgreSQLConnectionTests: XCTestCase {
             var double: Double
             var float: Float
             var date: Date
+            var decimal: Decimal
         }
         
-        let typesA = Types(bool: true, string: "hello", int: 1, int8: 2, int16: 3, int32: 4, int64: 5, uint: 6, uint8: 7, uint16: 8, uint32: 9, uint64: 10, double: 13.37, float: 3.14, date: Date())
+        let typesA = Types(bool: true, string: "hello", int: 1, int8: 2, int16: 3, int32: 4, int64: 5, uint: 6, uint8: 7, uint16: 8, uint32: 9, uint64: 10, double: 13.37, float: 3.14, date: Date(), decimal: .init(-1.234))
         _ = try conn.query(.insert(into: "types", values: SQLRowEncoder().encode(typesA))).wait()
         let rows = try conn.query(.select([.all], from: "types")).wait()
         switch rows.count {
@@ -432,6 +434,7 @@ class PostgreSQLConnectionTests: XCTestCase {
             XCTAssertEqual(typesA.double, typesB.double)
             XCTAssertEqual(typesA.float, typesB.float)
             XCTAssertEqual(typesA.date, typesB.date)
+            XCTAssertEqual(typesA.decimal, typesB.decimal)
         default: XCTFail("Invalid row count")
         }
     }

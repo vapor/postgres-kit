@@ -136,7 +136,6 @@ extension PostgreSQLConnection {
     private func _query(_ string: String, _ parameters: [Encodable] = [], resultFormat: PostgreSQLResultFormat, onRow: @escaping ([PostgreSQLColumn: PostgreSQLData]) throws -> ()) throws -> Future<Void> {
         let parameters = try parameters.map { try PostgreSQLDataEncoder().encode($0) }
         logger?.record(query: string, values: parameters.map { $0.description })
-
         var currentRow: PostgreSQLMessage.RowDescription?
         return self.send([
             .parse(.init(statementName: "", query: string, parameterTypes: parameters.map { $0.type })),
