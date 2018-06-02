@@ -19,7 +19,7 @@ public final class PostgreSQLDatabase: Database, LogSupporting {
         return Future.flatMap(on: worker) {
             return try PostgreSQLConnection.connect(to: config.serverAddress, transport: config.transportConfig, on: worker) { error in
                 ERROR(error.localizedDescription)
-            }.flatMap(to: PostgreSQLConnection.self) { client in
+            }.flatMap { client in
                 return client.authenticate(
                     username: config.username,
                     database: config.database,

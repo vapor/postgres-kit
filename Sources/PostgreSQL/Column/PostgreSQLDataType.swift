@@ -1,5 +1,3 @@
-import Foundation
-
 /// The data type's raw object ID.
 /// Use `select * from pg_type where oid = <idhere>;` to lookup more information.
 public struct PostgreSQLDataType: Codable, Equatable, ExpressibleByIntegerLiteral {

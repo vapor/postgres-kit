@@ -154,7 +154,7 @@ extension BinaryFloatingPoint {
 }
 
 extension FixedWidthInteger {
-    public func cast<T>(to value: T.Type) -> T? where T: FixedWidthInteger {
+    func cast<T>(to value: T.Type) -> T? where T: FixedWidthInteger {
         if let existing = self as? T {
             return existing
         }
