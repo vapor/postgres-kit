@@ -7,21 +7,22 @@ extension Date: PostgreSQLDataConvertible {
             case .timestamp: return try value.parseDate(format:  "yyyy-MM-dd HH:mm:ss")
             case .date: return try value.parseDate(format:  "yyyy-MM-dd")
             case .time: return try value.parseDate(format:  "HH:mm:ss")
-            default: throw PostgreSQLError(identifier: "date", reason: "Could not parse Date from text data type: \(data.type).")
+            default: throw PostgreSQLError.decode(Date.self, from: data)
             }
         case .binary(let value):
             switch data.type {
-            case .timestamp, .time:
+            case .timestamp, .timestamptz:
                 let microseconds = value.as(Int64.self, default: 0).bigEndian
                 let seconds = Double(microseconds) / Double(_microsecondsPerSecond)
                 return Date(timeInterval: seconds, since: _psqlDateStart)
+            case .time, .timetz: throw PostgreSQLError.decode(Date.self, from: data)
             case .date:
                 let days = value.as(Int32.self, default: 0).bigEndian
                 let seconds = days * _secondsInDay
                 return Date(timeInterval: Double(seconds), since: _psqlDateStart)
-            default: throw PostgreSQLError(identifier: "date", reason: "Could not parse Date from binary data type: \(data.type).")
+            default: throw PostgreSQLError.decode(Date.self, from: data)
             }
-        case .null: throw PostgreSQLError(identifier: "data", reason: "Could not decode String from null.")
+        case .null: throw PostgreSQLError.decode(Date.self, from: data)
         }
     }
 

@@ -489,21 +489,41 @@ class PostgreSQLConnectionTests: XCTestCase {
         )).wait()
         XCTAssertEqual(save.count, 0)
         
-        let search = try conn.query(.dml(
-            statement: .select,
-            table: "users",
-            keys: [.all],
-            predicates: [.predicate("name", .equal, .bind("vapor"))]
-            )).wait()
+        let search = try conn.query(.select([.all], from: "users", where: [.predicate("name", .equal, .bind("vapor"))]
+        )).wait()
         XCTAssertEqual(search.count, 1)
         
         try conn.query(.select(["id", "name", "pet"], from: "users")) { row in
             print(row)
         }.wait()
     }
+    
+    // https://github.com/vapor/postgresql/issues/63
+    func testTimeTz() throws {
+        let conn = try PostgreSQLConnection.makeTest(transport: .cleartext)
+        _ = try conn.simpleQuery(.create(table: "timetest", columns: [
+            .column("timestamptz", .columnType("TIMESTAMPTZ"))
+        ])).wait()
+        defer { _ = try? conn.simpleQuery(.drop(table: "timetest")).wait() }
+        
+        struct Time: Codable, Equatable {
+            var timestamptz: Date
+        }
+        
+        let time = Time(timestamptz: .init())
+        _ = try conn.query(.insert(into: "timetest", values: SQLRowEncoder().encode(time))).wait()
+        
+        let fetch = try conn.query(.select([.all], from: "timetest"), decoding: Time.self).wait()
+        switch fetch.count {
+        case 1:
+            XCTAssertEqual(fetch[0], time)
+        default: XCTFail("invalid row count")
+        }
+    }
 
     static var allTests = [
         ("testVersion", testVersion),
+        ("testTimeTz", testTimeTz),
     ]
 }
 

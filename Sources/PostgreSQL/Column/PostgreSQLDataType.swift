@@ -38,6 +38,8 @@ public struct PostgreSQLDataType: Codable, Equatable, ExpressibleByIntegerLitera
     public static let time = PostgreSQLDataType(1083)
     public static let timestamp = PostgreSQLDataType(1114)
     public static let _timestamp = PostgreSQLDataType(1115)
+    public static let timestamptz = PostgreSQLDataType(1184)
+    public static let timetz = PostgreSQLDataType(1266)
     public static let numeric = PostgreSQLDataType(1700)
     public static let void = PostgreSQLDataType(2278)
     public static let uuid = PostgreSQLDataType(2950)
