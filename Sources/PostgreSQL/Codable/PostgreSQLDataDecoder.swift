@@ -47,63 +47,77 @@ public struct PostgreSQLDataDecoder {
         }
         
         func unkeyedContainer() throws -> UnkeyedDecodingContainer {
-            struct ArrayMetadata {
-                /// Unknown
-                private let _b: Int32
-                
-                /// The big-endian array element type
-                private let _type: Int32
-                
-                /// The big-endian length of the array
-                private let _count: Int32
-                
-                /// The big-endian number of dimensions
-                private let _dimensions: Int32
-                
-                /// Converts the raw array elemetn type to DataType
-                var type: PostgreSQLDataType {
-                    return .init(_type.bigEndian)
-                }
-                
-                /// The length of the array
-                var count: Int32 {
-                    return _count.bigEndian
-                }
-                
-                /// The  number of dimensions
-                var dimensions: Int32 {
-                    return _dimensions.bigEndian
-                }
-            }
-            
             switch data.storage {
             case .binary(var value):
                 /// Extract and convert each element.
                 var array: [PostgreSQLData] = []
-                
                 let hasData = value.extract(Int32.self).bigEndian
                 if hasData == 1 {
-                    /// grab the array metadata from the beginning of the data
-                    let metadata = value.extract(ArrayMetadata.self)
-                    for _ in 0..<metadata.count {
+                    /// Unknown
+                    let _ = value.extract(Int32.self).bigEndian
+                    /// The big-endian array element type
+                    let type: PostgreSQLDataType = .init(value.extract(Int32.self).bigEndian)
+                    /// The big-endian length of the array
+                    let count = value.extract(Int32.self).bigEndian
+                    /// The big-endian number of dimensions
+                    let _ = value.extract(Int32.self).bigEndian
+                    for _ in 0..<count {
                         let count = Int(value.extract(Int32.self).bigEndian)
                         let subValue = value.extract(count: count)
-                        let psqlData = PostgreSQLData(metadata.type, binary: subValue)
+                        let psqlData = PostgreSQLData(type, binary: subValue)
                         array.append(psqlData)
                     }
                 } else {
                     array = []
                 }
-                
-                print(array)
-                fatalError("Unimplemented.")
-            default: fatalError()
+                return _UnkeyedDecodingContainer(data: array)
+            default: throw PostgreSQLError(identifier: "array", reason: "Cannot decode array from: \(data).")
             }
         }
         
         func singleValueContainer() throws -> SingleValueDecodingContainer {
             return _SingleValueDecodingContainer(data: data)
         }
+    }
+    
+    private struct _UnkeyedDecodingContainer: UnkeyedDecodingContainer {
+        let codingPath: [CodingKey] = []
+        let data: [PostgreSQLData]
+        var count: Int? {
+            return data.count
+        }
+        var isAtEnd: Bool {
+            return currentIndex >= data.count
+        }
+        var currentIndex: Int
+        
+        init(data: [PostgreSQLData]) {
+            self.data = data
+            self.currentIndex = 0
+        }
+        
+        mutating func decodeNil() throws -> Bool {
+            defer { currentIndex += 1 }
+            return data[currentIndex].isNull
+        }
+        
+        mutating func decode<T>(_ type: T.Type) throws -> T where T : Decodable {
+            defer { currentIndex += 1 }
+            return try PostgreSQLDataDecoder().decode(T.self, from: data[currentIndex])
+        }
+        
+        mutating func nestedContainer<NestedKey>(keyedBy type: NestedKey.Type) throws -> KeyedDecodingContainer<NestedKey> where NestedKey : CodingKey {
+            fatalError()
+        }
+        
+        mutating func nestedUnkeyedContainer() throws -> UnkeyedDecodingContainer {
+            fatalError()
+        }
+        
+        mutating func superDecoder() throws -> Decoder {
+            fatalError()
+        }
+        
     }
     
     private struct _SingleValueDecodingContainer: SingleValueDecodingContainer {

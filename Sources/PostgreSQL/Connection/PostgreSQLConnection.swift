@@ -22,6 +22,8 @@ public final class PostgreSQLConnection: DatabaseConnection, BasicWorker {
     
     /// The channel
     internal let channel: Channel
+    
+    internal var tableNameCache: TableNameCache?
 
     /// In-flight `send(...)` futures.
     private var currentSend: Promise<Void>?

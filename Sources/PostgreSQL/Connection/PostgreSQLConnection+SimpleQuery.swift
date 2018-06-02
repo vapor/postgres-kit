@@ -1,28 +1,28 @@
 extension PostgreSQLConnection {
     // MARK: Query
     
-    public func simpleQuery<D>(_ query: Query<PostgreSQLDatabase>, decoding: D.Type) -> Future<[D]> where D: Decodable {
+    public func simpleQuery<D>(_ query: SQLQuery, decoding: D.Type) -> Future<[D]> where D: Decodable {
         var binds = Binds()
         let string = PostgreSQLSerializer().serialize(query: query, binds: &binds)
         assert(binds.values.count == 0, "Cannot bind values to simpleQuery. Use `query(...)` instead.")
         return simpleQuery(string, decoding: D.self)
     }
     
-    public func simpleQuery(_ query: Query<PostgreSQLDatabase>) -> Future<[[PostgreSQLColumn: PostgreSQLData]]> {
+    public func simpleQuery(_ query: SQLQuery) -> Future<[[PostgreSQLColumn: PostgreSQLData]]> {
         var binds = Binds()
         let string = PostgreSQLSerializer().serialize(query: query, binds: &binds)
         assert(binds.values.count == 0, "Cannot bind values to simpleQuery. Use `query(...)` instead.")
         return simpleQuery(string)
     }
     
-    public func simpleQuery<D>(_ query: Query<PostgreSQLDatabase>, decoding: D.Type, onRow: @escaping (D) throws -> ()) -> Future<Void> where D: Decodable {
+    public func simpleQuery<D>(_ query: SQLQuery, decoding: D.Type, onRow: @escaping (D) throws -> ()) -> Future<Void> where D: Decodable {
         var binds = Binds()
         let string = PostgreSQLSerializer().serialize(query: query, binds: &binds)
         assert(binds.values.count == 0, "Cannot bind values to simpleQuery. Use `query(...)` instead.")
         return simpleQuery(string, decoding: D.self, onRow: onRow)
     }
     
-    public func simpleQuery(_ query: Query<PostgreSQLDatabase>, onRow: @escaping ([PostgreSQLColumn: PostgreSQLData]) throws -> ()) -> Future<Void> {
+    public func simpleQuery(_ query: SQLQuery, onRow: @escaping ([PostgreSQLColumn: PostgreSQLData]) throws -> ()) -> Future<Void> {
         var binds = Binds()
         let string = PostgreSQLSerializer().serialize(query: query, binds: &binds)
         assert(binds.values.count == 0, "Cannot bind values to simpleQuery. Use `query(...)` instead.")

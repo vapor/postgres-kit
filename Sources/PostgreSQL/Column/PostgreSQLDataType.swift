@@ -111,6 +111,25 @@ extension PostgreSQLDataType {
         default: return nil
         }
     }
+    
+    /// Returns the array type for this type if one is known.
+    internal var arrayType: PostgreSQLDataType? {
+        switch self {
+        case .bool: return ._bool
+        case .bytea: return ._bytea
+        case .char: return ._char
+        case .name: return ._name
+        case .int2: return ._int2
+        case .int4: return ._int4
+        case .int8: return ._int8
+        case .point: return ._point
+        case .float4: return ._float4
+        case .float8: return ._float8
+        case .uuid: return ._uuid
+        case .jsonb: return ._jsonb
+        default: return nil
+        }
+    }
 }
 
 extension PostgreSQLDataType: CustomStringConvertible {

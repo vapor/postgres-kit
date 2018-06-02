@@ -171,7 +171,7 @@ extension Data {
             self = Data()
             return
         }
-        self = suffix(from: n)
+        self = advanced(by: n)
     }
     
     mutating func skip<T>(sizeOf: T.Type) {

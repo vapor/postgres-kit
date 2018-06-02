@@ -1,129 +1,98 @@
-extension Query where Database == PostgreSQLDatabase {
-    public struct ColumnType {
+extension PostgreSQLDatabase {
+    public enum ColumnType {
         /// `BOOL`.
-        public static var bool:  ColumnType {
-            return .init(name: "BOOL")
+        public static var bool: String {
+            return "BOOL"
         }
         
         /// `CHAR`
-        public static var char: ColumnType {
-            return .init(name: "CHAR")
+        public static var char: String {
+            return "CHAR"
         }
         
-        /// `CHAR(n)`
-        ///
-        /// - parameters:
-        ///     - length: Maximum characters to allow.
-        public static func char(_ length: Int) -> ColumnType {
-            return .init(name: "CHAR", parameters: [length.description])
-        }
-        
-        /// `VARCHAR(n)`
-        ///
-        /// - parameters:
-        ///     - length: Maximum characters to allow.
-        public static func varchar(_ length: Int) -> ColumnType {
-            return .init(name: "VARCHAR", parameters: [length.description])
+        /// `VARCHAR`
+        public static var varchar: String {
+            return "VARCHAR"
         }
         
         /// `TEXT`
-        public static var text: ColumnType {
-            return .init(name: "TEXT")
+        public static var text: String {
+            return "TEXT"
         }
         
         /// `SMALLINT`
-        public static var smallint: ColumnType {
-            return .init(name: "SMALLINT")
+        public static var smallint: String {
+            return "SMALLINT"
         }
         
         /// `INT`
-        public static var int: ColumnType {
-            return .init(name: "INT")
+        public static var int: String {
+            return "INT"
         }
         
         /// `BIGINT`
-        public static var bigint: ColumnType {
-            return .init(name: "BIGINT")
+        public static var bigint: String {
+            return "BIGINT"
         }
         
         /// `SMALLSERIAL`
-        public static var smallserial: ColumnType {
-            return .init(name: "SMALL SERIAL")
+        public static var smallserial: String {
+            return "SMALL SERIAL"
         }
         
         /// `SERIAL`
-        public static var serial: ColumnType {
-            return .init(name: "SERIAL")
+        public static var serial: String {
+            return "SERIAL"
         }
         
         /// `BIGSERIAL`
-        public static var bigserial: ColumnType {
-            return .init(name: "BIGSERIAL")
+        public static var bigserial: String {
+            return "BIGSERIAL"
         }
         
         /// `REAL`
-        public static var real: ColumnType {
-            return .init(name: "REAL")
+        public static var real: String {
+            return "REAL"
         }
         
         /// `DOUBLE PRECISION`
-        public static var doublePrecision: ColumnType {
-            return .init(name: "DOUBLE PRECISION")
+        public static var doublePrecision: String {
+            return "DOUBLE PRECISION"
         }
         
         /// `DATE`
-        public static var date: ColumnType {
-            return .init(name: "DATE")
+        public static var date: String {
+            return "DATE"
         }
         
         /// `TIMESTAMP`
-        public static var timestamp: ColumnType {
-            return .init(name: "TIMESTAMP")
+        public static var timestamp: String {
+            return "TIMESTAMP"
         }
         
-        /// `TIMESTAMP`
-        public static func timestamp(nullable: Bool = false) -> ColumnType {
-            return .init(name: "TIMESTAMP", nullable: nullable)
+        /// `UUID`
+        public static var uuid: String {
+            return "UUID"
+        }
+        
+        /// `POINT`
+        public static var point: String {
+            return "POINT"
         }
         
         /// `JSON`
-        public static var json: ColumnType {
-            return .init(name: "JSON")
+        public static var json: String {
+            return "JSON"
         }
         
         /// `JSONB`
-        public static var jsonb: ColumnType {
-            return .init(name: "JSONB")
+        public static var jsonb: String {
+            return "JSONB"
         }
         
-        public enum Default {
-            case computed(Query.DML.ComputedColumn)
-            case unescaped(String)
-        }
-        
-        public var name: String
-        public var parameters: [String]
-        public var primaryKey: Bool
-        public var nullable: Bool
-        public var generatedIdentity: Bool
-        public var `default`: Default?
-        
-        public init(name: String, parameters: [String] = [], primaryKey: Bool = false, nullable: Bool = false, generatedIdentity: Bool = false, default: Default? = nil) {
-            self.name = name
-            self.parameters = parameters
-            self.primaryKey = primaryKey
-            self.nullable = nullable
-            self.generatedIdentity = generatedIdentity
-            self.default = `default`
-        }
-        
-        public init(_ dataType: PostgreSQLDataType, parameters: [String] = [], primaryKey: Bool = false, nullable: Bool = false, generatedIdentity: Bool = false, default: Default? = nil) {
-            self.name = dataType.knownSQLName ?? "VOID"
-            self.parameters = parameters
-            self.primaryKey = primaryKey
-            self.nullable = nullable
-            self.generatedIdentity = generatedIdentity
-            self.default = `default`
+        /// `BYTEA`
+        public static var bytea: String {
+            return "BYTEA"
         }
     }
 }

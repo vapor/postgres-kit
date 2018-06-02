@@ -1,5 +1,5 @@
 extension PostgreSQLConnection {
-    public func query<D>(_ query: Query<PostgreSQLDatabase>, resultFormat: PostgreSQLResultFormat = .binary, decoding: D.Type) -> Future<[D]> where D: Decodable {
+    public func query<D>(_ query: SQLQuery, resultFormat: PostgreSQLResultFormat = .binary, decoding: D.Type) -> Future<[D]> where D: Decodable {
         var binds = Binds()
         let sql = PostgreSQLSerializer().serialize(query: query, binds: &binds)
         return self.query(sql, binds.values, resultFormat: resultFormat, decoding: D.self)
@@ -14,18 +14,13 @@ extension PostgreSQLConnection {
     /// - parameters:
     ///     - query: `Query` to execute.
     /// - returns: A future array of results.
-    public func query(_ query: Query<PostgreSQLDatabase>, resultFormat: PostgreSQLResultFormat = .binary) -> Future<[[PostgreSQLColumn: PostgreSQLData]]> {
+    public func query(_ query: SQLQuery, resultFormat: PostgreSQLResultFormat = .binary) -> Future<[[PostgreSQLColumn: PostgreSQLData]]> {
         var binds = Binds()
         let sql = PostgreSQLSerializer().serialize(query: query, binds: &binds)
         return self.query(sql, binds.values, resultFormat: resultFormat)
     }
     
-    public func query<D>(
-        _ query: Query<PostgreSQLDatabase>,
-        resultFormat: PostgreSQLResultFormat = .binary,
-        decoding: D.Type,
-        onRow: @escaping (D) throws -> ()
-    ) -> Future<Void> where D: Decodable {
+    public func query<D>(_ query: SQLQuery, resultFormat: PostgreSQLResultFormat = .binary, decoding: D.Type, onRow: @escaping (D) throws -> ()) -> Future<Void> where D: Decodable {
         var binds = Binds()
         let sql = PostgreSQLSerializer().serialize(query: query, binds: &binds)
         return self.query(sql, binds.values, resultFormat: resultFormat, decoding: D.self, onRow: onRow)
@@ -44,11 +39,7 @@ extension PostgreSQLConnection {
     ///     - resultFormat: Desired `PostgreSQLResultFormat` to request from PostgreSQL. Defaults to `.binary`.
     ///     - onRow: PostgreSQL row accepting closure to handle results, if any.
     /// - returns: A future that signals query completion.
-    public func query(
-        _ query: Query<PostgreSQLDatabase>,
-        resultFormat: PostgreSQLResultFormat = .binary,
-        onRow: @escaping ([PostgreSQLColumn: PostgreSQLData]) throws -> ()
-    ) -> Future<Void> {
+    public func query(_ query: SQLQuery, resultFormat: PostgreSQLResultFormat = .binary, onRow: @escaping ([PostgreSQLColumn: PostgreSQLData]) throws -> ()) -> Future<Void> {
         var binds = Binds()
         let sql = PostgreSQLSerializer().serialize(query: query, binds: &binds)
         return self.query(sql, binds.values, resultFormat: resultFormat, onRow: onRow)

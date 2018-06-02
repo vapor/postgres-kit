@@ -1,8 +1,5 @@
 /// Creates connections to an identified PostgreSQL database.
-public final class PostgreSQLDatabase: Database, LogSupporting, SQLSupporting {
-    /// See `SQLSupporting`.
-    public typealias ColumnType = Query<PostgreSQLDatabase>.ColumnType
-    
+public final class PostgreSQLDatabase: Database, LogSupporting {
     /// See `LogSupporting`
     public static func enableLogging(_ logger: DatabaseLogger, on conn: PostgreSQLConnection) {
         conn.logger = logger

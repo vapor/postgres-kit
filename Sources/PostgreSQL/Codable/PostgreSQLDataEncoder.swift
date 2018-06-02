@@ -23,10 +23,28 @@ public struct PostgreSQLDataEncoder {
         do {
             let encoder = _Encoder()
             try encodable.encode(to: encoder)
-            guard let data = encoder.data else {
-                fatalError()
+            if let data = encoder.data {
+                return data
+            } else {
+                let type = encoder.array.first?.type ?? .null
+                // encode array
+                var data = Data()
+                data += Data.of(Int32(1).bigEndian) // non-null
+                data += Data.of(Int32(0).bigEndian) // b
+                data += Data.of(type.raw.bigEndian)
+                data += Data.of(Int32(encoder.array.count).bigEndian) // length
+                data += Data.of(Int32(1).bigEndian) // dimensions
+                
+                for element in encoder.array {
+                    switch element.storage {
+                    case .binary(let value):
+                        data += Data.of(Int32(value.count).bigEndian)
+                        data += value
+                    default: data += Data.of(Int32(0).bigEndian)
+                    }
+                }
+                return PostgreSQLData(type.arrayType ?? .null, binary: data)
             }
-            return data
         } catch is _KeyedError {
             struct AnyEncodable: Encodable {
                 var encodable: Encodable
@@ -49,17 +67,19 @@ public struct PostgreSQLDataEncoder {
         let codingPath: [CodingKey] = []
         let userInfo: [CodingUserInfoKey: Any] = [:]
         var data: PostgreSQLData?
+        var array: [PostgreSQLData]
         
         init() {
             self.data = nil
+            self.array = []
         }
         
         func container<Key>(keyedBy type: Key.Type) -> KeyedEncodingContainer<Key> where Key : CodingKey {
-            return .init(_KeyedEncodingContainer())
+            return .init(_KeyedEncodingContainer(encoder: self))
         }
         
         func unkeyedContainer() -> UnkeyedEncodingContainer {
-            fatalError()
+            return _UnkeyedEncodingContainer(encoder: self)
         }
         
         func singleValueContainer() -> SingleValueEncodingContainer {
@@ -91,11 +111,48 @@ public struct PostgreSQLDataEncoder {
         }
     }
     
+    private struct _UnkeyedEncodingContainer: UnkeyedEncodingContainer {
+        let codingPath: [CodingKey] = []
+        let encoder: _Encoder
+        var count: Int
+        init(encoder: _Encoder) {
+            self.encoder = encoder
+            self.count = 0
+        }
+        
+        mutating func encodeNil() throws {
+            encoder.array.append(.null)
+        }
+        
+        mutating func encode<T>(_ value: T) throws where T : Encodable {
+            if let convertible = value as? PostgreSQLDataConvertible {
+                try encoder.array.append(convertible.convertToPostgreSQLData())
+            } else {
+                try value.encode(to: encoder)
+            }
+        }
+        
+        mutating func nestedContainer<NestedKey>(keyedBy keyType: NestedKey.Type) -> KeyedEncodingContainer<NestedKey> where NestedKey : CodingKey {
+            return .init(_KeyedEncodingContainer<NestedKey>(encoder: encoder))
+        }
+        
+        mutating func nestedUnkeyedContainer() -> UnkeyedEncodingContainer {
+            return _UnkeyedEncodingContainer(encoder: encoder)
+        }
+        
+        mutating func superEncoder() -> Encoder {
+            return encoder
+        }
+    }
+    
     private struct _KeyedError: Error { }
     
     private struct _KeyedEncodingContainer<Key>: KeyedEncodingContainerProtocol where Key: CodingKey {
         let codingPath: [CodingKey] = []
-        init() { }
+        let encoder: _Encoder
+        init(encoder: _Encoder) {
+            self.encoder = encoder
+        }
         
         mutating func encodeNil(forKey key: Key) throws {
             throw _KeyedError()
@@ -106,19 +163,19 @@ public struct PostgreSQLDataEncoder {
         }
         
         mutating func nestedContainer<NestedKey>(keyedBy keyType: NestedKey.Type, forKey key: Key) -> KeyedEncodingContainer<NestedKey> where NestedKey: CodingKey {
-            return .init(_KeyedEncodingContainer<NestedKey>())
+            return .init(_KeyedEncodingContainer<NestedKey>(encoder: encoder))
         }
         
         mutating func nestedUnkeyedContainer(forKey key: Key) -> UnkeyedEncodingContainer {
-            fatalError()
+            return _UnkeyedEncodingContainer(encoder: encoder)
         }
         
         mutating func superEncoder() -> Encoder {
-            fatalError()
+            return encoder
         }
         
         mutating func superEncoder(forKey key: Key) -> Encoder {
-            fatalError()
+            return encoder
         }
     }
 }

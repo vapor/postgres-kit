@@ -44,26 +44,7 @@
 //            try requirePostgreSQLDataCustomConvertible($0).convertToPostgreSQLData()
 //        }
 //
-//        var data = Data()
-//        data += Int32(1).data // non-null
-//        data += Int32(0).data // b
-//        data += requirePostgreSQLDataCustomConvertible(PostgreSQLArrayElement.self).postgreSQLDataType.raw.data // type
-//        data += Int32(elements.count).data // length
-//        data += Int32(1).data // dimensions
 //
-//        for element in elements {
-//            switch element.storage {
-//            case .binary(let value):
-//                data += Int32(value.count).data
-//                data += value
-//            default: data += Int32(0).data
-//            }
-//        }
-//
-//        return PostgreSQLData(
-//            requirePostgreSQLDataCustomConvertible(PostgreSQLArrayElement.self).postgreSQLDataArrayType,
-//            binary: data
-//        )
 //    }
 //}
 //
