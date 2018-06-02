@@ -523,6 +523,19 @@ class PostgreSQLConnectionTests: XCTestCase {
         default: XCTFail("invalid row count")
         }
     }
+    
+    func testListen() throws {
+        let conn = try PostgreSQLConnection.makeTest(transport: .cleartext)
+        let done = conn.listen("foo") { message in
+            XCTAssertEqual(message, "hi")
+            return true
+        }
+        do {
+            let conn = try PostgreSQLConnection.makeTest(transport: .cleartext)
+            _ = try conn.notify("foo", message: "hi").wait()
+        }
+        try done.wait()
+    }
 
     static var allTests = [
         ("testVersion", testVersion),

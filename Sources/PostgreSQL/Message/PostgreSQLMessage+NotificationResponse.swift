@@ -1,5 +1,5 @@
 extension PostgreSQLMessage {
-    struct NotificationResponse {
+    struct Notification {
         /// The message coming from PSQL
         let processID: Int32
         
@@ -13,9 +13,9 @@ extension PostgreSQLMessage {
 
 // MARK: Parse
 
-extension PostgreSQLMessage.NotificationResponse {
+extension PostgreSQLMessage.Notification {
     /// Parses an instance of this message type from a byte buffer.
-    static func parse(from buffer: inout ByteBuffer) throws -> PostgreSQLMessage.NotificationResponse {
+    static func parse(from buffer: inout ByteBuffer) throws -> PostgreSQLMessage.Notification {
         guard let processID = buffer.readInteger(as: Int32.self) else {
             throw PostgreSQLError.protocol(reason: "Could not read process ID from notification response.")
         }

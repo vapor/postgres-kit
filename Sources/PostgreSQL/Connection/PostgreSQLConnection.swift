@@ -23,6 +23,7 @@ public final class PostgreSQLConnection: DatabaseConnection, BasicWorker {
     /// The channel
     internal let channel: Channel
     
+    /// Previously fetched table name cache
     internal var tableNameCache: TableNameCache?
 
     /// In-flight `send(...)` futures.
@@ -30,15 +31,6 @@ public final class PostgreSQLConnection: DatabaseConnection, BasicWorker {
 
     /// The current query running, if one exists.
     private var pipeline: Future<Void>
-
-    /// Block type to be called on close of connection
-    internal typealias CloseHandler = ((PostgreSQLConnection) -> Future<Void>)
-    /// Called on close of the connection
-    internal var closeHandlers = [CloseHandler]()
-    /// Handler type for Notifications
-    internal typealias NotificationHandler = (String) throws -> Void
-    /// Handlers to be stored by channel name
-    internal var notificationHandlers: [String: NotificationHandler] = [:]
 
     /// Creates a new PostgreSQL client on the provided data source and sink.
     init(queue: QueueHandler<PostgreSQLMessage, PostgreSQLMessage>, channel: Channel) {
@@ -122,13 +114,7 @@ public final class PostgreSQLConnection: DatabaseConnection, BasicWorker {
 
     /// Executes close handlers before closing.
     private  func executeCloseHandlersThenClose() -> Future<Void> {
-        if let beforeClose = closeHandlers.popLast() {
-            return beforeClose(self).then { _ in
-                self.executeCloseHandlersThenClose()
-            }
-        } else {
-            return channel.close(mode: .all)
-        }
+        return channel.close(mode: .all)
     }
 
     /// Called when this class deinitializes.

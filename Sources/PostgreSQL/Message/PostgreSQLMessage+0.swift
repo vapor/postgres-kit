@@ -37,7 +37,7 @@ enum PostgreSQLMessage {
     case notice(ErrorResponse)
     
     /// Identifies the message as a notification response.
-    case notificationResponse(NotificationResponse)
+    case notification(Notification)
     
     /// Identifies the message as a parameter description.
     case parameterDescription(ParameterDescription)

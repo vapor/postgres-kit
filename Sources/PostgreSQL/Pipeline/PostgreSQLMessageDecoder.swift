@@ -69,7 +69,7 @@ final class PostgreSQLMessageDecoder: ByteToMessageDecoder {
         case .E: message = try .error(.parse(from: &buffer))
         case .n: message = .noData
         case .N: message = try .notice(.parse(from: &buffer))
-        case .A: message = try .notificationResponse(.parse(from: &buffer))
+        case .A: message = try .notification(.parse(from: &buffer))
         case .t: message = try .parameterDescription(.parse(from: &buffer))
         case .S: message = try .parameterStatus(.parse(from: &buffer))
         case .one: message = .parseComplete
