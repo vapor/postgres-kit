@@ -44,9 +44,6 @@ jobs:
           name: Compile code with optimizations
           command: swift build -c release
 
-
-
-
   linux-fluent:
     docker:
       - image: codevapor/swift:4.1
