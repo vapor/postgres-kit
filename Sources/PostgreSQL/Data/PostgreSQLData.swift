@@ -103,8 +103,8 @@ extension PostgreSQLData: CustomStringConvertible {
             }
             
             let readable = override ?? "0x" + data.hexEncodedString()
-            return readable + " (" + type.description + ")"
-        case .text(let string): return "\"" + string + "\"" + " (" + type.description + ")"
+            return readable + ":" + type.description
+        case .text(let string): return "\"" + string + "\":" + type.description
         case .null:  return "null"
         }
     }
