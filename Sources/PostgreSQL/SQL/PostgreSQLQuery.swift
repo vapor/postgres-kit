@@ -6,18 +6,18 @@ public enum PostgreSQLQuery {
     // MARK: DDL
     
     public static func drop(table: String, ifExists: Bool = false) -> PostgreSQLQuery {
-        let drop = DDL.Drop(name: table, ifExists: ifExists)
-        return .ddl(.drop(drop))
+        let drop = DDL.DropTable(name: table, ifExists: ifExists)
+        return .ddl(.dropTable(drop))
     }
     
-    public static func create(storage: DDL.Create.Storage = .permanent, table: String, ifNotExists: Bool = false, _ items: DDL.Item...) -> PostgreSQLQuery {
-        let query = DDL.Create(
+    public static func create(storage: DDL.CreateTable.Storage = .permanent, table: String, ifNotExists: Bool = false, _ items: DDL.Item...) -> PostgreSQLQuery {
+        let query = DDL.CreateTable(
             storage: storage,
             ifNotExists: ifNotExists,
             name: table,
             items: items
         )
-        return .ddl(.create(query))
+        return .ddl(.createTable(query))
     }
 
     public enum DDL {
@@ -186,11 +186,17 @@ public enum PostgreSQLQuery {
                 case uuid
                 /// XML data
                 case xml
+                /// User-defined type
+                case custom(String)
             }
             
             public struct Constraint {
                 public static var notNull: Constraint {
                     return .init(.notNull)
+                }
+                
+                public static var null: Constraint {
+                    return .init(.null)
                 }
                 
                 public static var primaryKey: Constraint {
@@ -199,6 +205,10 @@ public enum PostgreSQLQuery {
                 
                 public static func generated(_ type: ConstraintType.Generated) -> Constraint {
                     return .init(.generated(type))
+                }
+                
+                public static func `default`(_ expr: Expression) -> Constraint {
+                    return .init(.default(expr))
                 }
                 
                 public enum ConstraintType {
@@ -227,12 +237,14 @@ public enum PostgreSQLQuery {
             
             public var name: String
             public var dataType: DataType
+            public var isArray: Bool
             public var collate: String?
             public var constraints: [Constraint]
             
-            public init(name: String, dataType: DataType, collate: String? = nil, constraints: [Constraint] = []) {
+            public init(name: String, dataType: DataType, isArray: Bool = false, collate: String? = nil, constraints: [Constraint] = []) {
                 self.name = name
                 self.dataType = dataType
+                self.isArray = isArray
                 self.collate = collate
                 self.constraints = constraints
             }
@@ -241,8 +253,8 @@ public enum PostgreSQLQuery {
         public struct Constraint {
             public enum ConstraintType {
                 case check(Expression, noInherit: Bool)
-                case unique(columns: [String], IndexParameters)
-                case primaryKey(column: String, IndexParameters)
+                case unique(columns: [String], IndexParameters?)
+                case primaryKey(column: String, IndexParameters?)
                 #warning("exclude")
                 case foreignKey(columns: [String], reftable: String, refcolumns: [String], onDelete: ForeignKeyAction?, onUpdate: ForeignKeyAction?)
             }
@@ -255,7 +267,7 @@ public enum PostgreSQLQuery {
             }
         }
         
-        public struct Create {
+        public struct CreateTable {
             public enum Storage {
                 case permanent
                 case temporary
@@ -266,7 +278,7 @@ public enum PostgreSQLQuery {
             public var name: String
             public var items: [Item]
             
-            public init(storage: Storage = .permanent, ifNotExists: Bool = false, name: String, items: [Item]) {
+            public init(storage: Storage = .permanent, ifNotExists: Bool = false, name: String, items: [Item] = []) {
                 self.storage = storage
                 self.ifNotExists = ifNotExists
                 self.name = name
@@ -274,7 +286,7 @@ public enum PostgreSQLQuery {
             }
         }
         
-        public struct Drop {
+        public struct DropTable {
             public var name: String
             public var ifExists: Bool
             public init(name: String, ifExists: Bool = false) {
@@ -302,82 +314,174 @@ public enum PostgreSQLQuery {
             
         }
         
-        case create(Create)
-        case drop(Drop)
+        case createTable(CreateTable)
+        case dropTable(DropTable)
     }
     
     // MARK: DML
     
-    public static func insert(into table: DML.Table, values: [String: DML.Value], returning keys: DML.Key...) -> PostgreSQLQuery {
+    public static func insert(into table: DML.Table, values: [String: DML.Value], returning keys: Expression...) -> PostgreSQLQuery {
         let insert = DML.Insert(table: table, values: values, returning: keys)
         return .dml(.insert(insert))
     }
     
-    public static func select(distinct: [Column], _ keys: [DML.Key] = [], from: [DML.Table] = []) -> PostgreSQLQuery {
+    public static func select(distinct: [Column], _ keys: [Expression] = [], from tables: [DML.Table] = [], joins: [DML.Join] = [], orderBys: [DML.OrderBy] = []) -> PostgreSQLQuery {
         let query = DML.Select(
             candidates: .distinct(columns: distinct),
             keys: keys,
-            from: from
+            tables: tables,
+            joins: joins,
+            orderBys: orderBys
         )
         return .dml(.select(query))
     }
     
-    public static func select(_ keys: DML.Key..., from: [DML.Table] = []) -> PostgreSQLQuery {
+    public static func select(_ keys: Expression..., from tables: [DML.Table] = [], joins: [DML.Join] = [], orderBys: [DML.OrderBy] = []) -> PostgreSQLQuery {
         let query = DML.Select(
             candidates: .all,
             keys: keys,
-            from: from
+            tables: tables,
+            joins: joins,
+            orderBys: orderBys
         )
         return .dml(.select(query))
     }
     
-    public static func select(_ keys: [DML.Key] = [], from: [DML.Table] = []) -> PostgreSQLQuery {
+    public static func select(_ keys: [Expression] = [], from tables: [DML.Table] = [], joins: [DML.Join] = [], orderBys: [DML.OrderBy] = []) -> PostgreSQLQuery {
         let query = DML.Select(
             candidates: .all,
             keys: keys,
-            from: from
+            tables: tables,
+            joins: joins,
+            orderBys: orderBys
         )
         return .dml(.select(query))
     }
     
     public enum DML {
-        public struct Table {
-            public var name: String
-            public var alias: String?
-            
-            public init(name: String, as alias: String? = nil) {
-                self.name = name
-                self.alias = alias
-            }
-        }
-        
-        public enum Key {
-            public static var version: Key {
-                return .expression(.function("version"))
-            }
-            
-            public static func function(_ name: String, _ parameters: Expression..., as alias: String? = nil) -> Key {
-                return .expression(.function(name, parameters), as: alias)
-            }
-            
-            public static func expression(_ expression: Expression, as alias: String? = nil) -> Key {
-                return .expression(expression, alias: alias)
-            }
-            
-            case all
-            case expression(Expression, alias: String?)
-        }
-        
         public struct Insert {
             public var table: Table
             public var values: [String: DML.Value]
-            public var returning: [Key]
+            public var returning: [Expression]
             
-            public init(table: Table, values: [String: DML.Value], returning: [Key] = []) {
+            public init(table: Table, values: [String: DML.Value], returning: [Expression] = []) {
                 self.table = table
                 self.values = values
                 self.returning = returning
             }
+        }
+        
+        /// Represents a SQL join.
+        public struct Join {
+            /// Supported SQL `DataJoin` methods.
+            public enum Method {
+                /// (INNER) JOIN: Returns records that have matching values in both tables
+                case inner
+                /// LEFT (OUTER) JOIN: Return all records from the left table, and the matched records from the right table
+                case left
+                /// RIGHT (OUTER) JOIN: Return all records from the right table, and the matched records from the left table
+                case right
+                /// FULL (OUTER) JOIN: Return all records when there is a match in either left or right table
+                case outer
+            }
+            
+            /// `INNER`, `OUTER`, etc.
+            public let method: Method
+            
+            /// The left-hand side of the join. References the local column.
+            public let local: Column
+            
+            /// The right-hand side of the join. References the column being joined.
+            public let foreign: Column
+            
+            /// Creates a new SQL `DataJoin`.
+            public init(method: Method, local: Column, foreign: Column) {
+                self.method = method
+                self.local = local
+                self.foreign = foreign
+            }
+        }
+        
+        /// A SQL `ORDER BY` that determines the order of results.
+        public struct OrderBy {
+            public static func ascending(_ columns: [Column]) -> OrderBy {
+                return .init(columns: columns, direction: .ascending)
+            }
+            
+            public static func descending(_ columns: [Column]) -> OrderBy {
+                return .init(columns: columns, direction: .descending)
+            }
+            
+            /// Available order by directions for a `DataOrderBy`.
+            public enum Direction {
+                /// DESC
+                case ascending
+                
+                /// ASC
+                case descending
+            }
+            
+            /// The columns to order.
+            public var columns: [Column]
+            
+            /// The direction to order the results.
+            public var direction: Direction
+            
+            /// Creates a new SQL `DataOrderBy`
+            public init(columns: [Column], direction: Direction) {
+                self.columns = columns
+                self.direction = direction
+            }
+        }
+        
+        /// Represents one or more nestable SQL predicates joined by `AND` or `OR`.
+        public indirect enum Predicate {
+            /// All suported SQL `DataPredicate` comparisons.
+            public enum ComparisonOperator {
+                /// =
+                case equal
+                /// !=, <>
+                case notEqual
+                /// <
+                case lessThan
+                /// >
+                case greaterThan
+                /// <=
+                case lessThanOrEqual
+                /// >=
+                case greaterThanOrEqual
+                /// IN
+                case `in`
+                /// NOT IN
+                case notIn
+                /// BETWEEN
+                case between
+                /// LIKE
+                case like
+                /// NOT LIKE
+                case notLike
+            }
+            
+            /// Supported data predicate relations.
+            public enum InfixOperator {
+                /// AND
+                case and
+                /// OR
+                case or
+            }
+            
+            public enum PrefixOperator {
+                /// NOT
+                case not
+            }
+            
+            /// A collection of `DataPredicate` items joined by AND or OR.
+            case infix(InfixOperator, Predicate, Predicate)
+            
+            case prefix(PrefixOperator, Predicate)
+            
+            /// A single `DataPredicate`.
+            case predicate(Column, ComparisonOperator, Value)
         }
         
         public struct Select {
@@ -389,13 +493,48 @@ public enum PostgreSQLQuery {
             }
             
             public var candidates: Candidates
-            public var keys: [Key]
-            public var from: [Table]
+            public var keys: [Expression]
+            public var tables: [Table]
+            public var joins: [Join]
+            
+            public var predicate: Predicate?
+            
+            /// List of columns to order by.
+            public var orderBys: [OrderBy]
+            
+            public var groupBys: [Expression]
+            
+            public var limit: Int?
+            public var offset: Int?
+            
+            public init(candidates: Candidates = .all, keys: [Expression] = [], tables: [Table], joins: [Join] = [], orderBys: [OrderBy] = []) {
+                self.candidates = candidates
+                self.keys = keys
+                self.tables = tables
+                self.joins = joins
+                self.orderBys = orderBys
+                self.groupBys = []
+                self.predicate = nil
+            }
+        }
+        
+        public struct Table {
+            public var name: String
+            public var alias: String?
+            
+            public init(name: String, as alias: String? = nil) {
+                self.name = name
+                self.alias = alias
+            }
         }
         
         public enum Value {
             public static func bind(_ encodable: Encodable) throws -> Value {
                 return try PostgreSQLValueEncoder().encode(encodable)
+            }
+            
+            public static func binds(_ encodables: [Encodable]) throws -> Value {
+                return try .values(encodables.map { try .bind($0) })
             }
             
             case values([Value])
@@ -410,8 +549,8 @@ public enum PostgreSQLQuery {
     }
     
     public struct Column: Hashable {
-        var table: String?
-        var name: String
+        public var table: String?
+        public var name: String
         
         public init(table: String? = nil, name: String) {
             self.table = table
@@ -420,12 +559,16 @@ public enum PostgreSQLQuery {
     }
     
     public enum Expression {
-        public static func function(_ name: String, _ parameters: Expression...) -> Expression {
-            return .function(name, parameters)
+        public static func function(_ name: String, _ parameters: Expression..., as alias: String? = nil) -> Expression {
+            return .function(name, parameters, as: alias)
         }
         
-        public static func function(_ name: String, _ parameters: [Expression]) -> Expression {
-            return .function(.init(name: name, parameters: parameters))
+        public static func function(_ name: String, _ parameters: [Expression], as alias: String? = nil) -> Expression {
+            return .function(.init(name: name, parameters: parameters), alias: alias)
+        }
+        
+        public static func column(_ column: Column, as alias: String? = nil) -> Expression {
+            return .column(column, alias: alias)
         }
         
         public struct Function {
@@ -433,8 +576,10 @@ public enum PostgreSQLQuery {
             var parameters: [Expression]
         }
         
-        case column(Column)
-        case function(Function)
+        /// *
+        case all
+        case column(Column, alias: String?)
+        case function(Function, alias: String?)
         case stringLiteral(String)
         case literal(String)
     }
@@ -473,10 +618,24 @@ extension Array: ExpressibleByStringLiteral, ExpressibleByUnicodeScalarLiteral, 
     }
 }
 
-extension PostgreSQLQuery.Expression: ExpressibleByStringLiteral {
-    public init(stringLiteral value: String) {
-        self = .stringLiteral(value)
-    }
+public func ==(_ lhs: PostgreSQLQuery.Column, _ rhs: PostgreSQLQuery.DML.Value) -> PostgreSQLQuery.DML.Predicate {
+    return .predicate(lhs, .equal, rhs)
+}
+
+public func !=(_ lhs: PostgreSQLQuery.Column, _ rhs: PostgreSQLQuery.DML.Value) -> PostgreSQLQuery.DML.Predicate {
+    return .predicate(lhs, .notEqual, rhs)
+}
+
+public func &&(_ lhs: PostgreSQLQuery.DML.Predicate, _ rhs: PostgreSQLQuery.DML.Predicate) -> PostgreSQLQuery.DML.Predicate {
+    return .infix(.and, lhs, rhs)
+}
+
+public func ||(_ lhs: PostgreSQLQuery.DML.Predicate, _ rhs: PostgreSQLQuery.DML.Predicate) -> PostgreSQLQuery.DML.Predicate {
+    return .infix(.or, lhs, rhs)
+}
+
+public prefix func !(_ lhs: PostgreSQLQuery.DML.Predicate) -> PostgreSQLQuery.DML.Predicate {
+    return .prefix(.not, lhs)
 }
 
 extension PostgreSQLQuery.Expression: ExpressibleByIntegerLiteral {
@@ -491,9 +650,9 @@ extension PostgreSQLQuery.Expression: ExpressibleByFloatLiteral {
     }
 }
 
-extension PostgreSQLQuery.DML.Key: ExpressibleByStringLiteral {
+extension PostgreSQLQuery.Expression: ExpressibleByStringLiteral {
     public init(stringLiteral value: String) {
-        self = .expression(.column(.init(stringLiteral: value)), alias: nil)
+        self = .column(.init(stringLiteral: value), alias: nil)
     }
 }
 
@@ -516,9 +675,9 @@ extension PostgreSQLQuery: ExpressibleByStringLiteral {
 }
 
 extension PostgreSQLQuery {
-    public func serialize(binds: inout [PostgreSQLData]) -> String {
+    public func serialize(_ binds: inout [PostgreSQLData]) -> String {
         var serializer = Serializer()
-        return serializer.serialize(self, binds: &binds)
+        return serializer.serialize(self, &binds)
     }
     
     private struct Serializer {
@@ -527,10 +686,10 @@ extension PostgreSQLQuery {
             self.placeholderOffset = 1
         }
         
-        mutating func serialize(_ query: PostgreSQLQuery, binds: inout [PostgreSQLData]) -> String {
+        mutating func serialize(_ query: PostgreSQLQuery, _ binds: inout [PostgreSQLData]) -> String {
             switch query {
             case .ddl(let ddl): return serialize(ddl)
-            case .dml(let dml): return serialize(dml, binds: &binds)
+            case .dml(let dml): return serialize(dml, &binds)
             case .listen(let channel): return "LISTEN " + escapeString(channel)
             case .notify(let channel, let message): return "NOTIFY " + escapeString(channel) + ", " + stringLiteral(message)
             case .raw(let raw, let values):
@@ -544,12 +703,12 @@ extension PostgreSQLQuery {
         
         private func serialize(_ table: DDL) -> String {
             switch table {
-            case .create(let create): return serialize(create)
-            case .drop(let drop): return serialize(drop)
+            case .createTable(let create): return serialize(create)
+            case .dropTable(let drop): return serialize(drop)
             }
         }
         
-        private func serialize(_ drop: DDL.Drop) -> String {
+        private func serialize(_ drop: DDL.DropTable) -> String {
             var sql: [String] = []
             sql.append("DROP TABLE")
             if drop.ifExists {
@@ -559,7 +718,7 @@ extension PostgreSQLQuery {
             return sql.joined(separator: " ")
         }
         
-        private func serialize(_ create: DDL.Create) -> String {
+        private func serialize(_ create: DDL.CreateTable) -> String {
             var sql: [String] = []
             sql.append("CREATE")
             switch create.storage {
@@ -590,7 +749,11 @@ extension PostgreSQLQuery {
         private func serialize(_ column: DDL.ColumnDefinition) -> String {
             var sql: [String] = []
             sql.append(escapeString(column.name))
-            sql.append(serialize(column.dataType))
+            if column.isArray {
+                sql.append(serialize(column.dataType) + "[]")
+            } else {
+                sql.append(serialize(column.dataType))
+            }
             if let collate = column.collate {
                 sql.append("COLLATE")
                 sql.append(collate)
@@ -688,6 +851,7 @@ extension PostgreSQLQuery {
             case .txidSnapshot: return "TXID_SNAPSHOT"
             case .uuid: return "UUID"
             case .xml: return "XML"
+            case .custom(let custom): return custom
             }
         }
         
@@ -744,21 +908,21 @@ extension PostgreSQLQuery {
         
         // MARK: DML
         
-        private mutating func serialize(_ table: DML, binds: inout [PostgreSQLData]) -> String {
+        private mutating func serialize(_ table: DML, _ binds: inout [PostgreSQLData]) -> String {
             switch table {
-            case .insert(let insert): return serialize(insert, binds: &binds)
-            case .select(let select): return serialize(select, binds: &binds)
+            case .insert(let insert): return serialize(insert, &binds)
+            case .select(let select): return serialize(select,  &binds)
             }
         }
         
-        private mutating func serialize(_ insert: DML.Insert, binds: inout [PostgreSQLData]) -> String {
+        private mutating func serialize(_ insert: DML.Insert, _ binds: inout [PostgreSQLData]) -> String {
             var sql: [String] = []
             sql.append("INSERT INTO")
             sql.append(serialize(insert.table))
             if !insert.values.isEmpty {
                 sql.append(group(insert.values.keys.map(escapeString)))
                 sql.append("VALUES")
-                sql.append(group(insert.values.values.map { serialize($0, binds: &binds) }))
+                sql.append(group(insert.values.values.map { serialize($0, &binds) }))
             } else {
                 sql.append("DEFAULT VALUES")
             }
@@ -769,9 +933,9 @@ extension PostgreSQLQuery {
             return sql.joined(separator: " ")
         }
         
-        private mutating func serialize(_ value: DML.Value, binds: inout [PostgreSQLData]) -> String {
+        private mutating func serialize(_ value: DML.Value, _ binds: inout [PostgreSQLData]) -> String {
             switch value {
-            case .values(let values): return group(values.map { self.serialize($0, binds: &binds) })
+            case .values(let values): return group(values.map { self.serialize($0, &binds) })
             case .data(let data):
                 binds.append(data)
                 return nextPlaceholder()
@@ -781,7 +945,7 @@ extension PostgreSQLQuery {
             }
         }
         
-        private func serialize(_ select: DML.Select, binds: inout [PostgreSQLData]) -> String {
+        private mutating func serialize(_ select: DML.Select, _ binds: inout [PostgreSQLData]) -> String {
             var sql: [String] = []
             sql.append("SELECT")
             switch select.candidates {
@@ -792,23 +956,56 @@ extension PostgreSQLQuery {
                     sql.append("(" + columns.map(serialize).joined(separator: ",") + ")")
                 }
             }
-            sql.append(select.keys.map(serialize).joined(separator: ", "))
-            if !select.from.isEmpty {
+            let keys = select.keys.isEmpty ? [.all] : select.keys
+            sql.append(keys.map(serialize).joined(separator: ", "))
+            if !select.tables.isEmpty {
                 sql.append("FROM")
-                sql.append(select.from.map(serialize).joined(separator: ", "))
+                sql.append(select.tables.map(serialize).joined(separator: ", "))
+            }
+            if let predicate = select.predicate {
+                sql.append("WHERE")
+                sql.append(serialize(predicate, &binds))
             }
             return sql.joined(separator: " ")
         }
         
-        private func serialize(_ key: DML.Key) -> String {
-            switch key {
-            case .all: return "*"
-            case .expression(let expression, let alias):
-                if let alias = alias {
-                    return serialize(expression) + " AS " + escapeString(alias)
-                } else {
-                    return serialize(expression)
-                }
+        private mutating func serialize(_ predicate: DML.Predicate, _ binds: inout [PostgreSQLData]) -> String {
+            switch predicate {
+            case .infix(let infix, let left, let right):
+                return serialize(left, &binds) + " " + serialize(infix) + " " + serialize(right, &binds)
+            case .prefix(let prefix, let right):
+                return serialize(prefix) + " " + serialize(right, &binds)
+            case .predicate(let col, let comparison, let value):
+                return serialize(col) + " " + serialize(comparison) + " " + serialize(value, &binds)
+            }
+        }
+        
+        private func serialize(_ op: DML.Predicate.InfixOperator) -> String {
+            switch op {
+            case .and: return "AND"
+            case .or: return "OR"
+            }
+        }
+        
+        private func serialize(_ op: DML.Predicate.PrefixOperator) -> String {
+            switch op {
+            case .not: return "!"
+            }
+        }
+        
+        private func serialize(_ op: DML.Predicate.ComparisonOperator) -> String {
+            switch op {
+            case .between: return "BETWEEN"
+            case .equal: return "="
+            case .greaterThan: return ">"
+            case .greaterThanOrEqual: return ">="
+            case .in: return "IN"
+            case .lessThan: return "<"
+            case .lessThanOrEqual: return "<="
+            case .like: return "LIKE"
+            case .notEqual: return "!="
+            case .notIn: return "NOT IN"
+            case .notLike: return "NOT LIKE"
             }
         }
         
@@ -834,8 +1031,19 @@ extension PostgreSQLQuery {
             switch expression {
             case .stringLiteral(let string): return stringLiteral(string)
             case .literal(let literal): return literal
-            case .column(let column): return serialize(column)
-            case .function(let function): return serialize(function)
+            case .column(let column, let alias):
+                if let alias = alias {
+                    return serialize(column) + " AS " + escapeString(alias)
+                } else {
+                    return serialize(column)
+                }
+            case .function(let function, let alias):
+                if let alias = alias {
+                    return serialize(function) + " AS " + escapeString(alias)
+                } else {
+                    return serialize(function)
+                }
+            case .all: return "*"
             }
         }
         

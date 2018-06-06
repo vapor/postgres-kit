@@ -24,7 +24,7 @@ extension PostgreSQLConnection {
     
     public func simpleQuery(_ query: PostgreSQLQuery, onRow: @escaping ([PostgreSQLColumn: PostgreSQLData]) throws -> ()) -> Future<Void> {
         var binds: [PostgreSQLData] = []
-        let sql = query.serialize(binds: &binds)
+        let sql = query.serialize(&binds)
         assert(binds.count == 0, "Binds not allowed in simpleQuery(...). Use query(...) instead.")
         return operation { self._simpleQuery(sql, onRow: onRow) }
     }

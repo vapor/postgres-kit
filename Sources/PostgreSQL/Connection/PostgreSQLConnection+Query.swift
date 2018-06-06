@@ -46,7 +46,7 @@ extension PostgreSQLConnection {
     /// - returns: A future that signals query completion.
     public func query(_ query: PostgreSQLQuery, resultFormat: PostgreSQLResultFormat = .binary, onRow: @escaping ([PostgreSQLColumn: PostgreSQLData]) throws -> ()) -> Future<Void> {
         var binds: [PostgreSQLData] = []
-        let sql = query.serialize(binds: &binds)
+        let sql = query.serialize(&binds)
         return operation {
             do {
                 return try self._query(sql, binds, resultFormat: resultFormat, onRow: onRow)
