@@ -1,12 +1,12 @@
 extension PostgreSQLQuery {
-    public static func insert(
-        into table: TableName,
-        values: [String: Value],
-        returning keys: Key...
-    ) -> PostgreSQLQuery {
-        let insert = Insert(table: table, values: values, returning: keys)
-        return .insert(insert)
-    }
+//    public static func insert(
+//        into table: TableName,
+//        values: [String: Value],
+//        returning keys: Key...
+//    ) -> PostgreSQLQuery {
+//        let insert = Insert(table: table, values: values, returning: keys)
+//        return .insert(insert)
+//    }
 
     public struct Insert {
         public var table: TableName

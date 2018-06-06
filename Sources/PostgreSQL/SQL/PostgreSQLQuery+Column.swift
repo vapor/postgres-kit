@@ -3,6 +3,14 @@ extension PostgreSQLQuery {
         public var table: String?
         public var name: String
         
+        public var hashValue: Int {
+            if let table = table {
+                return table.hashValue &+ name.hashValue
+            } else {
+                return name.hashValue
+            }
+        }
+        
         public init(table: String? = nil, name: String) {
             self.table = table
             self.name = name

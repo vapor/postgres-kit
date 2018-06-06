@@ -14,7 +14,9 @@ class PostgreSQLConnectionTests: XCTestCase {
 
     func testUnverifiedSSLConnection() throws {
         let client = try PostgreSQLConnection.makeTest(transport: .unverifiedTLS)
-        let results = try client.simpleQuery(.select(.version), decoding: VersionMetadata.self).wait()
+        let results = try client.simpleQuery(.select(.init(
+            keys: [.version]
+        )), decoding: VersionMetadata.self).wait()
         XCTAssertTrue(results[0].version.contains("10."))
     }
 
@@ -82,26 +84,8 @@ class PostgreSQLConnectionTests: XCTestCase {
 //            var typacl: String?
         }
         let client = try PostgreSQLConnection.makeTest(transport: .cleartext)
-        do {
-            // simple query
-            let results = try client.simpleQuery(.select(.all, from: ["pg_type"]), decoding: PGType.self).wait()
-            XCTAssert(results.count >= 350, "Results count not large enough: \(results.count)")
-        }
-        do {
-            // query: default
-            let results = try client.select(PGType.self).from("pg_type").all().wait()
-            XCTAssert(results.count >= 350, "Results count not large enough: \(results.count)")
-        }
-        do {
-            // query: binary
-            let results = try client.query(.select(.all, from: ["pg_type"]), resultFormat: .binary, decoding: PGType.self).wait()
-            XCTAssert(results.count >= 350, "Results count not large enough: \(results.count)")
-        }
-        do {
-            // query: text
-            let results = try client.query(.select(.all, from: ["pg_type"]), resultFormat: .text, decoding: PGType.self).wait()
-            XCTAssert(results.count >= 350, "Results count not large enough: \(results.count)")
-        }
+        let results = try client.select(PGType.self).from("pg_type").all().wait()
+        XCTAssert(results.count >= 350, "Results count not large enough: \(results.count)")
     }
     
     struct Foo: Codable {
@@ -116,11 +100,16 @@ class PostgreSQLConnectionTests: XCTestCase {
     func testStruct() throws {
         let client = try PostgreSQLConnection.makeTest(transport: .cleartext)
 
-        _ = try client.simpleQuery(.create(table: "foo", .column("id", .bigint), .column("dict", .jsonb))).wait()
+        _ = try client.simpleQuery(.createTable(.init(
+            name: "foo",
+            columns: [.column("id", .bigint), .column("dict", .jsonb)]
+        ))).wait()
         defer { _ = try? client.simpleQuery(.drop(table: "foo")).wait() }
 
         let hello = Hello(message: "Hello, world!")
-        _ = try client.query(.insert(into: "foo", values: ["id": .bind(1), "dict": .bind(hello)])).wait()
+        _ = try client.query(.insert(.init(
+            table: "foo", values: ["id": .bind(1), "dict": .bind(hello)]
+        ))).wait()
 
         let fetch = try client.select(Foo.self).from("foo").all().wait()
         switch fetch.count {
@@ -134,13 +123,19 @@ class PostgreSQLConnectionTests: XCTestCase {
     func testNull() throws {
         let conn = try PostgreSQLConnection.makeTest(transport: .cleartext)
         
-        _ = try conn.query(.create(table: "nulltest",
-            .column("i", .bigint, .notNull, .primaryKey, .generated(.byDefault)),
-            .column("d", .timestamp)
-        )).wait()
+        _ = try conn.query(.createTable(.init(
+            name: "nulltest",
+            columns: [
+                .column("i", .bigint, .notNull, .primaryKey, .generated(.byDefault)),
+                .column("d", .timestamp(nil))
+            ]
+        ))).wait()
         defer { _ = try? conn.simpleQuery(.drop(table: "nulltest")).wait() }
         
-        _ = try conn.query(.insert(into: "nulltest", values: ["i": .bind(1), "d": .bind(Date?.none)])).wait()
+        _ = try conn.query(.insert(.init(
+            table: "nulltest",
+            values: ["i": .bind(1), "d": .bind(Date?.none)]
+        ))).wait()
     }
 
     func testGH24() throws {
@@ -167,24 +162,51 @@ class PostgreSQLConnectionTests: XCTestCase {
 
         /// INSERT
         let userUUID = UUID()
-        let _ = try client.query(.raw("""
-        INSERT INTO "users" ("id", "name", "username") VALUES ($1, $2, $3)
-        """, [userUUID, "Vapor Test", "vapor"])).wait()
-        let _ = try client.query(.raw("""
-        INSERT INTO "acronyms" ("id", "userID", "short", "long") VALUES ($1, $2, $3, $4)
-        """, [1, userUUID, "ilv", "i love vapor"])).wait()
-        let _ = try client.query(.raw("""
-        INSERT INTO "categories" ("id", "name") VALUES ($1, $2);
-        """, [1, "all"])).wait()
+        let _ = try client.query(.raw(
+            query: """
+            INSERT INTO "users" ("id", "name", "username") VALUES ($1, $2, $3)
+            """,
+            binds: [
+                userUUID.convertToPostgreSQLData(),
+                "Vapor Test".convertToPostgreSQLData(),
+                "vapor".convertToPostgreSQLData()
+            ]
+        )).wait()
+        let _ = try client.query(.raw(
+            query: """
+            INSERT INTO "acronyms" ("id", "userID", "short", "long") VALUES ($1, $2, $3, $4)
+            """,
+            binds: [
+                1.convertToPostgreSQLData(),
+                userUUID.convertToPostgreSQLData(),
+                "ilv".convertToPostgreSQLData(),
+                "i love vapor".convertToPostgreSQLData()
+            ]
+        )).wait()
+        let _ = try client.query(.raw(
+            query: """
+            INSERT INTO "categories" ("id", "name") VALUES ($1, $2);
+            """,
+            binds: [
+                1.convertToPostgreSQLData(),
+                "all".convertToPostgreSQLData()
+            ]
+        )).wait()
 
 
         /// SELECT
-        let acronyms = try client.query(.raw("""
-        SELECT "acronyms".* FROM "acronyms" WHERE ("acronyms"."id" = $1) LIMIT 1 OFFSET 0
-        """, [1]))
-        let categories = try client.query(.raw("""
-        SELECT "categories".* FROM "categories" WHERE ("categories"."id" = $1) LIMIT 1 OFFSET 0
-        """, [1]))
+        let acronyms = try client.query(.raw(
+            query: """
+            SELECT "acronyms".* FROM "acronyms" WHERE ("acronyms"."id" = $1) LIMIT 1 OFFSET 0
+            """,
+            binds: [1.convertToPostgreSQLData()]
+        ))
+        let categories = try client.query(.raw(
+            query: """
+            SELECT "categories".* FROM "categories" WHERE ("categories"."id" = $1) LIMIT 1 OFFSET 0
+            """,
+            binds: [1.convertToPostgreSQLData()]
+        ))
 
         _ = try acronyms.wait()
         _ = try categories.wait()
@@ -291,25 +313,28 @@ class PostgreSQLConnectionTests: XCTestCase {
     func testRowCodableTypes() throws {
         let conn = try PostgreSQLConnection.makeTest(transport: .cleartext)
         _ = try! conn.simpleQuery(.drop(table: "types", ifExists: true)).wait()
-        _ = try conn.simpleQuery(.create(table: "types",
-            .column("id", .bigint, .primaryKey, .generated(.byDefault), .notNull),
-            .column("bool", .bool, .notNull),
-            .column("string", .text, .notNull),
-            .column("int", .bigint, .notNull),
-            .column("int8", .char, .notNull),
-            .column("int16", .smallint, .notNull),
-            .column("int32", .int, .notNull),
-            .column("int64", .bigint, .notNull),
-            .column("uint", .bigint, .notNull),
-            .column("uint8", .char, .notNull),
-            .column("uint16", .smallint, .notNull),
-            .column("uint32", .int, .notNull),
-            .column("uint64", .bigint, .notNull),
-            .column("double", .doublePrecision, .notNull),
-            .column("float", .real, .notNull),
-            .column("date", .timestamp, .notNull),
-            .column("decimal", .jsonb, .notNull)
-        )).wait()
+        _ = try conn.simpleQuery(.createTable(.init(
+            name: "types",
+            columns: [
+                .column("id", .bigint, .primaryKey, .generated(.byDefault), .notNull),
+                .column("bool", .bool, .notNull),
+                .column("string", .text, .notNull),
+                .column("int", .bigint, .notNull),
+                .column("int8", .char(nil), .notNull),
+                .column("int16", .smallint, .notNull),
+                .column("int32", .int, .notNull),
+                .column("int64", .bigint, .notNull),
+                .column("uint", .bigint, .notNull),
+                .column("uint8", .char(nil), .notNull),
+                .column("uint16", .smallint, .notNull),
+                .column("uint32", .int, .notNull),
+                .column("uint64", .bigint, .notNull),
+                .column("double", .doublePrecision, .notNull),
+                .column("float", .real, .notNull),
+                .column("date", .timestamp(nil), .notNull),
+                .column("decimal", .jsonb, .notNull)
+            ]
+        ))).wait()
         defer { _ = try! conn.simpleQuery(.drop(table: "types")).wait() }
         
         struct Types: Codable {
@@ -332,10 +357,13 @@ class PostgreSQLConnectionTests: XCTestCase {
         }
         
         let typesA = Types(bool: true, string: "hello", int: 1, int8: 2, int16: 3, int32: 4, int64: 5, uint: 6, uint8: 7, uint16: 8, uint32: 9, uint64: 10, double: 13.37, float: 3.14, date: Date(), decimal: .init(-1.234))
-        _ = try conn.query(.insert(into: "types", values:
-            PostgreSQLQueryEncoder().encode(typesA)
-        )).wait()
-        let rows = try conn.query(.select(.all, from: ["types"])).wait()
+        _ = try conn.query(.insert(.init(
+            table: "types",
+            values: PostgreSQLQueryEncoder().encode(typesA)
+        ))).wait()
+        let rows = try conn.query(.select(.init(
+            tables: ["types"]
+        ))).wait()
         switch rows.count {
         case 1:
             let typesB = try PostgreSQLRowDecoder().decode(Types.self, from: rows[0])
@@ -361,54 +389,71 @@ class PostgreSQLConnectionTests: XCTestCase {
     
     func testDML() throws {
         let conn = try PostgreSQLConnection.makeTest(transport: .cleartext)
-        _ = try conn.simpleQuery(.create(table: "users",
-            .column("id", .bigint, .primaryKey, .generated(.byDefault)),
-            .column("name", .text)
-        )).wait()
+        _ = try conn.simpleQuery(.createTable(.init(
+            name: "users",
+            columns: [
+                .column("id", .bigint, .primaryKey, .generated(.byDefault)),
+                .column("name", .text)
+            ]
+        ))).wait()
         defer { _ = try? conn.simpleQuery(.drop(table: "users")).wait() }
         
-        let save = try conn.query(.insert(into: "users", values: ["name": .bind("vapor")])).wait()
+        let save = try conn.query(.insert(.init(
+            table: "users",
+            values: ["name": .bind("vapor")]
+        ))).wait()
         XCTAssertEqual(save.count, 0)
 
-        let search = try conn.query(.select(
-            .all,
-            from: ["users"],
+        let search = try conn.query(.select(.init(
+            tables: ["users"],
             predicate: .predicate("name", .equal, .bind("vapor"))
-        )).wait()
+        ))).wait()
         XCTAssertEqual(search.count, 1)
         
-        try conn.query(.select("id", "name", from: ["users"])) { row in
+        try conn.query(.select(.init(
+            keys: ["id", "name"],
+            tables: ["users"]
+        ))) { row in
             print(row)
         }.wait()
     }
     
     func testDMLNestedType() throws {
         let conn = try PostgreSQLConnection.makeTest(transport: .cleartext)
-        _ = try conn.simpleQuery(.create(table: "users",
-            .column("id", .bigint, .primaryKey, .generated(.byDefault)),
-            .column("name", .varchar),
-            .column("pet", .jsonb)
-        )).wait()
+        _ = try conn.simpleQuery(.createTable(.init(
+            name: "users",
+            columns: [
+                .column("id", .bigint, .primaryKey, .generated(.byDefault)),
+                .column("name", .varchar(nil)),
+                .column("pet", .jsonb)
+            ]
+        ))).wait()
         defer { _ = try? conn.simpleQuery(.drop(table: "users")).wait() }
         
         struct Pet: Encodable {
             var name: String
         }
         
-        let save = try conn.query(.insert(into: "users", values: [
-            "name": .bind("vapor"),
-            "pet": .bind(Pet(name: "Zizek"))
-        ], returning: "id")).wait()
+        let save = try conn.query(.insert(.init(
+            table: "users",
+            values: [
+                "name": .bind("vapor"),
+                "pet": .bind(Pet(name: "Zizek"))
+            ],
+            returning: ["id"]
+        ))).wait()
         XCTAssertEqual(save.count, 1)
         
-        let search = try conn.query(.select(
-            .all,
-            from: ["users"],
+        let search = try conn.query(.select(.init(
+            tables: ["users"],
             predicate: .predicate("name", .equal, .bind("vapor"))
-        )).wait()
+        ))).wait()
         XCTAssertEqual(search.count, 1)
         
-        try conn.query(.select("id", "name", "pet", from: ["users"])) { row in
+        try conn.query(.select(.init(
+            keys: ["id", "name", "pet"],
+            tables: ["users"]
+        ))) { row in
             print(row)
         }.wait()
     }
@@ -416,7 +461,10 @@ class PostgreSQLConnectionTests: XCTestCase {
     // https://github.com/vapor/postgresql/issues/63
     func testTimeTz() throws {
         let conn = try PostgreSQLConnection.makeTest(transport: .cleartext)
-        _ = try conn.simpleQuery(.create(table: "timetest", .column("timestamptz", .timestamptz))).wait()
+        _ = try conn.simpleQuery(.createTable(.init(
+            name: "timetest",
+            columns: [.column("timestamptz", .timestamptz(nil))]
+        ))).wait()
         defer { _ = try? conn.simpleQuery(.drop(table: "timetest")).wait() }
         
         struct Time: Codable, Equatable {
@@ -424,9 +472,10 @@ class PostgreSQLConnectionTests: XCTestCase {
         }
         
         let time = Time(timestamptz: .init())
-        _ = try conn.query(.insert(into: "timetest", values:
-            PostgreSQLQueryEncoder().encode(time)
-        )).wait()
+        _ = try conn.query(.insert(.init(
+            table: "timetest",
+            values: PostgreSQLQueryEncoder().encode(time)
+        ))).wait()
         
         let fetch: [Time] = try conn.select(Time.self).from("timetest").all().wait()
         switch fetch.count {

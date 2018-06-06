@@ -1,28 +1,28 @@
 extension PostgreSQLQuery {
-    public static func select(
-        candidates: Select.Candidates = .all,
-        _ keys: Key...,
-        from tables: [TableName] = [],
-        joins: [Join] = [],
-        predicate: Predicate? = nil,
-        orderBy: [OrderBy] = [],
-        groupBy: [Key] = [],
-        limit: Int? = nil,
-        offset: Int? = nil
-    ) -> PostgreSQLQuery {
-        return .select(.init(
-            candidates: candidates,
-            keys: keys,
-            tables: tables,
-            joins: joins,
-            predicate: predicate,
-            orderBy: orderBy,
-            groupBy: groupBy,
-            limit: limit,
-            offset: offset
-        ))
-    }
-    
+//    public static func select(
+//        candidates: Select.Candidates = .all,
+//        _ keys: Key...,
+//        from tables: [TableName] = [],
+//        joins: [Join] = [],
+//        predicate: Predicate? = nil,
+//        orderBy: [OrderBy] = [],
+//        groupBy: [Key] = [],
+//        limit: Int? = nil,
+//        offset: Int? = nil
+//    ) -> PostgreSQLQuery {
+//        return .select(.init(
+//            candidates: candidates,
+//            keys: keys,
+//            tables: tables,
+//            joins: joins,
+//            predicate: predicate,
+//            orderBy: orderBy,
+//            groupBy: groupBy,
+//            limit: limit,
+//            offset: offset
+//        ))
+//    }
+//    
     public struct Select {
         public enum Candidates {
             /// All row candiates are available for selection.
@@ -49,7 +49,7 @@ extension PostgreSQLQuery {
         public init(
             candidates: Candidates = .all,
             keys: [Key] = [],
-            tables: [TableName],
+            tables: [TableName] = [],
             joins: [Join] = [],
             predicate: Predicate? = nil,
             orderBy: [OrderBy] = [],

@@ -1,19 +1,4 @@
 extension PostgreSQLQuery {
-    public static func create(storage: CreateTable.Storage = .permanent, table: String, ifNotExists: Bool = false, _ columns: ColumnDefinition..., constraints: [TableConstraint] = []) -> PostgreSQLQuery {
-        return create(storage: storage, table: table, ifNotExists: ifNotExists, columns: columns, constraints: constraints)
-    }
-    
-    public static func create(storage: CreateTable.Storage = .permanent, table: String, ifNotExists: Bool = false, columns: [ColumnDefinition], constraints: [TableConstraint] = []) -> PostgreSQLQuery {
-        let query = CreateTable(
-            storage: storage,
-            ifNotExists: ifNotExists,
-            name: table,
-            columns: columns,
-            constraints: constraints
-        )
-        return .createTable(query)
-    }
-    
     public struct CreateTable {
         public enum Storage {
             case permanent
@@ -27,7 +12,7 @@ extension PostgreSQLQuery {
         public var constraints: [TableConstraint]
         // FIXME: ("FIXME: like")
         
-        public init(storage: Storage = .permanent, ifNotExists: Bool = false, name: String, columns: [ColumnDefinition] = [], constraints: [TableConstraint]) {
+        public init(storage: Storage = .permanent, ifNotExists: Bool = false, name: String, columns: [ColumnDefinition], constraints: [TableConstraint] = []) {
             self.storage = storage
             self.ifNotExists = ifNotExists
             self.name = name

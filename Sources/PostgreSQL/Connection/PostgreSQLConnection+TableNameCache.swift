@@ -46,7 +46,7 @@ extension PostgreSQLConnection {
                 var oid: UInt32
                 var relname: String
             }
-            return simpleQuery(.select("oid", "relname", from: ["pg_class"]), decoding: PGClass.self).map { rows in
+            return select(PGClass.self).keys("oid", "relname").from("pg_class").all().map { rows in 
                 var cache: [UInt32: String] = [:]
                 for row in rows {
                     cache[row.oid] = row.relname

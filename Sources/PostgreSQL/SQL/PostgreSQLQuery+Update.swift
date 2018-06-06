@@ -7,15 +7,15 @@ extension PostgreSQLQuery {
         case inherited
     }
     
-    public static func update(
-        locality: UpdateLocality = .inherited,
-        table: TableName,
-        values: [String: Value],
-        where predicate: Predicate? = nil,
-        returning keys: Key...
-    ) -> PostgreSQLQuery {
-        return .update(.init(locality: locality, table: table, values: values, predicate: predicate, returning: keys))
-    }
+//    public static func update(
+//        locality: UpdateLocality = .inherited,
+//        table: TableName,
+//        values: [String: Value],
+//        where predicate: Predicate? = nil,
+//        returning keys: Key...
+//    ) -> PostgreSQLQuery {
+//        return .update(.init(locality: locality, table: table, values: values, predicate: predicate, returning: keys))
+//    }
     
     /// `UPDATE` queries.
     ///

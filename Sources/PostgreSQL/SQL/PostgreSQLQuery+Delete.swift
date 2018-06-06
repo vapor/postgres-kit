@@ -1,13 +1,13 @@
 extension PostgreSQLQuery {
-    public static func delete(
-        locality: UpdateLocality = .inherited,
-        from table: TableName,
-        where predicate: Predicate? = nil,
-        returning keys: Key...
-    ) -> PostgreSQLQuery {
-        return .delete(.init(locality: locality, table: table, predicate: predicate, returning: keys))
-    }
-    
+//    public static func delete(
+//        locality: UpdateLocality = .inherited,
+//        from table: TableName,
+//        where predicate: Predicate? = nil,
+//        returning keys: Key...
+//    ) -> PostgreSQLQuery {
+//        return .delete(.init(locality: locality, table: table, predicate: predicate, returning: keys))
+//    }
+//    
     /// `DELETE` query.
     ///
     ///     [ WITH [ RECURSIVE ] with_query [, ...] ]
