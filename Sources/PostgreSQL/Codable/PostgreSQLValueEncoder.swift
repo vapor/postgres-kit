@@ -3,7 +3,7 @@
 ///     let data = try PostgreSQLDataEncoder().encode("hello")
 ///     print(data) // PostgreSQLData
 ///
-public struct PostgreSQLDataEncoder {
+public struct PostgreSQLValueEncoder {
     /// Creates a new `PostgreSQLDataEncoder`.
     public init() { }
 
@@ -15,9 +15,12 @@ public struct PostgreSQLDataEncoder {
     /// - parameters:
     ///     - encodable: `Encodable` object to encode.
     /// - returns: Encoded `PostgreSQLData`.
-    public func encode(_ encodable: Encodable) throws -> PostgreSQLData {
+    public func encode(_ encodable: Encodable) throws -> PostgreSQLQuery.DML.Value {
+        if let psql = encodable as? PostgreSQLValueRepresentable {
+            return psql.postgreSQLValue
+        }
         if let convertible = encodable as? PostgreSQLDataConvertible {
-            return try convertible.convertToPostgreSQLData()
+            return try .data(convertible.convertToPostgreSQLData())
         }
         
         do {
@@ -43,7 +46,7 @@ public struct PostgreSQLDataEncoder {
                     default: data += Data.of(Int32(0).bigEndian)
                     }
                 }
-                return PostgreSQLData(type.arrayType ?? .null, binary: data)
+                return .data(PostgreSQLData(type.arrayType ?? .null, binary: data))
             }
         } catch is _KeyedError {
             struct AnyEncodable: Encodable {
@@ -56,7 +59,7 @@ public struct PostgreSQLDataEncoder {
                     try encodable.encode(to: encoder)
                 }
             }
-            return try PostgreSQLData(.jsonb, binary: [0x01] + JSONEncoder().encode(AnyEncodable(encodable)))
+            return try .data(PostgreSQLData(.jsonb, binary: [0x01] + JSONEncoder().encode(AnyEncodable(encodable))))
         }
     }
 
@@ -66,7 +69,7 @@ public struct PostgreSQLDataEncoder {
     private final class _Encoder: Encoder {
         let codingPath: [CodingKey] = []
         let userInfo: [CodingUserInfoKey: Any] = [:]
-        var data: PostgreSQLData?
+        var data: PostgreSQLQuery.DML.Value?
         var array: [PostgreSQLData]
         
         init() {
@@ -103,11 +106,16 @@ public struct PostgreSQLDataEncoder {
         }
 
         mutating func encode<T>(_ value: T) throws where T : Encodable {
-            if let convertible = value as? PostgreSQLDataConvertible {
-                encoder.data = try convertible.convertToPostgreSQLData()
-            } else {
-                try value.encode(to: encoder)
+            if let psql = value as? PostgreSQLValueRepresentable {
+                encoder.data = psql.postgreSQLValue
+                return
             }
+            if let convertible = value as? PostgreSQLDataConvertible {
+                encoder.data = try .data(convertible.convertToPostgreSQLData())
+                return
+            }
+            
+            try value.encode(to: encoder)
         }
     }
     

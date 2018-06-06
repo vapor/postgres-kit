@@ -100,6 +100,13 @@ extension PostgreSQLMessage.ErrorResponse {
     }
 }
 
+extension PostgreSQLMessage.ErrorResponse: CustomStringConvertible {
+    /// See `CustomStringConvertible`.
+    var description: String {
+        return (fields[.severity] ?? "ERROR") + ": " + (fields[.message] ?? "unknown")
+    }
+}
+
 // MARK: Error
 
 extension PostgreSQLError {

@@ -1,17 +1,16 @@
 /// Encodes `Encodable` objects to PostgreSQL row data.
-public struct PostgreSQLRowEncoder {
+public struct PostgreSQLQueryEncoder {
     /// Creates a new `PostgreSQLRowEncoder`.
     public init() { }
     
-    /// Encodes an `Encodable` object to `[PostgreSQLColumn: PostgreSQLData]`.
+    /// Encodes an `Encodable` object to `[String: PostgreSQLQuery.DML.Value]`.
     ///
     /// - parameters:
     ///     - encodable: Item to encode.
-    ///     - tableOID: Optional table OID to use when encoding.
-    public func encode<E>(_ encodable: E, tableOID: UInt32 = 0) throws -> [PostgreSQLColumn: PostgreSQLData]
+    public func encode<E>(_ encodable: E) throws -> [String: PostgreSQLQuery.DML.Value]
         where E: Encodable
     {
-        let encoder = _Encoder(tableOID: tableOID)
+        let encoder = _Encoder()
         try encodable.encode(to: encoder)
         return encoder.row
     }
@@ -21,12 +20,10 @@ public struct PostgreSQLRowEncoder {
     private final class _Encoder: Encoder {
         let codingPath: [CodingKey] = []
         var userInfo: [CodingUserInfoKey: Any] = [:]
-        var row: [PostgreSQLColumn: PostgreSQLData]
-        let tableOID: UInt32
+        var row: [String: PostgreSQLQuery.DML.Value]
         
-        init(tableOID: UInt32) {
+        init() {
             self.row = [:]
-            self.tableOID = tableOID
         }
         
         func container<Key>(keyedBy type: Key.Type) -> KeyedEncodingContainer<Key> where Key : CodingKey {
@@ -50,11 +47,11 @@ public struct PostgreSQLRowEncoder {
         }
         
         mutating func encodeNil(forKey key: Key) throws {
-            encoder.row[.init(tableOID: encoder.tableOID, name: key.stringValue)] = .null
+            encoder.row[key.stringValue] = .null
         }
         
-        mutating func encode<T>(_ value: T, forKey key: Key) throws where T : Encodable {
-            encoder.row[.init(tableOID: encoder.tableOID, name: key.stringValue)] = try PostgreSQLDataEncoder().encode(value)
+        mutating func encode<T>(_ encodable: T, forKey key: Key) throws where T : Encodable {
+            encoder.row[key.stringValue] = try PostgreSQLValueEncoder().encode(encodable)
         }
         
         mutating func nestedContainer<NestedKey>(keyedBy keyType: NestedKey.Type, forKey key: Key) -> KeyedEncodingContainer<NestedKey> where NestedKey : CodingKey {

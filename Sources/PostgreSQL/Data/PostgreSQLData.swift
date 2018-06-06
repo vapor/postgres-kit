@@ -1,5 +1,5 @@
 /// Supported `PostgreSQLData` data types.
-public struct PostgreSQLData: Equatable, Encodable {
+public struct PostgreSQLData: Equatable {
     /// `NULL` data.
     public static let null: PostgreSQLData = PostgreSQLData(type: .null, storage: .null)
     
@@ -65,22 +65,6 @@ public struct PostgreSQLData: Equatable, Encodable {
     public init(_ type: PostgreSQLDataType, text: String) {
         self.type = type
         self.storage = .text(text)
-    }
-    
-    /// See `Decodable`.
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.singleValueContainer()
-        try self.init(.void, binary: container.decode(Data.self))
-    }
-    
-    /// See `Encodable`.
-    public func encode(to encoder: Encoder) throws {
-        var container = encoder.singleValueContainer()
-        switch storage {
-        case .binary(let binary): try container.encode(binary)
-        case .text(let text): try container.encode(text)
-        case .null: try container.encodeNil()
-        }
     }
 }
 

@@ -20,15 +20,15 @@ extension PostgreSQLConnection {
     ///     - handler: Handles incoming String messages. Returning `true` here will end the subscription
     ///                sending an `UNLISTEN` command.
     /// - returns: A future that signals completion of the `UNLISTEN` command.
-    public func listen(_ channelName: String, handler: @escaping (String) throws -> (Bool)) -> Future<Void> {
+    public func listen(_ channel: String, handler: @escaping (String) throws -> (Bool)) -> Future<Void> {
         let promise = eventLoop.newPromise(Void.self)
-        return queue.enqueue([.query(.init(query: "LISTEN \"\(channelName)\";"))]) { message in
+        return queue.enqueue([.query(.init(query: "LISTEN \"\(channel)\";"))]) { message in
             switch message {
             case .close: return false
             case .readyForQuery: return false
             case .notification(let notif):
                 if try handler(notif.message) {
-                    self.simpleQuery("UNLISTEN \"\(channelName)\"").transform(to: ()).cascade(promise: promise)
+                    self.simpleQuery(.unlisten(channel: channel)).transform(to: ()).cascade(promise: promise)
                     return true
                 } else {
                     return false
@@ -50,8 +50,8 @@ extension PostgreSQLConnection {
     ///     - channelName: String identifier for the channel to send to.
     ///     - message: String message to send to subscribers.
     /// - returns: A future that signals completion of the send.
-    public func notify(_ channelName: String, message: String) -> Future<Void> {
-        return simpleQuery("NOTIFY \"\(channelName)\", '\(message)'").transform(to: ())
+    public func notify(_ channel: String, message: String) -> Future<Void> {
+        return simpleQuery(.notify(channel: channel, message: message)).transform(to: ())
     }
 }
 

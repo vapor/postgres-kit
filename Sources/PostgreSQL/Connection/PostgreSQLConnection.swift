@@ -79,7 +79,7 @@ public final class PostgreSQLConnection: DatabaseConnection, BasicWorker {
                 if let e = error { throw e }
                 return true
             case .error(let e): error = PostgreSQLError.errorResponse(e)
-            case .notice(let n): debugOnly { WARNING("\(n)") }
+            case .notice(let n): debugOnly { WARNING(n.description) }
             default: try onResponse(message)
             }
             return false // request until ready for query

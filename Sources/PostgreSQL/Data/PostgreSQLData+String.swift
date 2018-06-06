@@ -36,6 +36,11 @@ extension String: PostgreSQLDataConvertible {
                 for offset in 0..<metadata.ndigits.bigEndian {
                     /// extract current char and advance memory
                     let char = value.as(Int16.self, default: 0).bigEndian
+                    if value.count <= 2 {
+                        value = .init()
+                    } else {
+                        value = value.advanced(by: 2)
+                    }
                     
                     /// conver the current char to its string form
                     let string: String
