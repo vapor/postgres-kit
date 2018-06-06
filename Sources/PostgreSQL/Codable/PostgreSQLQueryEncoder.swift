@@ -7,7 +7,7 @@ public struct PostgreSQLQueryEncoder {
     ///
     /// - parameters:
     ///     - encodable: Item to encode.
-    public func encode<E>(_ encodable: E) throws -> [String: PostgreSQLQuery.DML.Value]
+    public func encode<E>(_ encodable: E) throws -> [String: PostgreSQLQuery.Value]
         where E: Encodable
     {
         let encoder = _Encoder()
@@ -20,7 +20,7 @@ public struct PostgreSQLQueryEncoder {
     private final class _Encoder: Encoder {
         let codingPath: [CodingKey] = []
         var userInfo: [CodingUserInfoKey: Any] = [:]
-        var row: [String: PostgreSQLQuery.DML.Value]
+        var row: [String: PostgreSQLQuery.Value]
         
         init() {
             self.row = [:]

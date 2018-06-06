@@ -1,3 +1,8 @@
+public protocol PostgreSQLValueRepresentable {
+    var postgreSQLValue: PostgreSQLQuery.Value { get }
+}
+
+
 /// Converts `Encodable` objects to `PostgreSQLData`.
 ///
 ///     let data = try PostgreSQLDataEncoder().encode("hello")
@@ -15,7 +20,7 @@ public struct PostgreSQLValueEncoder {
     /// - parameters:
     ///     - encodable: `Encodable` object to encode.
     /// - returns: Encoded `PostgreSQLData`.
-    public func encode(_ encodable: Encodable) throws -> PostgreSQLQuery.DML.Value {
+    public func encode(_ encodable: Encodable) throws -> PostgreSQLQuery.Value {
         if let psql = encodable as? PostgreSQLValueRepresentable {
             return psql.postgreSQLValue
         }
@@ -69,7 +74,7 @@ public struct PostgreSQLValueEncoder {
     private final class _Encoder: Encoder {
         let codingPath: [CodingKey] = []
         let userInfo: [CodingUserInfoKey: Any] = [:]
-        var data: PostgreSQLQuery.DML.Value?
+        var data: PostgreSQLQuery.Value?
         var array: [PostgreSQLData]
         
         init() {
