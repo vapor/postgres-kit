@@ -25,7 +25,7 @@ extension PostgreSQLQuery {
         public var name: String
         public var columns: [ColumnDefinition]
         public var constraints: [TableConstraint]
-        #warning("FIXME: like")
+        // FIXME: ("FIXME: like")
         
         public init(storage: Storage = .permanent, ifNotExists: Bool = false, name: String, columns: [ColumnDefinition] = [], constraints: [TableConstraint]) {
             self.storage = storage

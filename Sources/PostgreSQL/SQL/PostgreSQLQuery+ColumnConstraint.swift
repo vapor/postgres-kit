@@ -29,7 +29,7 @@ extension PostgreSQLQuery {
                 case always
                 case byDefault
             }
-            #warning("sequence options")
+            // FIXME: ("sequence options")
             case generated(Generated)
             case unique
             case primaryKey

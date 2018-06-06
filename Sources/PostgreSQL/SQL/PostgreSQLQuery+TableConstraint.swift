@@ -4,7 +4,7 @@ extension PostgreSQLQuery {
             case check(Key, noInherit: Bool)
             case unique(Unique)
             case primaryKey(PrimaryKey)
-            #warning("exclude")
+            // FIXME: ("exclude")
             case foreignKey(ForeignKey)
         }
         

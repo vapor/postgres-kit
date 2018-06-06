@@ -24,7 +24,7 @@ extension PostgreSQLQuery {
         /// The name (optionally schema-qualified) of the table to delete rows from.
         public var table: TableName
         
-        #warning("Add USING to delete query.")
+        // FIXME: ("Add USING to delete query.")
         
         /// DELETE deletes rows that satisfy the WHERE clause from the specified table.
         /// If the WHERE clause is absent, the effect is to delete all rows in the table.
