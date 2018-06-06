@@ -1,7 +1,15 @@
 extension PostgreSQLQuery {
     public enum Key {
+        public static func function(_ name: String, _ parameters: [Expression] = [], as alias: String? = nil) -> Key {
+            return .expression(.function(.init(name: name, parameters: parameters)), alias: alias)
+        }
+        
         public static func expression(_ expression: Expression) -> Key {
             return .expression(expression, alias: nil)
+        }
+        
+        public static var version: Key {
+            return .expression(.function(.init(name: "version", parameters: [])))
         }
         
         /// *

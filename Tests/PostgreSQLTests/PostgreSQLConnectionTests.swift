@@ -8,7 +8,7 @@ class PostgreSQLConnectionTests: XCTestCase {
     
     func testVersion() throws {
         let client = try PostgreSQLConnection.makeTest(transport: .cleartext)
-        let results = try client.simpleQuery(.select(.version), decoding: VersionMetadata.self).wait()
+        let results = try client.select(VersionMetadata.self).keys(.version).all().wait()
         XCTAssertTrue(results[0].version.contains("10."))
     }
 
@@ -84,22 +84,22 @@ class PostgreSQLConnectionTests: XCTestCase {
         let client = try PostgreSQLConnection.makeTest(transport: .cleartext)
         do {
             // simple query
-            let results = try client.simpleQuery(.select([.all], from: "pg_type"), decoding: PGType.self).wait()
+            let results = try client.simpleQuery(.select(.all, from: ["pg_type"]), decoding: PGType.self).wait()
             XCTAssert(results.count >= 350, "Results count not large enough: \(results.count)")
         }
         do {
             // query: default
-            let results = try client.query(.select([.all], from: "pg_type"), decoding: PGType.self).wait()
+            let results = try client.select(PGType.self).from("pg_type").all().wait()
             XCTAssert(results.count >= 350, "Results count not large enough: \(results.count)")
         }
         do {
             // query: binary
-            let results = try client.query(.select([.all], from: "pg_type"), resultFormat: .binary, decoding: PGType.self).wait()
+            let results = try client.query(.select(.all, from: ["pg_type"]), resultFormat: .binary, decoding: PGType.self).wait()
             XCTAssert(results.count >= 350, "Results count not large enough: \(results.count)")
         }
         do {
             // query: text
-            let results = try client.query(.select([.all], from: "pg_type"), resultFormat: .text, decoding: PGType.self).wait()
+            let results = try client.query(.select(.all, from: ["pg_type"]), resultFormat: .text, decoding: PGType.self).wait()
             XCTAssert(results.count >= 350, "Results count not large enough: \(results.count)")
         }
     }
@@ -122,7 +122,7 @@ class PostgreSQLConnectionTests: XCTestCase {
         let hello = Hello(message: "Hello, world!")
         _ = try client.query(.insert(into: "foo", values: ["id": .bind(1), "dict": .bind(hello)])).wait()
 
-        let fetch = try client.query(.select([.all], from: "foo"), decoding: Foo.self).wait()
+        let fetch = try client.select(Foo.self).from("foo").all().wait()
         switch fetch.count {
         case 1:
             XCTAssertEqual(fetch[0].id, 1)
@@ -335,7 +335,7 @@ class PostgreSQLConnectionTests: XCTestCase {
         _ = try conn.query(.insert(into: "types", values:
             PostgreSQLQueryEncoder().encode(typesA)
         )).wait()
-        let rows = try conn.query(.select([.all], from: "types")).wait()
+        let rows = try conn.query(.select(.all, from: ["types"])).wait()
         switch rows.count {
         case 1:
             let typesB = try PostgreSQLRowDecoder().decode(Types.self, from: rows[0])
@@ -370,12 +370,14 @@ class PostgreSQLConnectionTests: XCTestCase {
         let save = try conn.query(.insert(into: "users", values: ["name": .bind("vapor")])).wait()
         XCTAssertEqual(save.count, 0)
 
-        let search = try conn.query(.select([.all], from: "users"
-            // , predicates: [.predicate("name", .equal, .bind("vapor"))]
+        let search = try conn.query(.select(
+            .all,
+            from: ["users"],
+            predicate: .predicate("name", .equal, .bind("vapor"))
         )).wait()
         XCTAssertEqual(search.count, 1)
         
-        try conn.query(.select(["id", "name"], from: "users")) { row in
+        try conn.query(.select("id", "name", from: ["users"])) { row in
             print(row)
         }.wait()
     }
@@ -399,12 +401,14 @@ class PostgreSQLConnectionTests: XCTestCase {
         ], returning: "id")).wait()
         XCTAssertEqual(save.count, 1)
         
-        let search = try conn.query(.select([.all], from: "users"
-            //, where: [.predicate("name", .equal, .bind("vapor"))]
+        let search = try conn.query(.select(
+            .all,
+            from: ["users"],
+            predicate: .predicate("name", .equal, .bind("vapor"))
         )).wait()
         XCTAssertEqual(search.count, 1)
         
-        try conn.query(.select(["id", "name", "pet"], from: "users")) { row in
+        try conn.query(.select("id", "name", "pet", from: ["users"])) { row in
             print(row)
         }.wait()
     }
@@ -424,7 +428,7 @@ class PostgreSQLConnectionTests: XCTestCase {
             PostgreSQLQueryEncoder().encode(time)
         )).wait()
         
-        let fetch = try conn.query(.select([.all], from: "timetest"), decoding: Time.self).wait()
+        let fetch: [Time] = try conn.select(Time.self).from("timetest").all().wait()
         switch fetch.count {
         case 1:
             XCTAssertEqual(fetch[0], time)
@@ -451,7 +455,7 @@ class PostgreSQLConnectionTests: XCTestCase {
         struct Sum: Decodable {
             var sum: Double
         }
-        let rows = try conn.query(.select(.function("SUM", 3.14, as: "sum")), decoding: Sum.self).wait()
+        let rows: [Sum] = try conn.select(Sum.self).keys(.function("SUM", [3.14], as: "sum")).all().wait()
         switch rows.count {
         case 1: XCTAssertEqual(rows[0].sum, 3.14)
         default: XCTFail("invalid row count")
