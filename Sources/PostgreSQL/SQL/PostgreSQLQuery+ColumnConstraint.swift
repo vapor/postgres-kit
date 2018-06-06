@@ -23,7 +23,7 @@ extension PostgreSQLQuery {
         public enum Constraint {
             case notNull
             case null
-            case check(Expression, noInherit: Bool)
+            case check(Key, noInherit: Bool)
             case `default`(Expression)
             public enum Generated {
                 case always
@@ -33,12 +33,26 @@ extension PostgreSQLQuery {
             case generated(Generated)
             case unique
             case primaryKey
-            case references(reftable: String, refcolumn: String, onDelete: ForeignKeyAction?, onUpdate: ForeignKeyAction?)
+            case references(Reference)
+        }
+        
+        public struct Reference {
+            public var foreignTable: String
+            public var foreignColumn: String
+            public var onDelete: ForeignKeyAction?
+            public var onUpdate: ForeignKeyAction?
+            
+            public init(foreignTable: String, foreignColumn: String, onDelete: ForeignKeyAction? = nil, onUpdate: ForeignKeyAction? = nil) {
+                self.foreignTable = foreignTable
+                self.foreignColumn = foreignColumn
+                self.onDelete = onDelete
+                self.onUpdate = onUpdate
+            }
         }
         
         public var name: String?
         public var constraint: Constraint
-        public init(_ constraint: Constraint, as name: String? = nil) {
+        public init(_ constraint: Constraint, name: String? = nil) {
             self.constraint = constraint
             self.name = name
         }
@@ -48,7 +62,7 @@ extension PostgreSQLQuery {
 extension PostgreSQLSerializer {
     internal func serialize(_ constraint: PostgreSQLQuery.ColumnConstraint) -> String {
         if let name = constraint.name {
-            return "CONSTRAINT " + name + " " + serialize(constraint.constraint)
+            return "CONSTRAINT " + escapeString(name) + " " + serialize(constraint.constraint)
         } else {
             return serialize(constraint.constraint)
         }
@@ -72,22 +86,22 @@ extension PostgreSQLSerializer {
             }
         case .unique: return "UNIQUE"
         case .primaryKey: return "PRIMARY KEY"
-        case .references(let reftable, let refcolumn, let onDelete, let onUpdate):
-            // REFERENCES reftable [ ( refcolumn ) ] [ MATCH FULL | MATCH PARTIAL | MATCH SIMPLE ]
-            //   [ ON DELETE action ] [ ON UPDATE action ] }
-            var sql: [String] = []
-            sql.append("REFERENCES")
-            sql.append(reftable)
-            sql.append("(" + refcolumn + ")")
-            if let onDelete = onDelete {
-                sql.append("ON DELETE")
-                sql.append(serialize(onDelete))
-            }
-            if let onUpdate = onUpdate {
-                sql.append("ON UPDATE")
-                sql.append(serialize(onUpdate))
-            }
-            return sql.joined(separator: " ")
+        case .references(let reference): return serialize(reference)
         }
+    }
+    internal func serialize(_ reference: PostgreSQLQuery.ColumnConstraint.Reference) -> String {
+        var sql: [String] = []
+        sql.append("REFERENCES")
+        sql.append(escapeString(reference.foreignTable))
+        sql.append(group([escapeString(reference.foreignColumn)]))
+        if let onDelete = reference.onDelete {
+            sql.append("ON DELETE")
+            sql.append(serialize(onDelete))
+        }
+        if let onUpdate = reference.onUpdate {
+            sql.append("ON UPDATE")
+            sql.append(serialize(onUpdate))
+        }
+        return sql.joined(separator: " ")
     }
 }

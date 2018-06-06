@@ -1,28 +1,37 @@
 extension PostgreSQLQuery {
-    public enum Expression {
-        public static func function(_ name: String, _ parameters: Expression..., as alias: String? = nil) -> Expression {
-            return .function(name, parameters, as: alias)
-        }
-        
-        public static func function(_ name: String, _ parameters: [Expression], as alias: String? = nil) -> Expression {
-            return .function(.init(name: name, parameters: parameters), alias: alias)
-        }
-        
-        public static func column(_ column: Column, as alias: String? = nil) -> Expression {
-            return .column(column, alias: alias)
-        }
-        
-        public struct Function {
-            var name: String
-            var parameters: [Expression]
+    public enum Key {
+        public static func expression(_ expression: Expression) -> Key {
+            return .expression(expression, alias: nil)
         }
         
         /// *
         case all
-        case column(Column, alias: String?)
-        case function(Function, alias: String?)
+        case expression(Expression, alias: String?)
+    }
+    
+    
+    public struct Function {
+        var name: String
+        var parameters: [Expression]?
+        
+        public init(name: String, parameters: [Expression]? = nil) {
+            self.name = name
+            self.parameters = parameters
+        }
+    }
+    
+    public enum Expression {
+        case all
+        case column(Column)
+        case function(Function)
         case stringLiteral(String)
         case literal(String)
+    }
+}
+
+extension PostgreSQLQuery.Function: ExpressibleByStringLiteral {
+    public init(stringLiteral value: String) {
+        self.init(name: value)
     }
 }
 
@@ -40,32 +49,56 @@ extension PostgreSQLQuery.Expression: ExpressibleByFloatLiteral {
 
 extension PostgreSQLQuery.Expression: ExpressibleByStringLiteral {
     public init(stringLiteral value: String) {
-        self = .column(.init(stringLiteral: value), alias: nil)
+        self = .stringLiteral(value.description)
+    }
+}
+
+extension PostgreSQLQuery.Key: ExpressibleByIntegerLiteral {
+    public init(integerLiteral value: Int) {
+        self = .expression(.init(integerLiteral: value), alias: nil)
+    }
+}
+
+extension PostgreSQLQuery.Key: ExpressibleByFloatLiteral {
+    public init(floatLiteral value: Double) {
+        self = .expression(.init(floatLiteral: value), alias: nil)
+    }
+}
+
+extension PostgreSQLQuery.Key: ExpressibleByStringLiteral {
+    public init(stringLiteral value: String) {
+        self = .expression(.column(.init(stringLiteral: value)), alias: nil)
     }
 }
 
 extension PostgreSQLSerializer {
-    internal func serialize(_ expression: PostgreSQLQuery.Expression) -> String {
-        switch expression {
-        case .stringLiteral(let string): return stringLiteral(string)
-        case .literal(let literal): return literal
-        case .column(let column, let alias):
+    internal func serialize(_ key: PostgreSQLQuery.Key) -> String {
+        switch key {
+        case .expression(let expression, let alias):
             if let alias = alias {
-                return serialize(column) + " AS " + escapeString(alias)
+                return serialize(expression) + " AS " + escapeString(alias)
             } else {
-                return serialize(column)
-            }
-        case .function(let function, let alias):
-            if let alias = alias {
-                return serialize(function) + " AS " + escapeString(alias)
-            } else {
-                return serialize(function)
+                return serialize(expression)
             }
         case .all: return "*"
         }
     }
     
-    internal func serialize(_ function: PostgreSQLQuery.Expression.Function) -> String {
-        return function.name + group(function.parameters.map(serialize))
+    internal func serialize(_ expression: PostgreSQLQuery.Expression) -> String {
+        switch expression {
+        case .all: return "*"
+        case .stringLiteral(let string): return stringLiteral(string)
+        case .literal(let literal): return literal
+        case .column(let column): return serialize(column)
+        case .function(let function): return serialize(function)
+        }
+    }
+    
+    internal func serialize(_ function: PostgreSQLQuery.Function) -> String {
+        if let parameters = function.parameters {
+            return function.name + group(parameters.map(serialize))
+        } else {
+            return function.name
+        }
     }
 }

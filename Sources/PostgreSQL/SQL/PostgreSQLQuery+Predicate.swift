@@ -2,7 +2,7 @@ extension PostgreSQLQuery {
     /// Represents one or more nestable SQL predicates joined by `AND` or `OR`.
     public indirect enum Predicate {
         /// All suported SQL `DataPredicate` comparisons.
-        public enum ComparisonOperator {
+        public enum Comparison {
             /// =
             case equal
             /// !=, <>
@@ -28,25 +28,25 @@ extension PostgreSQLQuery {
         }
         
         /// Supported data predicate relations.
-        public enum InfixOperator {
+        public enum Relation {
             /// AND
             case and
             /// OR
             case or
         }
         
-        public enum PrefixOperator {
+        public enum Prefix {
             /// NOT
             case not
         }
         
         /// A collection of `DataPredicate` items joined by AND or OR.
-        case infix(InfixOperator, Predicate, Predicate)
+        case group(Relation, [Predicate])
         
-        case prefix(PrefixOperator, Predicate)
+        case prefix(Prefix, Predicate)
         
         /// A single `DataPredicate`.
-        case predicate(Column, ComparisonOperator, Value)
+        case predicate(Column, Comparison, Value)
     }
 }
 
@@ -59,14 +59,6 @@ public func !=(_ lhs: PostgreSQLQuery.Column, _ rhs: PostgreSQLQuery.Value) -> P
     return .predicate(lhs, .notEqual, rhs)
 }
 
-public func &&(_ lhs: PostgreSQLQuery.Predicate, _ rhs: PostgreSQLQuery.Predicate) -> PostgreSQLQuery.Predicate {
-    return .infix(.and, lhs, rhs)
-}
-
-public func ||(_ lhs: PostgreSQLQuery.Predicate, _ rhs: PostgreSQLQuery.Predicate) -> PostgreSQLQuery.Predicate {
-    return .infix(.or, lhs, rhs)
-}
-
 public prefix func !(_ lhs: PostgreSQLQuery.Predicate) -> PostgreSQLQuery.Predicate {
     return .prefix(.not, lhs)
 }
@@ -74,29 +66,45 @@ public prefix func !(_ lhs: PostgreSQLQuery.Predicate) -> PostgreSQLQuery.Predic
 extension PostgreSQLSerializer {
     internal mutating func serialize(_ predicate: PostgreSQLQuery.Predicate, _ binds: inout [PostgreSQLData]) -> String {
         switch predicate {
-        case .infix(let infix, let left, let right):
-            return serialize(left, &binds) + " " + serialize(infix) + " " + serialize(right, &binds)
+        case .group(let infix, let filters):
+            return filters.map { "(" + serialize($0, &binds) + ")" }.joined(separator: " " + serialize(infix) + " ")
         case .prefix(let prefix, let right):
             return serialize(prefix) + " " + serialize(right, &binds)
         case .predicate(let col, let comparison, let value):
-            return serialize(col) + " " + serialize(comparison) + " " + serialize(value, &binds)
+            return serialize(col) + " " + serialize(comparison, value, &binds)
         }
     }
     
-    internal func serialize(_ op: PostgreSQLQuery.Predicate.InfixOperator) -> String {
+    internal func serialize(_ op: PostgreSQLQuery.Predicate.Relation) -> String {
         switch op {
         case .and: return "AND"
         case .or: return "OR"
         }
     }
     
-    internal func serialize(_ op: PostgreSQLQuery.Predicate.PrefixOperator) -> String {
+    internal func serialize(_ op: PostgreSQLQuery.Predicate.Prefix) -> String {
         switch op {
         case .not: return "!"
         }
     }
     
-    internal func serialize(_ op: PostgreSQLQuery.Predicate.ComparisonOperator) -> String {
+    internal mutating func serialize(_ op: PostgreSQLQuery.Predicate.Comparison, _ value: PostgreSQLQuery.Value, _ binds: inout [PostgreSQLData]) -> String {
+        switch (op, value) {
+        case (.equal, .null): return "IS NULL"
+        case (.notEqual, .null): return "IS NOT NULL"
+        case (.in, .values(let values))
+            where values.count == 0: return "0"
+        case (.in, .values(let values))
+            where values.count == 1: return serialize(.equal, values[0], &binds)
+        case (.notIn, .values(let values))
+            where values.count == 0: return "1"
+        case (.notIn, .values(let values))
+            where values.count == 1: return serialize(.notEqual, values[0], &binds)
+        default: return serialize(op) + " " + serialize(value, &binds)
+        }
+    }
+    
+    internal func serialize(_ op: PostgreSQLQuery.Predicate.Comparison) -> String {
         switch op {
         case .between: return "BETWEEN"
         case .equal: return "="

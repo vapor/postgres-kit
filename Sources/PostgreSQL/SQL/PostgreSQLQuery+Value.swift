@@ -12,6 +12,7 @@ extension PostgreSQLQuery {
         case data(PostgreSQLData)
         case `default`
         case expression(Expression)
+        case subSelect(Select)
         case null
     }
 }
@@ -19,12 +20,17 @@ extension PostgreSQLQuery {
 extension PostgreSQLSerializer {
     internal mutating func serialize(_ value: PostgreSQLQuery.Value, _ binds: inout [PostgreSQLData]) -> String {
         switch value {
-        case .values(let values): return group(values.map { self.serialize($0, &binds) })
+        case .values(let values):
+            switch values.count {
+            case 1: return serialize(values[0], &binds)
+            default: return group(values.map { self.serialize($0, &binds) })
+            }
         case .data(let data):
             binds.append(data)
             return nextPlaceholder()
         case .`default`: return "DEFAULT"
         case .expression(let expression): return serialize(expression)
+        case .subSelect(let select): return "(" + serialize(select, &binds) + ")"
         case .null: return "NULL"
         }
     }

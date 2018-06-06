@@ -1,12 +1,12 @@
 extension PostgreSQLQuery {
     public static func select(
         candidates: Select.Candidates = .all,
-        _ keys: Expression...,
+        _ keys: Key...,
         from tables: [TableName] = [],
         joins: [Join] = [],
         predicate: Predicate? = nil,
         orderBy: [OrderBy] = [],
-        groupBy: [Expression] = [],
+        groupBy: [Key] = [],
         limit: Int? = nil,
         offset: Int? = nil
     ) -> PostgreSQLQuery {
@@ -32,7 +32,7 @@ extension PostgreSQLQuery {
         }
         
         public var candidates: Candidates
-        public var keys: [Expression]
+        public var keys: [Key]
         public var tables: [TableName]
         public var joins: [Join]
         public var predicate: Predicate?
@@ -41,19 +41,19 @@ extension PostgreSQLQuery {
         /// List of columns to order by.
         public var orderBy: [OrderBy]
         
-        public var groupBy: [Expression]
+        public var groupBy: [Key]
         
         public var limit: Int?
         public var offset: Int?
         
         public init(
             candidates: Candidates = .all,
-            keys: [Expression] = [],
+            keys: [Key] = [],
             tables: [TableName],
             joins: [Join] = [],
             predicate: Predicate? = nil,
             orderBy: [OrderBy] = [],
-            groupBy: [Expression] = [],
+            groupBy: [Key] = [],
             limit: Int? = nil,
             offset: Int? = nil
         ) {
@@ -61,11 +61,11 @@ extension PostgreSQLQuery {
             self.keys = keys
             self.tables = tables
             self.joins = joins
+            self.predicate = predicate
             self.orderBy = orderBy
             self.groupBy = groupBy
             self.limit = limit
             self.offset = offset
-            self.predicate = nil
         }
     }
 }
@@ -87,6 +87,9 @@ extension PostgreSQLSerializer {
         if !select.tables.isEmpty {
             sql.append("FROM")
             sql.append(select.tables.map(serialize).joined(separator: ", "))
+        }
+        if !select.joins.isEmpty {
+            sql += select.joins.map { serialize($0, &binds) }
         }
         if let predicate = select.predicate {
             sql.append("WHERE")

@@ -71,6 +71,7 @@ public struct PostgreSQLData: Equatable {
 extension PostgreSQLData: CustomStringConvertible {
     /// See `CustomStringConvertible`.
     public var description: String {
+        let readable: String
         switch storage {
         case .binary(let data):
             var override: String?
@@ -83,13 +84,17 @@ extension PostgreSQLData: CustomStringConvertible {
                 if let utf8 = String(data: data.dropFirst(), encoding: .utf8) {
                     override = utf8
                 }
+            case .int8: override = data.as(Int64.self, default: 0).bigEndian.description
+            case .int4: override = data.as(Int32.self, default: 0).bigEndian.description
+            case .int2: override = data.as(Int16.self, default: 0).bigEndian.description
+            case .uuid: override = UUID.init(uuid: data.as(uuid_t.self, default: (0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0))).description
             default: break
             }
             
-            let readable = override ?? "0x" + data.hexEncodedString()
-            return readable + ":" + type.description
-        case .text(let string): return "\"" + string + "\":" + type.description
+            readable = override ?? "0x" + data.hexEncodedString()
+        case .text(let string): readable = "\"" + string + "\""
         case .null:  return "null"
         }
+        return readable + " (" + type.description + ")"
     }
 }

@@ -2,7 +2,7 @@ extension PostgreSQLQuery {
     public static func insert(
         into table: TableName,
         values: [String: Value],
-        returning keys: Expression...
+        returning keys: Key...
     ) -> PostgreSQLQuery {
         let insert = Insert(table: table, values: values, returning: keys)
         return .insert(insert)
@@ -11,9 +11,9 @@ extension PostgreSQLQuery {
     public struct Insert {
         public var table: TableName
         public var values: [String: Value]
-        public var returning: [Expression]
+        public var returning: [Key]
         
-        public init(table: TableName, values: [String: Value], returning: [Expression] = []) {
+        public init(table: TableName, values: [String: Value], returning: [Key] = []) {
             self.table = table
             self.values = values
             self.returning = returning
