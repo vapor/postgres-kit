@@ -99,7 +99,7 @@ extension PostgreSQLSerializer {
             where values.count == 0: return "true"
         case (.notIn, .values(let values))
             where values.count == 1: return serialize(col, .notEqual, values[0], &binds)
-        default: return serialize(op) + " " + serialize(value, &binds)
+        default: return serialize(col) + " " + serialize(op) + " " + serialize(value, &binds)
         }
     }
     
