@@ -70,8 +70,7 @@ extension PostgreSQLSerializer {
             return filters.map { "(" + serialize($0, &binds) + ")" }.joined(separator: " " + serialize(infix) + " ")
         case .prefix(let prefix, let right):
             return serialize(prefix) + " " + serialize(right, &binds)
-        case .predicate(let col, let comparison, let value):
-            return serialize(col) + " " + serialize(comparison, value, &binds)
+        case .predicate(let col, let comparison, let value): return serialize(col, comparison, value, &binds)
         }
     }
     
@@ -88,18 +87,18 @@ extension PostgreSQLSerializer {
         }
     }
     
-    internal mutating func serialize(_ op: PostgreSQLQuery.Predicate.Comparison, _ value: PostgreSQLQuery.Value, _ binds: inout [PostgreSQLData]) -> String {
+    internal mutating func serialize(_ col: PostgreSQLQuery.Column, _ op: PostgreSQLQuery.Predicate.Comparison, _ value: PostgreSQLQuery.Value, _ binds: inout [PostgreSQLData]) -> String {
         switch (op, value) {
-        case (.equal, .null): return "IS NULL"
-        case (.notEqual, .null): return "IS NOT NULL"
+        case (.equal, .null): return serialize(col) + " IS NULL"
+        case (.notEqual, .null): return serialize(col) + " IS NOT NULL"
         case (.in, .values(let values))
-            where values.count == 0: return "0"
+            where values.count == 0: return "false"
         case (.in, .values(let values))
-            where values.count == 1: return serialize(.equal, values[0], &binds)
+            where values.count == 1: return serialize(col, .equal, values[0], &binds)
         case (.notIn, .values(let values))
-            where values.count == 0: return "1"
+            where values.count == 0: return "true"
         case (.notIn, .values(let values))
-            where values.count == 1: return serialize(.notEqual, values[0], &binds)
+            where values.count == 1: return serialize(col, .notEqual, values[0], &binds)
         default: return serialize(op) + " " + serialize(value, &binds)
         }
     }
