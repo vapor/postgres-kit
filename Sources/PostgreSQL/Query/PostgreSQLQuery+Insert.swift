@@ -1,20 +1,13 @@
 extension PostgreSQLQuery {
-//    public static func insert(
-//        into table: TableName,
-//        values: [String: Value],
-//        returning keys: Key...
-//    ) -> PostgreSQLQuery {
-//        let insert = Insert(table: table, values: values, returning: keys)
-//        return .insert(insert)
-//    }
-
     public struct Insert {
         public var table: TableName
-        public var values: [String: Value]
+        public var columns: [String]
+        public var values: [[Value]]
         public var returning: [Key]
         
-        public init(table: TableName, values: [String: Value], returning: [Key] = []) {
+        public init(table: TableName, columns: [String] = [], values: [[Value]] = [], returning: [Key] = []) {
             self.table = table
+            self.columns = columns
             self.values = values
             self.returning = returning
         }
@@ -27,9 +20,11 @@ extension PostgreSQLSerializer {
         sql.append("INSERT INTO")
         sql.append(serialize(insert.table))
         if !insert.values.isEmpty {
-            sql.append(group(insert.values.keys.map(escapeString)))
+            sql.append(group(insert.columns.map(escapeString)))
             sql.append("VALUES")
-            sql.append(group(insert.values.values.map { serialize($0, &binds) }))
+            sql.append(
+                insert.values.map { group($0.map { serialize($0, &binds) }) }.joined(separator: ", ")
+            )
         } else {
             sql.append("DEFAULT VALUES")
         }

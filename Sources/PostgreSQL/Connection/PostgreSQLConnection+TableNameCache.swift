@@ -42,11 +42,12 @@ extension PostgreSQLConnection {
         if let existing = tableNameCache {
             return future(existing)
         } else {
-            struct PGClass: Codable {
+            struct PGClass: PostgreSQLTable {
+                static let postgreSQLTable = "pg_class"
                 var oid: UInt32
                 var relname: String
             }
-            return select(PGClass.self).keys("oid", "relname").from("pg_class").all().map { rows in 
+            return select().keys("oid", "relname").from(PGClass.self).run(decoding: PGClass.self).map { rows in
                 var cache: [UInt32: String] = [:]
                 for row in rows {
                     cache[row.oid] = row.relname

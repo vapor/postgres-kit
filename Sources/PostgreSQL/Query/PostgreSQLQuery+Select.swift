@@ -1,28 +1,4 @@
 extension PostgreSQLQuery {
-//    public static func select(
-//        candidates: Select.Candidates = .all,
-//        _ keys: Key...,
-//        from tables: [TableName] = [],
-//        joins: [Join] = [],
-//        predicate: Predicate? = nil,
-//        orderBy: [OrderBy] = [],
-//        groupBy: [Key] = [],
-//        limit: Int? = nil,
-//        offset: Int? = nil
-//    ) -> PostgreSQLQuery {
-//        return .select(.init(
-//            candidates: candidates,
-//            keys: keys,
-//            tables: tables,
-//            joins: joins,
-//            predicate: predicate,
-//            orderBy: orderBy,
-//            groupBy: groupBy,
-//            limit: limit,
-//            offset: offset
-//        ))
-//    }
-//    
     public struct Select {
         public enum Candidates {
             /// All row candiates are available for selection.
@@ -36,7 +12,6 @@ extension PostgreSQLQuery {
         public var tables: [TableName]
         public var joins: [Join]
         public var predicate: Predicate?
-        
         
         /// List of columns to order by.
         public var orderBy: [OrderBy]
@@ -94,6 +69,10 @@ extension PostgreSQLSerializer {
         if let predicate = select.predicate {
             sql.append("WHERE")
             sql.append(serialize(predicate, &binds))
+        }
+        if !select.orderBy.isEmpty {
+            sql.append("ORDER BY")
+            sql.append(select.orderBy.map { serialize($0, &binds) }.joined(separator: ", "))
         }
         return sql.joined(separator: " ")
     }

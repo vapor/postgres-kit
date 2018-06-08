@@ -2,13 +2,13 @@ import PostgreSQL
 import XCTest
 
 class PostgreSQLConnectionTests: XCTestCase {
-    struct VersionMetadata: Decodable {
+    struct VersionMetadata: Codable {
         var version: String
     }
     
     func testVersion() throws {
         let client = try PostgreSQLConnection.makeTest(transport: .cleartext)
-        let results = try client.select(VersionMetadata.self).keys(.version).all().wait()
+        let results = try client.select().keys(.version).run(decoding: VersionMetadata.self).wait()
         XCTAssertTrue(results[0].version.contains("10."))
     }
 
@@ -51,7 +51,8 @@ class PostgreSQLConnectionTests: XCTestCase {
         // 1247.typmodin: 0x00000000 (REGPROC)
         // 1247.typanalyze: 0x00000000 (REGPROC)
         // 1247.typdelim: 0x2c (CHAR)
-        struct PGType: Decodable {
+        struct PGType: PostgreSQLTable {
+            static let postgreSQLTable = "pg_type"
             var typname: String
             var typnamespace: UInt32
             var typowner: UInt32
@@ -84,11 +85,12 @@ class PostgreSQLConnectionTests: XCTestCase {
 //            var typacl: String?
         }
         let client = try PostgreSQLConnection.makeTest(transport: .cleartext)
-        let results = try client.select(PGType.self).from("pg_type").all().wait()
+        let results = try client.select().all().from(PGType.self).run(decoding: PGType.self).wait()
         XCTAssert(results.count >= 350, "Results count not large enough: \(results.count)")
     }
     
-    struct Foo: Codable {
+    struct Foo: PostgreSQLTable {
+        static let postgreSQLTable = "foo"
         var id: Int?
         var dict: Hello
     }
@@ -108,10 +110,10 @@ class PostgreSQLConnectionTests: XCTestCase {
 
         let hello = Hello(message: "Hello, world!")
         _ = try client.query(.insert(.init(
-            table: "foo", values: ["id": .bind(1), "dict": .bind(hello)]
+            table: "foo", columns: ["id", "dict"], values: [[.bind(1), .bind(hello)]]
         ))).wait()
 
-        let fetch = try client.select(Foo.self).from("foo").all().wait()
+        let fetch = try client.select().all().from(Foo.self).run(decoding: Foo.self).wait()
         switch fetch.count {
         case 1:
             XCTAssertEqual(fetch[0].id, 1)
@@ -134,7 +136,8 @@ class PostgreSQLConnectionTests: XCTestCase {
         
         _ = try conn.query(.insert(.init(
             table: "nulltest",
-            values: ["i": .bind(1), "d": .bind(Date?.none)]
+            columns: ["i", "d"],
+            values: [[.bind(1), .bind(Date?.none)]]
         ))).wait()
     }
 
@@ -337,7 +340,8 @@ class PostgreSQLConnectionTests: XCTestCase {
         ))).wait()
         defer { _ = try! conn.simpleQuery(.drop(table: "types")).wait() }
         
-        struct Types: Codable {
+        struct Types: PostgreSQLTable, Codable {
+            static let postgreSQLTable = "types"
             var bool: Bool
             var string: String
             var int: Int
@@ -357,10 +361,7 @@ class PostgreSQLConnectionTests: XCTestCase {
         }
         
         let typesA = Types(bool: true, string: "hello", int: 1, int8: 2, int16: 3, int32: 4, int64: 5, uint: 6, uint8: 7, uint16: 8, uint32: 9, uint64: 10, double: 13.37, float: 3.14, date: Date(), decimal: .init(-1.234))
-        _ = try conn.query(.insert(.init(
-            table: "types",
-            values: PostgreSQLQueryEncoder().encode(typesA)
-        ))).wait()
+        try conn.insert(into: Types.self).values(typesA).run().wait()
         let rows = try conn.query(.select(.init(
             tables: ["types"]
         ))).wait()
@@ -400,7 +401,8 @@ class PostgreSQLConnectionTests: XCTestCase {
         
         let save = try conn.query(.insert(.init(
             table: "users",
-            values: ["name": .bind("vapor")]
+            columns: ["name"],
+            values: [[.bind("vapor")]]
         ))).wait()
         XCTAssertEqual(save.count, 0)
 
@@ -436,10 +438,11 @@ class PostgreSQLConnectionTests: XCTestCase {
         
         let save = try conn.query(.insert(.init(
             table: "users",
-            values: [
-                "name": .bind("vapor"),
-                "pet": .bind(Pet(name: "Zizek"))
-            ],
+            columns: ["name", "pet"],
+            values: [[
+                .bind("vapor"),
+                .bind(Pet(name: "Zizek"))
+            ]],
             returning: ["id"]
         ))).wait()
         XCTAssertEqual(save.count, 1)
@@ -467,17 +470,14 @@ class PostgreSQLConnectionTests: XCTestCase {
         ))).wait()
         defer { _ = try? conn.simpleQuery(.drop(table: "timetest")).wait() }
         
-        struct Time: Codable, Equatable {
+        struct Time: PostgreSQLTable, Equatable {
+            static let postgreSQLTable = "timetest"
             var timestamptz: Date
         }
         
         let time = Time(timestamptz: .init())
-        _ = try conn.query(.insert(.init(
-            table: "timetest",
-            values: PostgreSQLQueryEncoder().encode(time)
-        ))).wait()
-        
-        let fetch: [Time] = try conn.select(Time.self).from("timetest").all().wait()
+        try conn.insert(into: Time.self).values(time).run().wait()
+        let fetch: [Time] = try conn.select().all().from(Time.self).run(decoding: Time.self).wait()
         switch fetch.count {
         case 1:
             XCTAssertEqual(fetch[0], time)
@@ -504,11 +504,47 @@ class PostgreSQLConnectionTests: XCTestCase {
         struct Sum: Decodable {
             var sum: Double
         }
-        let rows: [Sum] = try conn.select(Sum.self).keys(.function("SUM", [3.14], as: "sum")).all().wait()
+        let rows: [Sum] = try conn.select().keys(.function("SUM", [3.14], as: "sum")).run(decoding: Sum.self).wait()
         switch rows.count {
         case 1: XCTAssertEqual(rows[0].sum, 3.14)
         default: XCTFail("invalid row count")
         }
+    }
+    
+    func testOrderBy() throws {
+        struct Planet: PostgreSQLTable, Equatable {
+            var id: Int?
+            var name: String
+            init(id: Int? = nil, name: String) {
+                self.id = id
+                self.name = name
+            }
+        }
+        
+        let conn = try PostgreSQLConnection.makeTest(transport: .cleartext)
+        try conn.drop(table: Planet.self).ifExists().run().wait()
+        try conn.create(table: Planet.self)
+            .column(for: \.id, .bigint, .primaryKey, .notNull, .generated(.byDefault))
+            .column(for: \.name, .text, .notNull)
+            .run().wait()
+        
+        let planet = try conn.insert(into: Planet.self).values(.init(name: "Venus")).returning(.all)
+            .run(decoding: Planet.self).wait()
+        XCTAssertEqual(planet.id, 1)
+        
+        try conn.insert(into: Planet.self)
+            .values(.init(name: "Earth"))
+            .values(.init(name: "Pluto"))
+            .values(.init(name: "Saturn"))
+            .values(.init(name: "Neptune"))
+            .run().wait()
+        
+        let planetsA = try conn.select().all().from(Planet.self)
+            .run(decoding: Planet.self).wait()
+        let planetsB = try conn.select().all().from(Planet.self)
+            .order(by: \Planet.name)
+            .run(decoding: Planet.self).wait()
+        XCTAssertNotEqual(planetsA, planetsB)
     }
 
     static var allTests = [
@@ -529,6 +565,7 @@ class PostgreSQLConnectionTests: XCTestCase {
         ("testTimeTz", testTimeTz),
         ("testListen", testListen),
         ("testSum", testSum),
+        ("testOrderBy", testOrderBy),
     ]
 }
 
