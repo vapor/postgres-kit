@@ -25,6 +25,10 @@ extension PostgreSQLQuery {
             case like
             /// NOT LIKE
             case notLike
+            /// ILIKE
+            case ilike
+            /// NOT ILIKE
+            case notIlike
         }
         
         /// Supported data predicate relations.
@@ -116,6 +120,8 @@ extension PostgreSQLSerializer {
         case .notEqual: return "!="
         case .notIn: return "NOT IN"
         case .notLike: return "NOT LIKE"
+        case .ilike: return "ILIKE"
+        case .notIlike: return "NOT ILIKE"
         }
     }
 }
