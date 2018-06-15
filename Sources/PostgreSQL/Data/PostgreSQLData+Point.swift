@@ -1,7 +1,7 @@
 import Foundation
 
 /// A 2-dimenstional (double[2]) point.
-public struct PostgreSQLPoint: Codable {
+public struct PostgreSQLPoint: Codable, Equatable {
     /// The point's x coordinate.
     public var x: Double
 
@@ -16,55 +16,38 @@ public struct PostgreSQLPoint: Codable {
 }
 
 extension PostgreSQLPoint: CustomStringConvertible {
-    /// See `CustomStringConvertible.description`
+    /// See `CustomStringConvertible`.
     public var description: String {
         return "(\(x),\(y))"
     }
 }
 
-extension PostgreSQLPoint: Equatable {
-    /// See `Equatable.==`
-    public static func ==(lhs: PostgreSQLPoint, rhs: PostgreSQLPoint) -> Bool {
-        return lhs.x == rhs.x && lhs.y == rhs.y
-    }
-}
-
 extension PostgreSQLPoint: PostgreSQLDataConvertible {
-    /// See `PostgreSQLDataCustomConvertible.postgreSQLDataType`
-    public static var postgreSQLDataType: PostgreSQLDataType { return .point }
-
-    /// See `PostgreSQLDataCustomConvertible.postgreSQLDataArrayType`
-    public static var postgreSQLDataArrayType: PostgreSQLDataType { return ._point }
-
-    /// See `PostgreSQLDataCustomConvertible.convertFromPostgreSQLData(_:)`
+    /// See `PostgreSQLDataConvertible`.
     public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> PostgreSQLPoint {
-        guard let value = data.data else {
-            throw PostgreSQLError(identifier: "data", reason: "Could not decode Point from `null` data.", source: .capture())
+        guard case .point = data.type else {
+            throw PostgreSQLError.decode(self, from: data)
         }
-        switch data.type {
-        case .point:
-            switch data.format {
-            case .text:
-                let string = try value.makeString()
-                let parts = string.split(separator: ",")
-                var x = parts[0]
-                var y = parts[1]
-                let leftParen = x.popFirst()
-                assert(leftParen == "(")
-                let rightParen = y.popLast()
-                assert(rightParen == ")")
-                return .init(x: Double(x)!, y: Double(y)!)
-            case .binary:
-                let x = value[0..<8]
-                let y = value[8..<16]
-                return .init(x: x.makeFloatingPoint(), y: y.makeFloatingPoint())
-            }
-        default: throw PostgreSQLError(identifier: "point", reason: "Could not decode Point from data type: \(data.type)", source: .capture())
+        switch data.storage {
+        case .text(let string):
+            let parts = string.split(separator: ",")
+            var x = parts[0]
+            var y = parts[1]
+            let leftParen = x.popFirst()
+            assert(leftParen == "(")
+            let rightParen = y.popLast()
+            assert(rightParen == ")")
+            return .init(x: Double(x)!, y: Double(y)!)
+        case .binary(let value):
+            let x = value[0..<8]
+            let y = value[8..<16]
+            return .init(x: x.as(Double.self, default: 0), y: y.as(Double.self, default: 0))
+        case .null: throw PostgreSQLError.decode(self, from: data)
         }
     }
 
-    /// See `PostgreSQLDataCustomConvertible.convertToPostgreSQLData()`
+    /// See `PostgreSQLDataConvertible`.
     public func convertToPostgreSQLData() throws -> PostgreSQLData {
-        return PostgreSQLData(type: .point, format: .binary, data: x.data + y.data)
+        return PostgreSQLData(.point, binary: Data.of(x) + Data.of(y))
     }
 }

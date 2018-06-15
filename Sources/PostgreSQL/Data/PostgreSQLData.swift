@@ -1,44 +1,100 @@
-import Foundation
-
 /// Supported `PostgreSQLData` data types.
-public struct PostgreSQLData {
+public struct PostgreSQLData: Equatable {
+    /// `NULL` data.
+    public static let null: PostgreSQLData = PostgreSQLData(type: .null, storage: .null)
+    
     /// The data's type.
     public var type: PostgreSQLDataType
 
+    /// Internal storage type.
+    enum Storage: Equatable {
+        case text(String)
+        case binary(Data)
+        case null
+    }
+    
     /// The data's format.
-    public var format: PostgreSQLFormatCode
+    let storage: Storage
 
+    /// Binary-formatted `Data`. `nil` if this data is null or not binary formatted.
+    public var binary: Data? {
+        switch storage {
+        case .binary(let data): return data
+        default: return nil
+        }
+    }
+    
+    /// Text-formatted `String`. `nil` if this data is null or not text formatted.
+    public var text: String? {
+        switch storage {
+        case .text(let string): return string
+        default: return nil
+        }
+    }
+    
     /// If `true`, this data is null.
     public var isNull: Bool {
-        return data == nil
+        switch storage {
+        case .null: return true
+        default: return false
+        }
+    }
+    
+    /// Internal init.
+    internal init(type: PostgreSQLDataType, storage: Storage) {
+        self.type = type
+        self.storage = storage
     }
 
-    /// The actual data.
-    public var data: Data?
-
-    public init(type: PostgreSQLDataType, format: PostgreSQLFormatCode = .binary, data: Data? = nil) {
+    /// Creates a new binary-formatted `PostgreSQLData`.
+    ///
+    /// - parameters:
+    ///     - type: Data type.
+    ///     - binary: Binary data blob.
+    public init(_ type: PostgreSQLDataType, binary: Data) {
         self.type = type
-        self.format = format
-        self.data = data
+        self.storage = .binary(binary)
+    }
+    
+    
+    /// Creates a new text-formatted `PostgreSQLData`.
+    ///
+    /// - parameters:
+    ///     - type: Data type.
+    ///     - text: Text string.
+    public init(_ type: PostgreSQLDataType, text: String) {
+        self.type = type
+        self.storage = .text(text)
     }
 }
 
 extension PostgreSQLData: CustomStringConvertible {
-    /// See `CustomStringConvertible.description`
+    /// See `CustomStringConvertible`.
     public var description: String {
-        if let data = data {
-            return "\(type) (\(format)) \(String(data: data, encoding: .ascii) ?? "<non-ascii>"))"
-        } else {
-            return "\(type) (\(format)) <null>"
+        let readable: String
+        switch storage {
+        case .binary(let data):
+            var override: String?
+            switch type {
+            case .json, .text, .varchar:
+                if let utf8 = String(data: data, encoding: .utf8) {
+                    override = "\"" + utf8 + "\""
+                }
+            case .jsonb:
+                if let utf8 = String(data: data.dropFirst(), encoding: .utf8) {
+                    override = utf8
+                }
+            case .int8: override = data.as(Int64.self, default: 0).bigEndian.description
+            case .int4: override = data.as(Int32.self, default: 0).bigEndian.description
+            case .int2: override = data.as(Int16.self, default: 0).bigEndian.description
+            case .uuid: override = UUID.init(uuid: data.as(uuid_t.self, default: (0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0))).description
+            default: break
+            }
+            
+            readable = override ?? "0x" + data.hexEncodedString()
+        case .text(let string): readable = "\"" + string + "\""
+        case .null:  return "null"
         }
-    }
-}
-
-/// MARK: Equatable
-
-extension PostgreSQLData: Equatable {
-    /// See Equatable.==
-    public static func ==(lhs: PostgreSQLData, rhs: PostgreSQLData) -> Bool {
-        return lhs.format == rhs.format && lhs.type == rhs.type && lhs.data == rhs.data
+        return readable + " (" + type.description + ")"
     }
 }

@@ -1,5 +1,3 @@
-import Async
-
 /// Creates connections to an identified PostgreSQL database.
 public final class PostgreSQLDatabase: Database, LogSupporting {
     /// See `LogSupporting`
@@ -20,8 +18,8 @@ public final class PostgreSQLDatabase: Database, LogSupporting {
         let config = self.config
         return Future.flatMap(on: worker) {
             return try PostgreSQLConnection.connect(to: config.serverAddress, transport: config.transportConfig, on: worker) { error in
-                print("[PostgreSQL] \(error)")
-            }.flatMap(to: PostgreSQLConnection.self) { client in
+                ERROR(error.localizedDescription)
+            }.flatMap { client in
                 return client.authenticate(
                     username: config.username,
                     database: config.database,

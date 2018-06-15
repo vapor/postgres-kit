@@ -1,74 +1,52 @@
-import Foundation
-
 extension FixedWidthInteger {
-    /// See `PostgreSQLDataCustomConvertible.postgreSQLDataType`
-    public static var postgreSQLDataType: PostgreSQLDataType {
-        switch Self.bitWidth {
-        case 8: return .char
-        case 16: return .int2
-        case 32: return .int4
-        case 64: return .int8
-        default: fatalError("Integer bit width not supported: \(Self.bitWidth)")
-        }
-    }
-
-    /// See `PostgreSQLDataCustomConvertible.postgreSQLDataArrayType`
-    public static var postgreSQLDataArrayType: PostgreSQLDataType {
-        switch Self.bitWidth {
-        case 8: return ._char
-        case 16: return ._int2
-        case 32: return ._int4
-        case 64: return ._int8
-        default: fatalError("Integer bit width not supported: \(Self.bitWidth)")
-        }
-    }
-
-    /// See `PostgreSQLDataCustomConvertible.convertFromPostgreSQLData(_:)`
+    /// See `PostgreSQLDataConvertible`.
     public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> Self {
-        guard let value = data.data else {
-            throw PostgreSQLError(identifier: "fixedWidthInteger", reason: "Could not decode \(Self.self) from `null` data.", source: .capture())
-        }
-        switch data.format {
-        case .binary:
+        switch data.storage {
+        case .binary(let value):
+            let i: Self?
             switch data.type {
-            case .char: return try safeCast(value.makeFixedWidthInteger(Int8.self))
-            case .int2: return try safeCast(value.makeFixedWidthInteger(Int16.self))
-            case .int4: return try safeCast(value.makeFixedWidthInteger(Int32.self))
-            case .int8: return try safeCast(value.makeFixedWidthInteger(Int64.self))
-            default: throw DecodingError.typeMismatch(Self.self, .init(codingPath: [], debugDescription: ""))
+            case .char, .bpchar: i = value.as(Int8.self, default: 0).bigEndian.cast(to: Self.self)
+            case .int2: i = value.as(Int16.self, default: 0).bigEndian.cast(to: Self.self)
+            case .int4, .oid, .regproc: i = value.as(Int32.self, default: 0).bigEndian.cast(to: Self.self)
+            case .int8: i = value.as(Int64.self, default: 0).bigEndian.cast(to: Self.self)
+            default: throw PostgreSQLError.decode(self, from: data)
             }
-        case .text:
-            let string = try value.makeString()
-            guard let converted = Self(string) else {
-                throw PostgreSQLError(identifier: "fixedWidthInteger", reason: "Could not decode \(Self.self) from text: \(string).", source: .capture())
+            guard let value = i else {
+                throw PostgreSQLError.decode(self, from: data)
             }
-            return converted
+            return value
+        case .text(let string):
+            switch data.type {
+            case .char, .bpchar:
+                guard string.count == 1, let char = Data(string.utf8).as(Int8.self, default: 0).bigEndian.cast(to: Self.self) else {
+                    throw PostgreSQLError.decode(self, from: data)
+                }
+                return char
+            default:
+                guard let converted = Self(string) else {
+                    throw PostgreSQLError.decode(self, from: data)
+                }
+                return converted
+            }
+        case .null: throw PostgreSQLError.decode(self, from: data)
         }
     }
 
-    /// See `PostgreSQLDataCustomConvertible.convertToPostgreSQLData()`
+    /// See `PostgreSQLDataConvertible`.
     public func convertToPostgreSQLData() throws -> PostgreSQLData {
-        return PostgreSQLData(type: Self.postgreSQLDataType, format: .binary, data: self.data)
+        let type: PostgreSQLDataType
+        switch Self.bitWidth {
+        case 8: type = .char
+        case 16: type = .int2
+        case 32: type = .int4
+        case 64: type = .int8
+        default: fatalError("Integer bit width not supported: \(Self.bitWidth)")
+        }
+        return PostgreSQLData(type, binary: Data.of(bigEndian))
     }
 
 
     /// Safely casts one `FixedWidthInteger` to another.
-    internal static func safeCast<I, V>(_ value: V, to type: I.Type = I.self) throws -> I where V: FixedWidthInteger, I: FixedWidthInteger {
-        if let existing = value as? I {
-            return existing
-        }
-
-        guard I.bitWidth >= V.bitWidth else {
-            throw DecodingError.typeMismatch(type, .init(codingPath: [], debugDescription: "Bit width too wide: \(I.bitWidth) < \(V.bitWidth)"))
-        }
-        guard value <= I.max else {
-            throw DecodingError.typeMismatch(type, .init(codingPath: [], debugDescription: "Value too large: \(value) > \(I.max)"))
-        }
-        guard value >= I.min else {
-            throw DecodingError.typeMismatch(type, .init(codingPath: [], debugDescription: "Value too small: \(value) < \(I.min)"))
-        }
-        return I(value)
-    }
 }
 
 extension Int: PostgreSQLDataConvertible {}
@@ -82,23 +60,3 @@ extension UInt8: PostgreSQLDataConvertible {}
 extension UInt16: PostgreSQLDataConvertible {}
 extension UInt32: PostgreSQLDataConvertible {}
 extension UInt64: PostgreSQLDataConvertible {}
-
-extension Data {
-    /// Converts this data to a fixed-width integer.
-    internal func makeFixedWidthInteger<I>(_ type: I.Type = I.self) throws -> I where I: FixedWidthInteger {
-        guard count >= (I.bitWidth / 8) else {
-            throw PostgreSQLError(identifier: "fixedWidthData", reason: "Not enough bytes to decode \(I.self): \(count)/\(I.bitWidth / 8)", source: .capture())
-        }
-        return unsafeCast(to: I.self).bigEndian
-    }
-}
-
-extension FixedWidthInteger {
-    /// Big-endian bytes for this integer.
-    internal var data: Data {
-        var bytes = [UInt8](repeating: 0, count: Self.bitWidth / 8)
-        var intNetwork = bigEndian
-        memcpy(&bytes, &intNetwork, bytes.count)
-        return Data(bytes)
-    }
-}

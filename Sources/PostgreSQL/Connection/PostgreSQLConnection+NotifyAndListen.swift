@@ -1,38 +1,57 @@
-import Async
-
-
 extension PostgreSQLConnection {
-    /// Note: after calling `listen'` on a connection, it can no longer handle other database operations. Do not try to send other SQL commands through this connection afterwards.
-    /// IAlso, notifications will only be sent for as long as this connection remains open; you are responsible for opening a new connection to listen on when this one closes.
-    internal func listen(_ channelName: String, handler: @escaping (String) throws -> ()) throws -> Future<Void> {
-        closeHandlers.append({ conn in
-            let query = PostgreSQLQuery(query: "UNLISTEN \"\(channelName)\";")
-            return conn.send([.query(query)], onResponse: { _ in })
-        })
-
-        notificationHandlers[channelName] = { message in
-            try handler(message)
-        }
-        let query = PostgreSQLQuery(query: "LISTEN \"\(channelName)\";")
-        return queue.enqueue([.query(query)], onInput: { message in
+    /// Begins listening for notifications on a channel.
+    ///
+    ///     LISTEN "<channel name>"
+    ///
+    /// To subscribe to a channel, call `listen(...)` and provide the channel name.
+    ///
+    ///     conn.listen("foo") { message in
+    ///         print(message)
+    ///         return true
+    ///     }
+    ///
+    /// Once a connection is listening, it may not be used to send further queries until `UNLISTEN` is sent.
+    /// To unlisten, return `true` in the callback handler. Returning `false` will continue the subscription.
+    ///
+    /// See `notify(...)` to send messages.
+    ///
+    /// - parameters:
+    ///     - channelName: String identifier for the channel to subscribe to.
+    ///     - handler: Handles incoming String messages. Returning `true` here will end the subscription
+    ///                sending an `UNLISTEN` command.
+    /// - returns: A future that signals completion of the `UNLISTEN` command.
+    public func listen(_ channel: String, handler: @escaping (String) throws -> (Bool)) -> Future<Void> {
+        let promise = eventLoop.newPromise(Void.self)
+        return queue.enqueue([.query(.init(query: "LISTEN \"\(channel)\";"))]) { message in
             switch message {
-            case let .notificationResponse(notification):
-                try self.notificationHandlers[notification.channel]?(notification.message)
-            default:
-                break
+            case .close: return false
+            case .readyForQuery: return false
+            case .notification(let notif):
+                if try handler(notif.message) {
+                    self.simpleQuery(.unlisten(channel: channel)).transform(to: ()).cascade(promise: promise)
+                    return true
+                } else {
+                    return false
+                }
+            default: throw PostgreSQLError(identifier: "listen", reason: "Unexpected message during listen: \(message).")
             }
-            return false
-        })
+        }.flatMap { promise.futureResult }
     }
 
-    internal func notify(_ channelName: String, message: String) throws -> Future<Void> {
-        let query = PostgreSQLQuery(query: "NOTIFY \"\(channelName)\", '\(message)';")
-        return send([.query(query)]).map(to: Void.self, { _ in })
-    }
-
-    internal func unlisten(_ channelName: String, unlistenHandler: (() -> Void)? = nil) throws -> Future<Void> {
-        notificationHandlers.removeValue(forKey: channelName)
-        let query = PostgreSQLQuery(query: "UNLISTEN \"\(channelName)\";")
-        return send([.query(query)], onResponse: { _ in unlistenHandler?() })
+    /// Sends a notification to a listening connection. Use in conjunction with `listen(...)`.
+    ///
+    ///     NOTIFY "foo" 'hello'
+    ///
+    /// A single connection can be used to send notifications to as many channels as desired.
+    ///
+    ///     conn.notify("foo", message: "hello")
+    ///
+    /// - parameters:
+    ///     - channelName: String identifier for the channel to send to.
+    ///     - message: String message to send to subscribers.
+    /// - returns: A future that signals completion of the send.
+    public func notify(_ channel: String, message: String) -> Future<Void> {
+        return simpleQuery(.notify(channel: channel, message: message)).transform(to: ())
     }
 }
+

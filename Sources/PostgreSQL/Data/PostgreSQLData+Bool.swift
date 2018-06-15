@@ -1,42 +1,43 @@
-import Foundation
-
 extension Bool: PostgreSQLDataConvertible {
-    /// See `PostgreSQLDataCustomConvertible.postgreSQLDataType`
+    /// See `PostgreSQLDataConvertible`.
     public static var postgreSQLDataType: PostgreSQLDataType { return .bool }
     
-    /// See `PostgreSQLDataCustomConvertible.postgreSQLDataArrayType`
+    /// See `PostgreSQLDataConvertible`.
     public static var postgreSQLDataArrayType: PostgreSQLDataType { return ._bool }
 
-    /// See `PostgreSQLDataCustomConvertible.convertFromPostgreSQLData(_:)`
+    /// See `PostgreSQLDataConvertible`.
     public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> Bool {
-        guard let value = data.data else {
-            throw PostgreSQLError(identifier: "bool", reason: "Could not decode String from `null` data.", source: .capture())
-        }
-        guard value.count == 1 else {
-            throw PostgreSQLError(identifier: "bool", reason: "Could not decode Bool from value: \(value)", source: .capture())
-        }
-        switch data.format {
-        case .text:
-            switch value[0] {
-            case .t: return true
-            case .f: return false
-            default: throw PostgreSQLError(identifier: "bool", reason: "Could not decode Bool from text: \(value)", source: .capture())
+        switch data.storage {
+        case .text(let value):
+            guard value.count == 1 else {
+                throw PostgreSQLError.decode(Bool.self, from: data)
             }
-        case .binary:
+            switch value[value.startIndex] {
+            case "t": return true
+            case "f": return false
+            default: throw PostgreSQLError.decode(Bool.self, from: data)
+            }
+        case .binary(let value):
+            guard value.count == 1 else {
+                throw PostgreSQLError.decode(Bool.self, from: data)
+            }
             switch value[0] {
             case 1: return true
             case 0: return false
-            default: throw PostgreSQLError(identifier: "bool", reason: "Could not decode Bool from binary: \(value)", source: .capture())
+            default: throw PostgreSQLError.decode(Bool.self, from: data)
             }
+        case .null: throw PostgreSQLError.decode(Bool.self, from: data)
         }
+
     }
 
-    /// See `PostgreSQLDataCustomConvertible.convertToPostgreSQLData()`
+    /// See `PostgreSQLDataConvertible`.
     public func convertToPostgreSQLData() throws -> PostgreSQLData {
-        return PostgreSQLData(type: .bool, format: .binary, data: self ? _true : _false)
+        return PostgreSQLData(.bool, binary: self ? _true : _false)
     }
 }
 
+// MARK: Private
+
 private let _true = Data([0x01])
 private let _false = Data([0x00])
-
