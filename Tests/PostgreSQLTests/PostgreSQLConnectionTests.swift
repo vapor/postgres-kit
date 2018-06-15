@@ -595,11 +595,7 @@ class PostgreSQLConnectionTests: XCTestCase {
 extension PostgreSQLConnection {
     /// Creates a test event loop and psql client over ssl.
     static func makeTest(transport: PostgreSQLConnection.TransportConfig) throws -> PostgreSQLConnection {
-        #if Xcode
         return try _makeTest(hostname: "localhost", port: transport.isTLS ? 5433 : 5432, password: "vapor_password", transport: transport)
-        #else
-        return try _makeTest(hostname: transport.isTLS ? "tls" : "cleartext", port: 5432, password: "vapor_password", transport: transport)
-        #endif
     }
 
     /// Creates a test connection.
