@@ -18,7 +18,7 @@ extension Date: PostgreSQLDataConvertible {
             case .time, .timetz: throw PostgreSQLError.decode(Date.self, from: data)
             case .date:
                 let days = value.as(Int32.self, default: 0).bigEndian
-                let seconds = days * _secondsInDay
+                let seconds = Int64(days) * _secondsInDay
                 return Date(timeInterval: Double(seconds), since: _psqlDateStart)
             default: throw PostgreSQLError.decode(Date.self, from: data)
             }
@@ -35,7 +35,7 @@ extension Date: PostgreSQLDataConvertible {
 // MARK: Private
 
 private let _microsecondsPerSecond: Int64 = 1_000_000
-private let _secondsInDay: Int32 = 24 * 60 * 60
+private let _secondsInDay: Int64 = 24 * 60 * 60
 private let _psqlDateStart = Date(timeIntervalSince1970: 946_684_800) // values are stored as seconds before or after midnight 2000-01-01
 
 private extension String {

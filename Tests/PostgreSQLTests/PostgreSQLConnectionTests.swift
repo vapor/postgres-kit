@@ -546,6 +546,28 @@ class PostgreSQLConnectionTests: XCTestCase {
             .run(decoding: Planet.self).wait()
         XCTAssertNotEqual(planetsA, planetsB)
     }
+    
+    // https://github.com/vapor/postgresql/issues/53
+    func testInvalidDate() throws {
+        let conn = try PostgreSQLConnection.makeTest(transport: .cleartext)
+        _ = try conn.simpleQuery(.createTable(.init(
+            name: "timetest",
+            columns: [.column("date", .date)]
+        ))).wait()
+        defer { _ = try? conn.simpleQuery(.drop(table: "timetest")).wait() }
+        
+        struct Time: PostgreSQLTable, Equatable {
+            static let postgreSQLTable = "timetest"
+            var date: Date
+        }
+        
+        _ = try conn.simpleQuery(.raw(query: "INSERT INTO timetest (date) VALUES ('0214-02-05')", binds: [])).wait()
+        let fetch: [Time] = try conn.select().all().from(Time.self).run(decoding: Time.self).wait()
+        switch fetch.count {
+        case 1: XCTAssertEqual(fetch[0].date.timeIntervalSince1970, -55410998400)
+        default: XCTFail("invalid row count")
+        }
+    }
 
     static var allTests = [
         ("testVersion", testVersion),
@@ -566,6 +588,7 @@ class PostgreSQLConnectionTests: XCTestCase {
         ("testListen", testListen),
         ("testSum", testSum),
         ("testOrderBy", testOrderBy),
+        ("testInvalidDate", testInvalidDate),
     ]
 }
 
