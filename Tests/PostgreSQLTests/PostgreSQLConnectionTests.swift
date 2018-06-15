@@ -217,7 +217,7 @@ class PostgreSQLConnectionTests: XCTestCase {
 
     func testURLParsing() throws {
         let databaseURL = "postgres://username:password@localhost:5432/database"
-        let config = try PostgreSQLDatabaseConfig(url: databaseURL)
+        let config = try PostgreSQLDatabaseConfig(url: databaseURL)!
         XCTAssertEqual("\(config.serverAddress)", "ServerAddress(storage: PostgreSQL.PostgreSQLConnection.ServerAddress.Storage.tcp(hostname: \"localhost\", port: 5432))")
         XCTAssertEqual(config.username, "username")
         XCTAssertEqual(config.password, "password")
