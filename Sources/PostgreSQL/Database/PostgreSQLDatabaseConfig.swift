@@ -32,10 +32,10 @@ public struct PostgreSQLDatabaseConfig {
     public init(serverAddress: PostgreSQLConnection.ServerAddress, username: String, database: String? = nil, password: String? = nil, transport: PostgreSQLConnection.TransportConfig = .cleartext) {
         self.username = username
         self.database = database
-		self.password = password
+        self.password = password
         self.serverAddress = serverAddress
-		self.transportConfig = transport
-	}
+        self.transportConfig = transport
+    }
 
     public init?(url urlString: String, transport: PostgreSQLConnection.TransportConfig = .cleartext) throws {
         guard let url = URL(string: urlString) else {
