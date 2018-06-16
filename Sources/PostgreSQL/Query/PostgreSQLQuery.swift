@@ -1,4 +1,5 @@
 public enum PostgreSQLQuery {
+    case alterTable(AlterTable)
     case createTable(CreateTable)
     case delete(Delete)
     case dropTable(DropTable)
@@ -14,6 +15,7 @@ public enum PostgreSQLQuery {
 extension PostgreSQLSerializer {
     mutating func serialize(_ query: PostgreSQLQuery, _ binds: inout [PostgreSQLData]) -> String {
         switch query {
+        case .alterTable(let alter): return serialize(alter)
         case .createTable(let create): return serialize(create)
         case .delete(let delete): return serialize(delete, &binds)
         case .dropTable(let drop): return serialize(drop)
