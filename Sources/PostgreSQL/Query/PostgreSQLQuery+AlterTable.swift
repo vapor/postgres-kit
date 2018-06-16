@@ -37,7 +37,7 @@ extension PostgreSQLSerializer {
         actions += alter.dropColumns.map { "DROP COLUMN " + escapeString($0) }
         actions += alter.addConstraints.map { "ADD CONSTSRAINT " + serialize($0) }
         actions += alter.dropConstraints.map { "DROP CONSTRAINT " + escapeString($0) }
-        sql.append(group(actions))
+        sql.append(actions.joined(separator: ", "))
         return sql.joined(separator: " ")
     }
 }
