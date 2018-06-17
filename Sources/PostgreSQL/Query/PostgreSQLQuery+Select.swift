@@ -74,6 +74,14 @@ extension PostgreSQLSerializer {
             sql.append("ORDER BY")
             sql.append(select.orderBy.map { serialize($0, &binds) }.joined(separator: ", "))
         }
+        if let limit = select.limit {
+            sql.append("LIMIT")
+            sql.append(String(describing: limit))
+        }
+        if let offset = select.offset {
+            sql.append("OFFSET")
+            sql.append(String(describing: offset))
+        }
         return sql.joined(separator: " ")
     }
 }
