@@ -5,11 +5,6 @@ extension String: PostgreSQLDataConvertible {
         case .text(let string): return string
         case .binary(let value):
             switch data.type {
-            case .text, .name, .varchar, .bpchar:
-                guard let string = String(data: value, encoding: .utf8) else {
-                    throw PostgreSQLError.decode(self, from: data)
-                }
-                return string
             case .uuid: return try UUID.convertFromPostgreSQLData(data).uuidString
             case .numeric:
                 /// Represents the meta information preceeding a numeric value.
@@ -80,7 +75,13 @@ extension String: PostgreSQLDataConvertible {
                 } else {
                     return numeric
                 }
-            default: throw PostgreSQLError.decode(self, from: data)
+            default:
+                // always try to parse a UTF-8 string
+                // this allows for ENUM and other UNKNOWN types to be parsed
+                guard let string = String(data: value, encoding: .utf8) else {
+                    throw PostgreSQLError.decode(self, from: data)
+                }
+                return string
             }
         case .null: throw PostgreSQLError.decode(self, from: data)
         }
