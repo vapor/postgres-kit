@@ -36,7 +36,7 @@ public struct PostgreSQLInsert: SQLInsert {
         if returning.isEmpty {
             return insert.serialize(&binds)
         } else {
-            return insert.serialize(&binds) + " RETURNING (" + returning.serialize(&binds) + ")"
+            return insert.serialize(&binds) + " RETURNING " + returning.serialize(&binds)
         }
     }
 }
