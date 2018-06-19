@@ -1,7 +1,4 @@
 /// See `SQLQuery`.
-public typealias PostgreSQLBinaryOperator = GenericSQLBinaryOperator
-
-/// See `SQLQuery`.
 public typealias PostgreSQLColumnConstraintAlgorithm = GenericSQLColumnConstraintAlgorithm<
     PostgreSQLExpression, PostgreSQLCollation, PostgreSQLPrimaryKeyDefault, PostgreSQLForeignKey
 >
