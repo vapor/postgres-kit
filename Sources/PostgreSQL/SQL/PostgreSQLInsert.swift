@@ -1,7 +1,7 @@
 public struct PostgreSQLInsert: SQLInsert {
     /// See `SQLInsert`.
     public static func insert(_ table: PostgreSQLTableIdentifier) -> PostgreSQLInsert {
-        return .init(insert: .insert(table), returning: [])
+        return self.init(table: table, columns: [], values: [], upsert: nil, returning: [])
     }
     
     /// See `SQLInsert`.
@@ -16,37 +16,36 @@ public struct PostgreSQLInsert: SQLInsert {
     /// See `SQLInsert`.
     public typealias Upsert = PostgreSQLUpsert
     
-    /// Root insert statement.
-    private var insert: GenericSQLInsert<TableIdentifier, ColumnIdentifier, Expression, Upsert>
-
+    /// Table to insert into.
+    public var table: TableIdentifier
+    /// See `SQLInsert`.
+    public var columns: [PostgreSQLColumnIdentifier]
+    
+    /// See `SQLInsert`.
+    public var values: [[PostgreSQLExpression]]
+    
+    /// Optional "upsert" condition.
+    public var upsert: PostgreSQLUpsert?
+    
     /// `RETURNING *`
     public var returning: [PostgreSQLSelectExpression]
     
-    /// See `SQLInsert`.
-    public var columns: [PostgreSQLColumnIdentifier] {
-        get { return insert.columns }
-        set { insert.columns = newValue }
-    }
-    
-    /// See `SQLInsert`.
-    public var values: [[PostgreSQLExpression]] {
-        get { return insert.values }
-        set { insert.values = newValue}
-    }
-    
-    /// See `SQLInsert`.
-    public var upsert: PostgreSQLUpsert? {
-        get { return insert.upsert }
-        set { insert.upsert = newValue }
-    }
-    
     /// See `SQLSerializable`.
     public func serialize(_ binds: inout [Encodable]) -> String {
-        if returning.isEmpty {
-            return insert.serialize(&binds)
-        } else {
-            return insert.serialize(&binds) + " RETURNING " + returning.serialize(&binds)
+        var sql: [String] = []
+        sql.append("INSERT INTO")
+        sql.append(table.serialize(&binds))
+        sql.append("(" + columns.serialize(&binds) + ")")
+        sql.append("VALUES")
+        sql.append(values.map { "(" + $0.serialize(&binds) + ")"}.joined(separator: ", "))
+        if let upsert = upsert {
+            sql.append(upsert.serialize(&binds))
         }
+        if !returning.isEmpty {
+            sql.append("RETURNING")
+            sql.append(returning.serialize(&binds))
+        }
+        return sql.joined(separator: " ")
     }
 }
 
