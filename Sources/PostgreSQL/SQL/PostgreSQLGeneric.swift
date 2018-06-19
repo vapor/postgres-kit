@@ -60,11 +60,6 @@ public typealias PostgreSQLGroupBy = GenericSQLGroupBy<PostgreSQLExpression>
 public typealias PostgreSQLIdentifier = GenericSQLIdentifier
 
 /// See `SQLQuery`.
-public typealias PostgreSQLInsert = GenericSQLInsert<
-    PostgreSQLTableIdentifier, PostgreSQLColumnIdentifier, PostgreSQLExpression
->
-
-/// See `SQLQuery`.
 public typealias PostgreSQLJoin = GenericSQLJoin<
     PostgreSQLJoinMethod, PostgreSQLTableIdentifier, PostgreSQLExpression
 >
