@@ -1,4 +1,12 @@
-public struct PostgreSQLDataType: SQLDataType {
+public struct PostgreSQLDataType: SQLDataType, Equatable {
+    /// See `Equatable`.
+    public static func == (lhs: PostgreSQLDataType, rhs: PostgreSQLDataType) -> Bool {
+        // FIXME: more performant equatable is possible
+        var binds: [Encodable] = []
+        return lhs.serialize(&binds) == rhs.serialize(&binds)
+    }
+    
+    /// See `SQLDataType`.
     public static func dataType(appropriateFor type: Any.Type) -> PostgreSQLDataType? {
         guard let type = type as? PostgreSQLDataTypeStaticRepresentable.Type else {
             return .jsonb
