@@ -60,6 +60,9 @@ extension PostgreSQLConnection {
                 default: throw PostgreSQLError(identifier: "authenticationMessage", reason: "Unexpected authentication message: \(message)")
                 }
             }
+        }.flatMap {
+            // always pre-fetch table names once authed
+            return self.tableNames().transform(to: ())
         }
     }
 }

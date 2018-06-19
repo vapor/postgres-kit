@@ -16,7 +16,7 @@ public final class PostgreSQLDatabase: Database, LogSupporting {
     /// See `Database.makeConnection()`
     public func newConnection(on worker: Worker) -> Future<PostgreSQLConnection> {
         let config = self.config
-        return Future.flatMap(on: worker) {
+        do {
             return try PostgreSQLConnection.connect(to: config.serverAddress, transport: config.transportConfig, on: worker) { error in
                 ERROR(error.localizedDescription)
             }.flatMap { client in
@@ -26,6 +26,8 @@ public final class PostgreSQLDatabase: Database, LogSupporting {
                     password: config.password
                 ).transform(to: client)
             }
+        } catch {
+            return worker.future(error: error)
         }
     }
 }

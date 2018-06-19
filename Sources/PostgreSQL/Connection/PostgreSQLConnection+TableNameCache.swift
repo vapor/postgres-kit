@@ -43,11 +43,11 @@ extension PostgreSQLConnection {
             return future(existing)
         } else {
             struct PGClass: PostgreSQLTable {
-                static let postgreSQLTable = "pg_class"
+                static let sqlTableIdentifierString = "pg_class"
                 var oid: UInt32
                 var relname: String
             }
-            return select().keys("oid", "relname").from(PGClass.self).run(decoding: PGClass.self).map { rows in
+            return select().column("oid").column("relname").from(PGClass.self).all(decoding: PGClass.self).map { rows in
                 var cache: [UInt32: String] = [:]
                 for row in rows {
                     cache[row.oid] = row.relname

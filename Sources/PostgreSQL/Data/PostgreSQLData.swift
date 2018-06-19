@@ -4,7 +4,7 @@ public struct PostgreSQLData: Equatable {
     public static let null: PostgreSQLData = PostgreSQLData(type: .null, storage: .null)
     
     /// The data's type.
-    public var type: PostgreSQLDataType
+    public var type: PostgreSQLDataFormat
 
     /// Internal storage type.
     enum Storage: Equatable {
@@ -41,7 +41,7 @@ public struct PostgreSQLData: Equatable {
     }
     
     /// Internal init.
-    internal init(type: PostgreSQLDataType, storage: Storage) {
+    internal init(type: PostgreSQLDataFormat, storage: Storage) {
         self.type = type
         self.storage = storage
     }
@@ -51,7 +51,7 @@ public struct PostgreSQLData: Equatable {
     /// - parameters:
     ///     - type: Data type.
     ///     - binary: Binary data blob.
-    public init(_ type: PostgreSQLDataType, binary: Data) {
+    public init(_ type: PostgreSQLDataFormat, binary: Data) {
         self.type = type
         self.storage = .binary(binary)
     }
@@ -62,7 +62,7 @@ public struct PostgreSQLData: Equatable {
     /// - parameters:
     ///     - type: Data type.
     ///     - text: Text string.
-    public init(_ type: PostgreSQLDataType, text: String) {
+    public init(_ type: PostgreSQLDataFormat, text: String) {
         self.type = type
         self.storage = .text(text)
     }

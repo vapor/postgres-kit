@@ -1,5 +1,5 @@
 /// A PostgreSQL frontend client.
-public final class PostgreSQLConnection: DatabaseConnection, BasicWorker {
+public final class PostgreSQLConnection: DatabaseConnection, BasicWorker, DatabaseQueryable, SQLConnection {
     /// See `DatabaseConnection`.
     public typealias Database = PostgreSQLDatabase
     
@@ -46,6 +46,19 @@ public final class PostgreSQLConnection: DatabaseConnection, BasicWorker {
             }
         }
     }
+    
+    /// See `SQLConnection`.
+    public func decode<D>(_ type: D.Type, from row: [PostgreSQLColumn : PostgreSQLData], table: GenericSQLTableIdentifier<PostgreSQLIdentifier>?) throws -> D where D : Decodable {
+        if let table = table {
+            guard let cache = tableNameCache else {
+                throw PostgreSQLError(identifier: "tableNameCache", reason: "Cannot decode row from specific table without table name cache.")
+            }
+            return try PostgreSQLRowDecoder().decode(D.self, from: row, tableOID: cache.tableOID(name: table.identifier.string) ?? 0)
+        } else {
+            return try PostgreSQLRowDecoder().decode(D.self, from: row)
+        }
+    }
+    
     
     /// Sends `PostgreSQLMessage` to the server.
     func send(_ message: [PostgreSQLMessage]) -> Future<[PostgreSQLMessage]> {

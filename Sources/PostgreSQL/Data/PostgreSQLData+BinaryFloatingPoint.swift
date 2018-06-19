@@ -31,7 +31,7 @@ extension BinaryFloatingPoint where Self: LosslessStringConvertible {
 
     /// See `PostgreSQLDataConvertible`.
     public func convertToPostgreSQLData() throws -> PostgreSQLData {
-        let type: PostgreSQLDataType
+        let type: PostgreSQLDataFormat
         switch Self.bitWidth {
         case 32: type = .float4
         case 64: type = .float8

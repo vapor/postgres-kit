@@ -1,11 +1,5 @@
 extension Bool: PostgreSQLDataConvertible {
     /// See `PostgreSQLDataConvertible`.
-    public static var postgreSQLDataType: PostgreSQLDataType { return .bool }
-    
-    /// See `PostgreSQLDataConvertible`.
-    public static var postgreSQLDataArrayType: PostgreSQLDataType { return ._bool }
-
-    /// See `PostgreSQLDataConvertible`.
     public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> Bool {
         switch data.storage {
         case .text(let value):

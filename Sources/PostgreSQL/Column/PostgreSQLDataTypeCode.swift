@@ -1,52 +1,52 @@
 /// The data type's raw object ID.
 /// Use `select * from pg_type where oid = <idhere>;` to lookup more information.
-public struct PostgreSQLDataType: Codable, Equatable, ExpressibleByIntegerLiteral {
+public struct PostgreSQLDataFormat: Codable, Equatable, ExpressibleByIntegerLiteral {
     /// Recognized types
-    public static let null = PostgreSQLDataType(0)
-    public static let bool = PostgreSQLDataType(16)
-    public static let bytea = PostgreSQLDataType(17)
-    public static let char = PostgreSQLDataType(18)
-    public static let name = PostgreSQLDataType(19)
-    public static let int8 = PostgreSQLDataType(20)
-    public static let int2 = PostgreSQLDataType(21)
-    public static let int4 = PostgreSQLDataType(23)
-    public static let regproc = PostgreSQLDataType(24)
-    public static let text = PostgreSQLDataType(25)
-    public static let oid = PostgreSQLDataType(26)
-    public static let json = PostgreSQLDataType(114)
-    public static let pg_node_tree = PostgreSQLDataType(194)
-    public static let point = PostgreSQLDataType(600)
-    public static let float4 = PostgreSQLDataType(700)
-    public static let float8 = PostgreSQLDataType(701)
-    public static let _bool = PostgreSQLDataType(1000)
-    public static let _bytea = PostgreSQLDataType(1001)
-    public static let _char = PostgreSQLDataType(1002)
-    public static let _name = PostgreSQLDataType(1003)
-    public static let _int2 = PostgreSQLDataType(1005)
-    public static let _int4 = PostgreSQLDataType(1007)
-    public static let _text = PostgreSQLDataType(1009)
-    public static let _int8 = PostgreSQLDataType(1016)
-    public static let _point = PostgreSQLDataType(1017)
-    public static let _float4 = PostgreSQLDataType(1021)
-    public static let _float8 = PostgreSQLDataType(1022)
-    public static let _aclitem = PostgreSQLDataType(1034)
-    public static let bpchar = PostgreSQLDataType(1042)
-    public static let varchar = PostgreSQLDataType(1043)
-    public static let date = PostgreSQLDataType(1082)
-    public static let time = PostgreSQLDataType(1083)
-    public static let timestamp = PostgreSQLDataType(1114)
-    public static let _timestamp = PostgreSQLDataType(1115)
-    public static let timestamptz = PostgreSQLDataType(1184)
-    public static let timetz = PostgreSQLDataType(1266)
-    public static let numeric = PostgreSQLDataType(1700)
-    public static let void = PostgreSQLDataType(2278)
-    public static let uuid = PostgreSQLDataType(2950)
-    public static let _uuid = PostgreSQLDataType(2951)
-    public static let jsonb = PostgreSQLDataType(3802)
-    public static let _jsonb = PostgreSQLDataType(3807)
+    public static let null = PostgreSQLDataFormat(0)
+    public static let bool = PostgreSQLDataFormat(16)
+    public static let bytea = PostgreSQLDataFormat(17)
+    public static let char = PostgreSQLDataFormat(18)
+    public static let name = PostgreSQLDataFormat(19)
+    public static let int8 = PostgreSQLDataFormat(20)
+    public static let int2 = PostgreSQLDataFormat(21)
+    public static let int4 = PostgreSQLDataFormat(23)
+    public static let regproc = PostgreSQLDataFormat(24)
+    public static let text = PostgreSQLDataFormat(25)
+    public static let oid = PostgreSQLDataFormat(26)
+    public static let json = PostgreSQLDataFormat(114)
+    public static let pg_node_tree = PostgreSQLDataFormat(194)
+    public static let point = PostgreSQLDataFormat(600)
+    public static let float4 = PostgreSQLDataFormat(700)
+    public static let float8 = PostgreSQLDataFormat(701)
+    public static let _bool = PostgreSQLDataFormat(1000)
+    public static let _bytea = PostgreSQLDataFormat(1001)
+    public static let _char = PostgreSQLDataFormat(1002)
+    public static let _name = PostgreSQLDataFormat(1003)
+    public static let _int2 = PostgreSQLDataFormat(1005)
+    public static let _int4 = PostgreSQLDataFormat(1007)
+    public static let _text = PostgreSQLDataFormat(1009)
+    public static let _int8 = PostgreSQLDataFormat(1016)
+    public static let _point = PostgreSQLDataFormat(1017)
+    public static let _float4 = PostgreSQLDataFormat(1021)
+    public static let _float8 = PostgreSQLDataFormat(1022)
+    public static let _aclitem = PostgreSQLDataFormat(1034)
+    public static let bpchar = PostgreSQLDataFormat(1042)
+    public static let varchar = PostgreSQLDataFormat(1043)
+    public static let date = PostgreSQLDataFormat(1082)
+    public static let time = PostgreSQLDataFormat(1083)
+    public static let timestamp = PostgreSQLDataFormat(1114)
+    public static let _timestamp = PostgreSQLDataFormat(1115)
+    public static let timestamptz = PostgreSQLDataFormat(1184)
+    public static let timetz = PostgreSQLDataFormat(1266)
+    public static let numeric = PostgreSQLDataFormat(1700)
+    public static let void = PostgreSQLDataFormat(2278)
+    public static let uuid = PostgreSQLDataFormat(2950)
+    public static let _uuid = PostgreSQLDataFormat(2951)
+    public static let jsonb = PostgreSQLDataFormat(3802)
+    public static let _jsonb = PostgreSQLDataFormat(3807)
 
     /// See `Equatable.==`
-    public static func ==(lhs: PostgreSQLDataType, rhs: PostgreSQLDataType) -> Bool {
+    public static func ==(lhs: PostgreSQLDataFormat, rhs: PostgreSQLDataFormat) -> Bool {
         return lhs.raw == rhs.raw
     }
 
@@ -64,7 +64,7 @@ public struct PostgreSQLDataType: Codable, Equatable, ExpressibleByIntegerLitera
     }
 }
 
-extension PostgreSQLDataType {
+extension PostgreSQLDataFormat {
     /// Returns the known SQL name, if one exists.
     /// Note: This only supports a limited subset of all PSQL types and is meant for convenience only.
     public var knownSQLName: String? {
@@ -113,7 +113,7 @@ extension PostgreSQLDataType {
     }
     
     /// Returns the array type for this type if one is known.
-    internal var arrayType: PostgreSQLDataType? {
+    internal var arrayType: PostgreSQLDataFormat? {
         switch self {
         case .bool: return ._bool
         case .bytea: return ._bytea
@@ -132,7 +132,7 @@ extension PostgreSQLDataType {
     }
 }
 
-extension PostgreSQLDataType: CustomStringConvertible {
+extension PostgreSQLDataFormat: CustomStringConvertible {
     /// See `CustomStringConvertible.description`
     public var description: String {
         return knownSQLName ?? "UNKNOWN \(raw)"

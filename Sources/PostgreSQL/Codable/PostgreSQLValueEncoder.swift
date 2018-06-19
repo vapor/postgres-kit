@@ -1,14 +1,9 @@
-public protocol PostgreSQLValueRepresentable {
-    var postgreSQLValue: PostgreSQLQuery.Value { get }
-}
-
-
 /// Converts `Encodable` objects to `PostgreSQLData`.
 ///
 ///     let data = try PostgreSQLDataEncoder().encode("hello")
 ///     print(data) // PostgreSQLData
 ///
-public struct PostgreSQLValueEncoder {
+public struct PostgreSQLDataEncoder {
     /// Creates a new `PostgreSQLDataEncoder`.
     public init() { }
 
@@ -20,12 +15,9 @@ public struct PostgreSQLValueEncoder {
     /// - parameters:
     ///     - encodable: `Encodable` object to encode.
     /// - returns: Encoded `PostgreSQLData`.
-    public func encode(_ encodable: Encodable) throws -> PostgreSQLQuery.Value {
-        if let psql = encodable as? PostgreSQLValueRepresentable {
-            return psql.postgreSQLValue
-        }
+    public func encode(_ encodable: Encodable) throws -> PostgreSQLData {
         if let convertible = encodable as? PostgreSQLDataConvertible {
-            return try .data(convertible.convertToPostgreSQLData())
+            return try convertible.convertToPostgreSQLData()
         }
         
         do {
@@ -51,7 +43,7 @@ public struct PostgreSQLValueEncoder {
                     default: data += Data.of(Int32(0).bigEndian)
                     }
                 }
-                return .data(PostgreSQLData(type.arrayType ?? .null, binary: data))
+                return PostgreSQLData(type.arrayType ?? .null, binary: data)
             }
         } catch is _KeyedError {
             struct AnyEncodable: Encodable {
@@ -64,7 +56,7 @@ public struct PostgreSQLValueEncoder {
                     try encodable.encode(to: encoder)
                 }
             }
-            return try .data(PostgreSQLData(.jsonb, binary: [0x01] + JSONEncoder().encode(AnyEncodable(encodable))))
+            return try PostgreSQLData(.jsonb, binary: [0x01] + JSONEncoder().encode(AnyEncodable(encodable)))
         }
     }
 
@@ -74,7 +66,7 @@ public struct PostgreSQLValueEncoder {
     private final class _Encoder: Encoder {
         let codingPath: [CodingKey] = []
         let userInfo: [CodingUserInfoKey: Any] = [:]
-        var data: PostgreSQLQuery.Value?
+        var data: PostgreSQLData?
         var array: [PostgreSQLData]
         
         init() {
@@ -111,15 +103,10 @@ public struct PostgreSQLValueEncoder {
         }
 
         mutating func encode<T>(_ value: T) throws where T : Encodable {
-            if let psql = value as? PostgreSQLValueRepresentable {
-                encoder.data = psql.postgreSQLValue
-                return
-            }
             if let convertible = value as? PostgreSQLDataConvertible {
-                encoder.data = try .data(convertible.convertToPostgreSQLData())
+                encoder.data = try convertible.convertToPostgreSQLData()
                 return
             }
-            
             try value.encode(to: encoder)
         }
     }

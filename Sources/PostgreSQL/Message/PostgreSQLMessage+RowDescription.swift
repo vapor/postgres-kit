@@ -13,7 +13,7 @@ extension PostgreSQLMessage {
             var columnAttributeNumber: Int16
             
             /// The object ID of the field's data type.
-            var dataType: PostgreSQLDataType
+            var dataType: PostgreSQLDataFormat
             
             /// The data type size (see pg_type.typlen). Note that negative values denote variable-width types.
             var dataTypeSize: Int16
@@ -48,7 +48,7 @@ extension PostgreSQLMessage.RowDescription {
             guard let columnAttributeNumber = buffer.readInteger(as: Int16.self) else {
                 throw PostgreSQLError.protocol(reason: "Could not read row description field column attribute number.")
             }
-            guard let dataType = buffer.readInteger(as: Int32.self).flatMap(PostgreSQLDataType.init(_:)) else {
+            guard let dataType = buffer.readInteger(as: Int32.self).flatMap(PostgreSQLDataFormat.init(_:)) else {
                 throw PostgreSQLError.protocol(reason: "Could not read row description field data type.")
             }
             guard let dataTypeSize = buffer.readInteger(as: Int16.self) else {
@@ -90,7 +90,7 @@ extension PostgreSQLMessage.RowDescription {
 
 extension PostgreSQLMessage.DataRow.Column {
     /// Parses this column to the specified data type and format code.
-    func parse(dataType: PostgreSQLDataType, format: PostgreSQLMessage.FormatCode) throws -> PostgreSQLData {
+    func parse(dataType: PostgreSQLDataFormat, format: PostgreSQLMessage.FormatCode) throws -> PostgreSQLData {
         guard let value = value else {
             return .null
         }
