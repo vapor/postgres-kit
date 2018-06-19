@@ -1,7 +1,7 @@
 public enum PostgreSQLDataType: SQLDataType {
     public static func dataType(appropriateFor type: Any.Type) -> PostgreSQLDataType? {
         guard let type = type as? PostgreSQLDataTypeStaticRepresentable.Type else {
-            return nil
+            return .jsonb
         }
         return type.postgreSQLDataType
     }

@@ -1,18 +1,16 @@
-public enum PostgreSQLPrimaryKey: SQLPrimaryKey {
+public enum PostgreSQLPrimaryKeyDefault: SQLPrimaryKeyDefault {
     public enum Generated {
         case byDefault
         case always
     }
-    case none
     case generated(Generated)
     
-    public static func primaryKey() -> PostgreSQLPrimaryKey {
+    public static var `default`: PostgreSQLPrimaryKeyDefault {
         return .generated(.byDefault)
     }
     
     public func serialize(_ binds: inout [Encodable]) -> String {
         switch self {
-        case .none: return ""
         case .generated(let generated):
             switch generated {
             case .always: return "GENERATED ALWAYS AS IDENTITY"

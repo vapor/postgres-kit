@@ -51,7 +51,7 @@ extension PostgreSQLConnection {
     ///     - message: String message to send to subscribers.
     /// - returns: A future that signals completion of the send.
     public func notify(_ channel: String, message: String) -> Future<Void> {
-        return simpleQuery("NOTIFY \"\(channel)\" '\(message)'")
+        return simpleQuery("NOTIFY \"\(channel)\", '\(message)'")
     }
 }
 

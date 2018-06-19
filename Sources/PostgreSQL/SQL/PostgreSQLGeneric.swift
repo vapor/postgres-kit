@@ -3,7 +3,7 @@ public typealias PostgreSQLBinaryOperator = GenericSQLBinaryOperator
 
 /// See `SQLQuery`.
 public typealias PostgreSQLColumnConstraintAlgorithm = GenericSQLColumnConstraintAlgorithm<
-    PostgreSQLExpression, PostgreSQLCollation, PostgreSQLPrimaryKey, PostgreSQLForeignKey
+    PostgreSQLExpression, PostgreSQLCollation, PostgreSQLPrimaryKeyDefault, PostgreSQLForeignKey
 >
 
 /// See `SQLQuery`.
@@ -88,7 +88,7 @@ public typealias PostgreSQLSelectExpression = GenericSQLSelectExpression<Postgre
 
 /// See `SQLQuery`.
 public typealias PostgreSQLTableConstraintAlgorithm = GenericSQLTableConstraintAlgorithm<
-    PostgreSQLIdentifier, PostgreSQLExpression, PostgreSQLCollation, PostgreSQLPrimaryKey, PostgreSQLForeignKey
+    PostgreSQLIdentifier, PostgreSQLExpression, PostgreSQLCollation, PostgreSQLForeignKey
 >
 
 /// See `SQLQuery`.
