@@ -88,6 +88,15 @@ extension PostgreSQLData: CustomStringConvertible {
             case .int4: override = data.as(Int32.self, default: 0).bigEndian.description
             case .int2: override = data.as(Int16.self, default: 0).bigEndian.description
             case .uuid: override = UUID.init(uuid: data.as(uuid_t.self, default: (0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0))).description
+            case ._text:
+                let strings = try? PostgreSQLDataDecoder().decode([String].self, from: self)
+                override = strings?.description
+            case ._int4:
+                let ints = try? PostgreSQLDataDecoder().decode([Int32].self, from: self)
+                override = ints?.description
+            case ._int8:
+                let ints = try? PostgreSQLDataDecoder().decode([Int64].self, from: self)
+                override = ints?.description
             default: break
             }
             

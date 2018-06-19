@@ -338,15 +338,15 @@ public struct PostgreSQLDataType: SQLDataType, Equatable {
         return .init(dataType.primitive, isArray: true)
     }
     
-    private let primitive: Primitive
-    private let isArray: Bool
+    let primitive: Primitive
+    let isArray: Bool
     
     private init(_ primitive: Primitive, isArray: Bool = false) {
         self.primitive = primitive
         self.isArray = isArray
     }
     
-    private enum Primitive {
+    enum Primitive {
         /// signed eight-byte integer
         case bigint
         

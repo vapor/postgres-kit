@@ -1,4 +1,4 @@
-public struct PostgreSQLUpsert {
+public struct PostgreSQLUpsert: SQLSerializable {
     /// See `SQLUpsert`.
     public typealias Identifier = PostgreSQLIdentifier
     

@@ -491,6 +491,32 @@ class PostgreSQLConnectionTests: XCTestCase {
         default: XCTFail("invalid row count")
         }
     }
+    
+    // https://github.com/vapor/postgresql/issues/80
+    func testEmptyArray() throws {
+        do {
+            var messages: [String] = []
+            let a = try PostgreSQLDataEncoder().encode(messages)
+            print(a)
+            messages.append("hello")
+            let b = try PostgreSQLDataEncoder().encode(messages)
+            print(b)
+            messages.append("world")
+            let c = try PostgreSQLDataEncoder().encode(messages)
+            print(c)
+        }
+        do {
+            var messages: [Int] = []
+            let a = try PostgreSQLDataEncoder().encode(messages)
+            print(a)
+            messages.append(42)
+            let b = try PostgreSQLDataEncoder().encode(messages)
+            print(b)
+            messages.append(1337)
+            let c = try PostgreSQLDataEncoder().encode(messages)
+            print(c)
+        }
+    }
 
     static var allTests = [
         ("testBenchmark", testBenchmark),
@@ -511,6 +537,7 @@ class PostgreSQLConnectionTests: XCTestCase {
         ("testSum", testSum),
         ("testOrderBy", testOrderBy),
         ("testInvalidDate", testInvalidDate),
+        ("testEmptyArray", testEmptyArray),
     ]
 }
 

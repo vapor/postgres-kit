@@ -26,7 +26,23 @@ public struct PostgreSQLDataEncoder {
             if let data = encoder.data {
                 return data
             } else {
-                let type = encoder.array.first?.type ?? .null
+                let type: PostgreSQLDataFormat
+                if let present = encoder.array.first?.type {
+                    type = present
+                } else if
+                    let array = Swift.type(of: encodable) as? AnyArray.Type,
+                    let psql = array.anyElementType as? PostgreSQLDataTypeStaticRepresentable.Type
+                {
+                    if let format = psql.postgreSQLDataType.dataFormat {
+                        type = format
+                    } else {
+                        WARNING("Could not determine PostgreSQL array data type: \(psql.postgreSQLDataType)")
+                        type = .null
+                    }
+                } else {
+                    WARNING("Could not determine PostgreSQL array data type: \(Swift.type(of: encodable))")
+                    type = .null
+                }
                 // encode array
                 var data = Data()
                 data += Data.of(Int32(1).bigEndian) // non-null
@@ -177,5 +193,15 @@ public struct PostgreSQLDataEncoder {
         mutating func superEncoder(forKey key: Key) -> Encoder {
             return encoder
         }
+    }
+}
+
+protocol AnyArray {
+    static var anyElementType: Any.Type { get }
+}
+
+extension Array: AnyArray {
+    static var anyElementType: Any.Type {
+        return Element.self
     }
 }

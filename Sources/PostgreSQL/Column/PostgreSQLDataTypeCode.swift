@@ -127,6 +127,30 @@ extension PostgreSQLDataFormat {
         case .float8: return ._float8
         case .uuid: return ._uuid
         case .jsonb: return ._jsonb
+        case .text: return ._text
+        default: return nil
+        }
+    }
+}
+
+extension PostgreSQLDataType {
+    internal var dataFormat: PostgreSQLDataFormat? {
+        switch primitive {
+        case .bigint, .bigserial: return .int8
+        case .bit, .char: return .char
+        case .boolean: return .bool
+        case .bytea: return .bytea
+        case .date: return .date
+        case .doublePrecision: return .float8
+        case .integer, .serial: return .int4
+        case .json: return .json
+        case .jsonb: return .jsonb
+        case .numeric: return .numeric
+        case .smallint, .smallserial: return .int2
+        case .text: return .text
+        case .time: return .time
+        case .timestamptz: return .timestamptz
+        case .uuid: return .uuid
         default: return nil
         }
     }
