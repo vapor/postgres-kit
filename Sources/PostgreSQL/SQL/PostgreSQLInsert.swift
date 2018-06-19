@@ -13,8 +13,11 @@ public struct PostgreSQLInsert: SQLInsert {
     /// See `SQLInsert`.
     public typealias Expression = PostgreSQLExpression
     
+    /// See `SQLInsert`.
+    public typealias Upsert = PostgreSQLUpsert
+    
     /// Root insert statement.
-    private var insert: GenericSQLInsert<TableIdentifier, ColumnIdentifier, Expression>
+    private var insert: GenericSQLInsert<TableIdentifier, ColumnIdentifier, Expression, Upsert>
 
     /// `RETURNING *`
     public var returning: [PostgreSQLSelectExpression]
@@ -29,6 +32,12 @@ public struct PostgreSQLInsert: SQLInsert {
     public var values: [[PostgreSQLExpression]] {
         get { return insert.values }
         set { insert.values = newValue}
+    }
+    
+    /// See `SQLInsert`.
+    public var upsert: PostgreSQLUpsert? {
+        get { return insert.upsert }
+        set { insert.upsert = newValue }
     }
     
     /// See `SQLSerializable`.
