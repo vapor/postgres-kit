@@ -11,7 +11,7 @@ extension PostgreSQLMessage {
         /// Note that this is not an indication of the number of parameters that might appear in the
         /// query string, only the number that the frontend wants to prespecify types for.
         /// Specifies the object ID of the parameter data type. Placing a zero here is equivalent to leaving the type unspecified.
-        var parameterTypes: [PostgreSQLDataType]
+        var parameterTypes: [PostgreSQLDataFormat]
     }
 }
 

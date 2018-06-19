@@ -34,7 +34,7 @@ extension FixedWidthInteger {
 
     /// See `PostgreSQLDataConvertible`.
     public func convertToPostgreSQLData() throws -> PostgreSQLData {
-        let type: PostgreSQLDataType
+        let type: PostgreSQLDataFormat
         switch Self.bitWidth {
         case 8: type = .char
         case 16: type = .int2

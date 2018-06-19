@@ -28,7 +28,7 @@ extension PostgreSQLConnection {
             case .readyForQuery: return false
             case .notification(let notif):
                 if try handler(notif.message) {
-                    self.simpleQuery(.unlisten(channel: channel)).transform(to: ()).cascade(promise: promise)
+                    self.simpleQuery("UNLISTEN \"\(channel)\"").cascade(promise: promise)
                     return true
                 } else {
                     return false
@@ -51,7 +51,7 @@ extension PostgreSQLConnection {
     ///     - message: String message to send to subscribers.
     /// - returns: A future that signals completion of the send.
     public func notify(_ channel: String, message: String) -> Future<Void> {
-        return simpleQuery(.notify(channel: channel, message: message)).transform(to: ())
+        return simpleQuery("NOTIFY \"\(channel)\", '\(message)'")
     }
 }
 

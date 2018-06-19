@@ -4,7 +4,7 @@ public struct PostgreSQLData: Equatable {
     public static let null: PostgreSQLData = PostgreSQLData(type: .null, storage: .null)
     
     /// The data's type.
-    public var type: PostgreSQLDataType
+    public var type: PostgreSQLDataFormat
 
     /// Internal storage type.
     enum Storage: Equatable {
@@ -41,7 +41,7 @@ public struct PostgreSQLData: Equatable {
     }
     
     /// Internal init.
-    internal init(type: PostgreSQLDataType, storage: Storage) {
+    internal init(type: PostgreSQLDataFormat, storage: Storage) {
         self.type = type
         self.storage = storage
     }
@@ -51,7 +51,7 @@ public struct PostgreSQLData: Equatable {
     /// - parameters:
     ///     - type: Data type.
     ///     - binary: Binary data blob.
-    public init(_ type: PostgreSQLDataType, binary: Data) {
+    public init(_ type: PostgreSQLDataFormat, binary: Data) {
         self.type = type
         self.storage = .binary(binary)
     }
@@ -62,7 +62,7 @@ public struct PostgreSQLData: Equatable {
     /// - parameters:
     ///     - type: Data type.
     ///     - text: Text string.
-    public init(_ type: PostgreSQLDataType, text: String) {
+    public init(_ type: PostgreSQLDataFormat, text: String) {
         self.type = type
         self.storage = .text(text)
     }
@@ -88,6 +88,15 @@ extension PostgreSQLData: CustomStringConvertible {
             case .int4: override = data.as(Int32.self, default: 0).bigEndian.description
             case .int2: override = data.as(Int16.self, default: 0).bigEndian.description
             case .uuid: override = UUID.init(uuid: data.as(uuid_t.self, default: (0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0))).description
+            case ._text:
+                let strings = try? PostgreSQLDataDecoder().decode([String].self, from: self)
+                override = strings?.description
+            case ._int4:
+                let ints = try? PostgreSQLDataDecoder().decode([Int32].self, from: self)
+                override = ints?.description
+            case ._int8:
+                let ints = try? PostgreSQLDataDecoder().decode([Int64].self, from: self)
+                override = ints?.description
             default: break
             }
             

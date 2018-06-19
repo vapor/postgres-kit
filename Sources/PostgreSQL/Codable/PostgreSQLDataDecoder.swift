@@ -56,7 +56,7 @@ public struct PostgreSQLDataDecoder {
                     /// Unknown
                     let _ = value.extract(Int32.self).bigEndian
                     /// The big-endian array element type
-                    let type: PostgreSQLDataType = .init(value.extract(Int32.self).bigEndian)
+                    let type: PostgreSQLDataFormat = .init(value.extract(Int32.self).bigEndian)
                     /// The big-endian length of the array
                     let count = value.extract(Int32.self).bigEndian
                     /// The big-endian number of dimensions
