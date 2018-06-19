@@ -14,7 +14,7 @@ let package = Package(
         .package(url: "https://github.com/vapor/crypto.git", from: "3.0.0"),
 
         // 🗄 Core services for creating database integrations.
-        .package(url: "https://github.com/vapor/database-kit.git", .branch("sql")),
+        .package(url: "https://github.com/vapor/database-kit.git", from: "1.2.0"),
 
         // 📦 Dependency injection / inversion of control framework.
         .package(url: "https://github.com/vapor/service.git", from: "1.0.0"),
@@ -23,7 +23,7 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-nio.git", from: "1.0.0"),
         
         // *️⃣ Build SQL queries in Swift. Extensible, protocol-based design that supports DQL, DML, and DDL.
-        .package(url: "https://github.com/vapor/sql.git", .branch("sql")),
+        .package(url: "https://github.com/vapor/sql.git", from: "2.0.0-beta"),
     ],
     targets: [
         .target(name: "PostgreSQL", dependencies: ["Async", "Bits", "Core", "Crypto", "DatabaseKit", "NIO", "Service", "SQL"]),
