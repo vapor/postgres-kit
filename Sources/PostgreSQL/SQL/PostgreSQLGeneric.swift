@@ -73,7 +73,7 @@ public typealias PostgreSQLJoin = GenericSQLJoin<
 public typealias PostgreSQLJoinMethod = GenericSQLJoinMethod
 
 /// See `SQLQuery`.
-public typealias PostgreSQLLiteral = GenericSQLLiteral<PostgreSQLDefaultLiteral>
+public typealias PostgreSQLLiteral = GenericSQLLiteral<PostgreSQLDefaultLiteral, PostgreSQLBoolLiteral>
 
 /// See `SQLQuery`.
 public typealias PostgreSQLOrderBy = GenericSQLOrderBy<PostgreSQLExpression, PostgreSQLDirection>
