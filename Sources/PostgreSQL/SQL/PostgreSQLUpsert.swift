@@ -6,8 +6,8 @@ public struct PostgreSQLUpsert: SQLSerializable {
     public typealias Expression = PostgreSQLExpression
     
     /// See `SQLUpsert`.
-    public static func upsert(_ column: [PostgreSQLColumnIdentifier], _ values: [(Identifier, Expression)]) -> PostgreSQLUpsert {
-        return self.init(columns: [.column(nil, .identifier("id"))], values: values)
+    public static func upsert(_ columns: [PostgreSQLColumnIdentifier]? = nil, _ values: [(Identifier, Expression)]) -> PostgreSQLUpsert {
+        return self.init(columns: columns ?? [.column(nil, .identifier("id"))], values: values)
     }
     
     /// See `SQLUpsert`.
