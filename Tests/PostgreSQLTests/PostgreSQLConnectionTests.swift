@@ -63,11 +63,11 @@ class PostgreSQLConnectionTests: XCTestCase {
             var typowner: UInt32
             var typlen: Int16
             var typbyval: Bool
-            var typtype: Char
-            var typcategory: Char
+            var typtype: String
+            var typcategory: String
             var typispreferred: Bool
             var typisdefined: Bool
-            var typdelim: Char
+            var typdelim: String
             var typrelid: UInt32
             var typelem: UInt32
             var typarray: UInt32
@@ -78,8 +78,8 @@ class PostgreSQLConnectionTests: XCTestCase {
             var typmodin: Regproc
             var typmodout: Regproc
             var typanalyze: Regproc
-            var typalign: Char
-            var typstorage: Char
+            var typalign: String
+            var typstorage: String
             var typnotnull: Bool
             var typbasetype: UInt32
             var typtypmod: Int

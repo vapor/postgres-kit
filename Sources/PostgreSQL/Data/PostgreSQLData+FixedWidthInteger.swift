@@ -5,10 +5,21 @@ extension FixedWidthInteger {
         case .binary(let value):
             let i: Self?
             switch data.type {
-            case .char, .bpchar: i = value.as(Int8.self, default: 0).bigEndian.cast(to: Self.self)
-            case .int2: i = value.as(Int16.self, default: 0).bigEndian.cast(to: Self.self)
-            case .int4, .oid, .regproc: i = value.as(Int32.self, default: 0).bigEndian.cast(to: Self.self)
-            case .int8: i = value.as(Int64.self, default: 0).bigEndian.cast(to: Self.self)
+            case .int2:
+                guard value.count == 2 else {
+                    throw PostgreSQLError.decode(self, from: data)
+                }
+                i = value.as(Int16.self, default: 0).bigEndian.cast(to: Self.self)
+            case .int4, .oid, .regproc:
+                guard value.count == 4 else {
+                    throw PostgreSQLError.decode(self, from: data)
+                }
+                i = value.as(Int32.self, default: 0).bigEndian.cast(to: Self.self)
+            case .int8:
+                guard value.count == 8 else {
+                    throw PostgreSQLError.decode(self, from: data)
+                }
+                i = value.as(Int64.self, default: 0).bigEndian.cast(to: Self.self)
             default: throw PostgreSQLError.decode(self, from: data)
             }
             guard let value = i else {
@@ -36,7 +47,17 @@ extension FixedWidthInteger {
     public func convertToPostgreSQLData() throws -> PostgreSQLData {
         let type: PostgreSQLDataFormat
         switch Self.bitWidth {
-        case 8: type = .char
+        case 8:
+            let data: PostgreSQLData?
+            if Self.isSigned {
+                data = try cast(to: Int16.self)?.convertToPostgreSQLData()
+            } else {
+                data = try cast(to: UInt16.self)?.convertToPostgreSQLData()
+            }
+            guard let d = data else {
+                throw PostgreSQLError(identifier: "singleByteInt", reason: "Could not convert \(Self.self) to PostgreSQLData: \(self)")
+            }
+            return d
         case 16: type = .int2
         case 32: type = .int4
         case 64: type = .int8

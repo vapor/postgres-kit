@@ -67,30 +67,6 @@ extension ByteBuffer {
     }
 }
 
-public struct Char: Codable, CustomStringConvertible {
-    public let value: UInt8
-    public var description: String {
-        if let string = String(data: Data([value]), encoding: .utf8) {
-            return "\"" + string + "\""
-        } else {
-            return "\\" + value.description
-        }
-    }
-    public init(_ value: UInt8) {
-        self.value = value
-    }
-    
-    public init(from decoder: Decoder) throws {
-        let single = try decoder.singleValueContainer()
-        self.value = try single.decode(UInt8.self)
-    }
-    
-    public func encode(to encoder: Encoder) throws {
-        var single = encoder.singleValueContainer()
-        try single.encode(value)
-    }
-}
-
 public enum Regproc: PostgreSQLDataConvertible, Codable {
     public func convertToPostgreSQLData() throws -> PostgreSQLData {
         switch self {
