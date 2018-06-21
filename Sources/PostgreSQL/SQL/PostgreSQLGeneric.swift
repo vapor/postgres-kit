@@ -18,9 +18,6 @@ public typealias PostgreSQLColumnIdentifier = GenericSQLColumnIdentifier<
     PostgreSQLTableIdentifier, PostgreSQLIdentifier
 >
 
-/// See `SQLQuery`.
-public typealias PostgreSQLConflictResolution = GenericSQLConflictResolution
-
 /// See `SQLQuery`
 public typealias PostgreSQLCreateTable = GenericSQLCreateTable<
     PostgreSQLTableIdentifier, PostgreSQLColumnDefinition, PostgreSQLTableConstraint
@@ -47,8 +44,11 @@ public typealias PostgreSQLExpression = GenericSQLExpression<
 
 /// See `SQLQuery`.
 public typealias PostgreSQLForeignKey = GenericSQLForeignKey<
-    PostgreSQLTableIdentifier, PostgreSQLIdentifier, PostgreSQLConflictResolution
+    PostgreSQLTableIdentifier, PostgreSQLIdentifier, PostgreSQLForeignKeyAction
 >
+
+/// See `SQLQuery`.
+public typealias PostgreSQLForeignKeyAction = GenericSQLForeignKeyAction
 
 /// See `SQLQuery`.
 public typealias PostgreSQLGroupBy = GenericSQLGroupBy<PostgreSQLExpression>

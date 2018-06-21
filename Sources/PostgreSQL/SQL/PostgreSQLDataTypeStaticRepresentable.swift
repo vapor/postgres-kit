@@ -27,7 +27,10 @@ extension Int: PostgreSQLDataTypeStaticRepresentable {
 
 extension Int8: PostgreSQLDataTypeStaticRepresentable  {
     /// See `PostgreSQLDataTypeStaticRepresentable`.
-    public static var postgreSQLDataType: PostgreSQLDataType { return .char }
+    public static var postgreSQLDataType: PostgreSQLDataType {
+        // PSQL has no single byte int type
+        return .smallint
+    }
 }
 
 extension Int16: PostgreSQLDataTypeStaticRepresentable {
@@ -52,7 +55,10 @@ extension UInt: PostgreSQLDataTypeStaticRepresentable {
 
 extension UInt8: PostgreSQLDataTypeStaticRepresentable {
     /// See `PostgreSQLDataTypeStaticRepresentable`.
-    public static var postgreSQLDataType: PostgreSQLDataType { return .char }
+    public static var postgreSQLDataType: PostgreSQLDataType {
+        // PSQL has no single byte int type
+        return .smallint
+    }
 }
 
 extension UInt16: PostgreSQLDataTypeStaticRepresentable {
