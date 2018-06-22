@@ -3,10 +3,16 @@ public enum PostgreSQLQuery: SQLQuery {
     public typealias AlterTable = PostgreSQLAlterTable
     
     /// See `SQLQuery`.
+    public typealias CreateIndex = PostgreSQLCreateIndex
+    
+    /// See `SQLQuery`.
     public typealias CreateTable = PostgreSQLCreateTable
     
     /// See `SQLQuery`.
     public typealias Delete = PostgreSQLDelete
+    
+    /// See `SQLQuery`.
+    public typealias DropIndex = PostgreSQLDropIndex
     
     /// See `SQLQuery`.
     public typealias DropTable = PostgreSQLDropTable
@@ -29,6 +35,11 @@ public enum PostgreSQLQuery: SQLQuery {
     }
     
     /// See `SQLQuery`.
+    public static func createIndex(_ createIndex: PostgreSQLCreateIndex) -> PostgreSQLQuery {
+        return ._createIndex(createIndex)
+    }
+    
+    /// See `SQLQuery`.
     public static func createTable(_ createTable: CreateTable) -> PostgreSQLQuery {
         return ._createTable(createTable)
     }
@@ -36,6 +47,11 @@ public enum PostgreSQLQuery: SQLQuery {
     /// See `SQLQuery`.
     public static func delete(_ delete: Delete) -> PostgreSQLQuery {
         return ._delete(delete)
+    }
+    
+    /// See `SQLQuery`.
+    public static func dropIndex(_ dropIndex: PostgreSQLDropIndex) -> PostgreSQLQuery {
+        return ._dropIndex(dropIndex)
     }
     
     /// See `SQLQuery`.
@@ -67,10 +83,16 @@ public enum PostgreSQLQuery: SQLQuery {
     case _alterTable(PostgreSQLAlterTable)
     
     /// See `SQLQuery`.
+    case _createIndex(PostgreSQLCreateIndex)
+    
+    /// See `SQLQuery`.
     case _createTable(PostgreSQLCreateTable)
     
     /// See `SQLQuery`.
     case _delete(PostgreSQLDelete)
+    
+    /// See `SQLQuery`.
+    case _dropIndex(PostgreSQLDropIndex)
     
     /// See `SQLQuery`.
     case _dropTable(PostgreSQLDropTable)
@@ -91,8 +113,10 @@ public enum PostgreSQLQuery: SQLQuery {
     public func serialize(_ binds: inout [Encodable]) -> String {
         switch self {
         case ._alterTable(let alterTable): return alterTable.serialize(&binds)
+        case ._createIndex(let createIndex): return createIndex.serialize(&binds)
         case ._createTable(let createTable): return createTable.serialize(&binds)
         case ._delete(let delete): return delete.serialize(&binds)
+        case ._dropIndex(let dropIndex): return dropIndex.serialize(&binds)
         case ._dropTable(let dropTable): return dropTable.serialize(&binds)
         case ._insert(let insert): return insert.serialize(&binds)
         case ._select(let select): return select.serialize(&binds)
