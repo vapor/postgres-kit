@@ -41,7 +41,7 @@ jobs:
           command: swift build
       - run: 
           name: Run unit tests
-          command: swift test
+          command: swift test -Xswiftc -DTEST_USE_UNVERIFIED_TLS
   10-linux-fluent:
     docker:
       - image: codevapor/swift:4.1
@@ -80,7 +80,7 @@ jobs:
           command: swift build
       - run: 
           name: Run unit tests
-          command: swift test
+          command: swift test -Xswiftc -DTEST_NO_GENERATED_AS_IDENTITY
   9-linux-fluent:
     docker:
       - image: codevapor/swift:4.1
