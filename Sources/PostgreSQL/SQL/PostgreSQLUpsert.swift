@@ -7,7 +7,11 @@ public struct PostgreSQLUpsert: SQLSerializable {
     
     /// See `SQLUpsert`.
     public static func upsert(_ columns: [PostgreSQLColumnIdentifier]? = nil, _ values: [(Identifier, Expression)]) -> PostgreSQLUpsert {
-        return self.init(columns: columns ?? [.column(nil, .identifier("id"))], values: values)
+        if let columns = columns, !columns.isEmpty {
+            return self.init(columns: columns, values: values)
+        } else {
+            return self.init(columns: [.column(nil, .identifier("id"))], values: values)
+        }
     }
     
     /// See `SQLUpsert`.
