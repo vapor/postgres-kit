@@ -6,7 +6,7 @@ public struct PostgreSQLUpsert: SQLSerializable {
     public typealias Expression = PostgreSQLExpression
     
     /// See `SQLUpsert`.
-    public static func upsert(_ columns: [PostgreSQLColumnIdentifier]? = nil, _ values: [(Identifier, Expression)]) -> PostgreSQLUpsert {
+    public static func upsert(_ columns: [PostgreSQLColumnIdentifier]?, _ values: [(Identifier, Expression)]) -> PostgreSQLUpsert {
         if let columns = columns, !columns.isEmpty {
             return self.init(columns: columns, values: values)
         } else {
