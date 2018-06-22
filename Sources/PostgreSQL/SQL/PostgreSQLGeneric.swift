@@ -18,7 +18,12 @@ public typealias PostgreSQLColumnIdentifier = GenericSQLColumnIdentifier<
     PostgreSQLTableIdentifier, PostgreSQLIdentifier
 >
 
-/// See `SQLQuery`
+/// See `SQLQuery`.
+public typealias PostgreSQLCreateIndex = GenericSQLCreateIndex<
+    PostgreSQLIndexModifier, PostgreSQLIdentifier, PostgreSQLTableIdentifier
+>
+
+/// See `SQLQuery`.
 public typealias PostgreSQLCreateTable = GenericSQLCreateTable<
     PostgreSQLTableIdentifier, PostgreSQLColumnDefinition, PostgreSQLTableConstraint
 >
@@ -52,6 +57,9 @@ public typealias PostgreSQLForeignKeyAction = GenericSQLForeignKeyAction
 
 /// See `SQLQuery`.
 public typealias PostgreSQLGroupBy = GenericSQLGroupBy<PostgreSQLExpression>
+
+/// See `SQLQuery`.
+public typealias PostgreSQLIndexModifier = GenericSQLIndexModifier
 
 /// See `SQLQuery`.
 public typealias PostgreSQLIdentifier = GenericSQLIdentifier

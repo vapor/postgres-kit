@@ -8,19 +8,13 @@ class PostgreSQLConnectionTests: XCTestCase {
     }
     
     func testBenchmark() throws {
-        let conn = try PostgreSQLConnection.makeTest(transport: .cleartext)
+        let conn = try PostgreSQLConnection.makeTest()
         let benchmarker = SQLBenchmarker(on: conn)
         try benchmarker.run()
     }
     
     func testVersion() throws {
-        let client = try PostgreSQLConnection.makeTest(transport: .cleartext)
-        let results = try client.select().column(.function("version", [])).all(decoding: VersionMetadata.self).wait()
-        XCTAssertTrue(results[0].version.contains("10."))
-    }
-
-    func testUnverifiedSSLConnection() throws {
-        let client = try PostgreSQLConnection.makeTest(transport: .unverifiedTLS)
+        let client = try PostgreSQLConnection.makeTest()
         let results = try client.select().column(.function("version", [])).all(decoding: VersionMetadata.self).wait()
         XCTAssertTrue(results[0].version.contains("10."))
     }
@@ -89,7 +83,7 @@ class PostgreSQLConnectionTests: XCTestCase {
 //            var typdefault: String?
 //            var typacl: String?
         }
-        let client = try PostgreSQLConnection.makeTest(transport: .cleartext)
+        let client = try PostgreSQLConnection.makeTest()
         let results = try client.select().all().from(PGType.self).all(decoding: PGType.self).wait()
         XCTAssert(results.count >= 350, "Results count not large enough: \(results.count)")
     }
@@ -101,11 +95,15 @@ class PostgreSQLConnectionTests: XCTestCase {
     }
     
     struct Hello: Codable, ReflectionDecodable, Equatable {
+        static func reflectDecoded() throws -> (PostgreSQLConnectionTests.Hello, PostgreSQLConnectionTests.Hello) {
+            return (.init(message: "0"), .init(message: "1"))
+        }
+        
         var message: String
     }
 
     func testStruct() throws {
-        let client = try PostgreSQLConnection.makeTest(transport: .cleartext)
+        let client = try PostgreSQLConnection.makeTest()
         
         struct Foo: PostgreSQLTable {
             var id: Int?
@@ -133,7 +131,7 @@ class PostgreSQLConnectionTests: XCTestCase {
     }
 
     func testNull() throws {
-        let conn = try PostgreSQLConnection.makeTest(transport: .cleartext)
+        let conn = try PostgreSQLConnection.makeTest()
 
         struct Nulltest: PostgreSQLTable {
             var i: Int?
@@ -153,7 +151,7 @@ class PostgreSQLConnectionTests: XCTestCase {
 
     func testGH24() throws {
         /// PREPARE
-        let client = try PostgreSQLConnection.makeTest(transport: .cleartext)
+        let client = try PostgreSQLConnection.makeTest()
 
         /// CREATE
         let _ = try client.query("""
@@ -230,7 +228,7 @@ class PostgreSQLConnectionTests: XCTestCase {
 
     // https://github.com/vapor/postgresql/issues/46
     func testGH46() throws {
-        let conn = try PostgreSQLConnection.makeTest(transport: .cleartext)
+        let conn = try PostgreSQLConnection.makeTest()
         _ = try conn.simpleQuery("CREATE TABLE apps (id INT, platform TEXT, identifier TEXT)").wait()
         defer { _ = try? conn.simpleQuery("DROP TABLE apps").wait() }
         _ = try conn.simpleQuery("INSERT INTO apps VALUES (1, 'a', 'b')").wait()
@@ -312,7 +310,7 @@ class PostgreSQLConnectionTests: XCTestCase {
     }
 
     func testRowCodableTypes() throws {
-        let conn = try PostgreSQLConnection.makeTest(transport: .cleartext)
+        let conn = try PostgreSQLConnection.makeTest()
         
         struct Types: PostgreSQLTable, Codable {
             static let postgreSQLTable = "types"
@@ -391,7 +389,7 @@ class PostgreSQLConnectionTests: XCTestCase {
             var timestamptz: Date
         }
         
-        let conn = try PostgreSQLConnection.makeTest(transport: .cleartext)
+        let conn = try PostgreSQLConnection.makeTest()
         defer {
             try? conn.drop(table: Time.self).ifExists().run().wait()
         }
@@ -408,13 +406,13 @@ class PostgreSQLConnectionTests: XCTestCase {
     }
 
     func testListen() throws {
-        let conn = try PostgreSQLConnection.makeTest(transport: .cleartext)
+        let conn = try PostgreSQLConnection.makeTest()
         let done = conn.listen("foo") { message in
             XCTAssertEqual(message, "hi")
             return true
         }
         do {
-            let conn = try PostgreSQLConnection.makeTest(transport: .cleartext)
+            let conn = try PostgreSQLConnection.makeTest()
             _ = try conn.notify("foo", message: "hi").wait()
         }
         try done.wait()
@@ -422,7 +420,7 @@ class PostgreSQLConnectionTests: XCTestCase {
 
     // https://github.com/vapor/postgresql/issues/56
     func testSum() throws {
-        let conn = try PostgreSQLConnection.makeTest(transport: .cleartext)
+        let conn = try PostgreSQLConnection.makeTest()
         struct Sum: Decodable {
             var sum: Double
         }
@@ -443,7 +441,7 @@ class PostgreSQLConnectionTests: XCTestCase {
             }
         }
 
-        let conn = try PostgreSQLConnection.makeTest(transport: .cleartext)
+        let conn = try PostgreSQLConnection.makeTest()
         defer {
             try? conn.drop(table: Planet.self).ifExists().run().wait()
         }
@@ -474,7 +472,7 @@ class PostgreSQLConnectionTests: XCTestCase {
 
     // https://github.com/vapor/postgresql/issues/53
     func testInvalidDate() throws {
-        let conn = try PostgreSQLConnection.makeTest(transport: .cleartext)
+        let conn = try PostgreSQLConnection.makeTest()
         
         struct Time: PostgreSQLTable, Equatable {
             static let sqlTableIdentifierString = "timetest"
@@ -521,7 +519,6 @@ class PostgreSQLConnectionTests: XCTestCase {
     static var allTests = [
         ("testBenchmark", testBenchmark),
         ("testVersion", testVersion),
-        ("testUnverifiedSSLConnection", testUnverifiedSSLConnection),
         ("testSelectTypes", testSelectTypes),
         ("testStruct", testStruct),
         ("testNull", testNull),
@@ -542,22 +539,27 @@ class PostgreSQLConnectionTests: XCTestCase {
 }
 
 extension PostgreSQLConnection {
-    /// Creates a test event loop and psql client over ssl.
-    static func makeTest(transport: PostgreSQLConnection.TransportConfig) throws -> PostgreSQLConnection {
-        #if Xcode
-        return try _makeTest(hostname: "localhost", port: transport.isTLS ? 5433 : 5432, password: "vapor_password", transport: transport)
-        #else
-        return try _makeTest(hostname: transport.isTLS ? "tls" : "cleartext", port: 5432, password: "vapor_password", transport: transport)
-        #endif
-    }
-
     /// Creates a test connection.
-    private static func _makeTest(hostname: String, port: Int, password: String? = nil, transport: PostgreSQLConnection.TransportConfig = .cleartext) throws -> PostgreSQLConnection {
+    static func makeTest() throws -> PostgreSQLConnection {
+        let transport: PostgreSQLConnection.TransportConfig
+        #if TEST_SSL
+        transport = .unverifiedTLS
+        #else
+        transport = .cleartext
+        #endif
+        
+        let hostname: String
+        #if os(macOS)
+        hostname = "localhost"
+        #else
+        hostname = "psql"
+        #endif
+        
         let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-        let client = try PostgreSQLConnection.connect(hostname: hostname, port: port, transport: transport, on: group) { error in
+        let client = try PostgreSQLConnection.connect(hostname: hostname, port: 5432, transport: transport, on: group) { error in
             XCTFail("\(error)")
         }.wait()
-        _ = try client.authenticate(username: "vapor_username", database: "vapor_database", password: password).wait()
+        _ = try client.authenticate(username: "vapor_username", database: "vapor_database", password: "vapor_password").wait()
         client.logger = DatabaseLogger(database: .psql, handler: PrintLogHandler())
         return client
     }
@@ -565,134 +567,4 @@ extension PostgreSQLConnection {
 
 func +=<T>(lhs: inout [T], rhs: T) {
     lhs.append(rhs)
-}
-
-
-
-
-
-
-
-
-extension ReflectionDecodable where Self: Decodable {
-    public static func reflectDecoded() throws -> (Self, Self) {
-        return try (Self.init(from: ArityDecoder(false)), Self.init(from: ArityDecoder(true)))
-    }
-}
-
-private struct ArityDecoder: Decoder {
-    let codingPath: [CodingKey] = []
-    let userInfo: [CodingUserInfoKey: Any] = [:]
-    let arity: Bool
-    init(_ arity: Bool) {
-        self.arity = arity
-    }
-    
-    func container<Key>(keyedBy type: Key.Type) throws -> KeyedDecodingContainer<Key> where Key : CodingKey {
-        return .init(ArityKeyedDecodingContainer(arity))
-    }
-    
-    func unkeyedContainer() throws -> UnkeyedDecodingContainer {
-        fatalError()
-    }
-    
-    func singleValueContainer() throws -> SingleValueDecodingContainer {
-        fatalError()
-    }
-    
-    private struct ArityKeyedDecodingContainer<Key>: KeyedDecodingContainerProtocol where Key: CodingKey {
-        let allKeys: [Key] = []
-        
-        let codingPath: [CodingKey] = []
-        let userInfo: [CodingUserInfoKey: Any] = [:]
-        let arity: Bool
-        init(_ arity: Bool) {
-            self.arity = arity
-        }
-        
-        
-        func contains(_ key: Key) -> Bool {
-            return true
-        }
-        
-        func decodeNil(forKey key: Key) throws -> Bool {
-            return true
-        }
-        
-        func decode(_ type: Bool.Type, forKey key: Key) throws -> Bool {
-            return arity
-        }
-        
-        func decode(_ type: String.Type, forKey key: Key) throws -> String {
-            return arity ? "1" : "0"
-        }
-        
-        func decode(_ type: Double.Type, forKey key: Key) throws -> Double {
-            return arity ? 1 : 0
-        }
-        
-        func decode(_ type: Float.Type, forKey key: Key) throws -> Float {
-            return arity ? 1 : 0
-        }
-        
-        func decode(_ type: Int.Type, forKey key: Key) throws -> Int {
-            return arity ? 1 : 0
-        }
-        
-        func decode(_ type: Int8.Type, forKey key: Key) throws -> Int8 {
-            return arity ? 1 : 0
-        }
-        
-        func decode(_ type: Int16.Type, forKey key: Key) throws -> Int16 {
-            return arity ? 1 : 0
-        }
-        
-        func decode(_ type: Int32.Type, forKey key: Key) throws -> Int32 {
-            return arity ? 1 : 0
-        }
-        
-        func decode(_ type: Int64.Type, forKey key: Key) throws -> Int64 {
-            return arity ? 1 : 0
-        }
-        
-        func decode(_ type: UInt.Type, forKey key: Key) throws -> UInt {
-            return arity ? 1 : 0
-        }
-        
-        func decode(_ type: UInt8.Type, forKey key: Key) throws -> UInt8 {
-            return arity ? 1 : 0
-        }
-        
-        func decode(_ type: UInt16.Type, forKey key: Key) throws -> UInt16 {
-            return arity ? 1 : 0
-        }
-        
-        func decode(_ type: UInt32.Type, forKey key: Key) throws -> UInt32 {
-            return arity ? 1 : 0
-        }
-        
-        func decode(_ type: UInt64.Type, forKey key: Key) throws -> UInt64 {
-            return arity ? 1 : 0
-        }
-        
-        func decode<T>(_ type: T.Type, forKey key: Key) throws -> T where T : Decodable {
-            return try T.init(from: ArityDecoder(arity))
-        }
-        
-        func nestedContainer<NestedKey>(keyedBy type: NestedKey.Type, forKey key: Key) throws -> KeyedDecodingContainer<NestedKey> where NestedKey : CodingKey {
-            return .init(ArityKeyedDecodingContainer<NestedKey>(arity))
-        }
-        
-        func nestedUnkeyedContainer(forKey key: Key) throws -> UnkeyedDecodingContainer {
-            fatalError()
-        }
-        
-        func superDecoder() throws -> Decoder {
-            return ArityDecoder(arity)
-        }
-        
-        func superDecoder(forKey key: Key) throws -> Decoder {
-            return ArityDecoder(arity)
-        }
-    }
 }
