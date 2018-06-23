@@ -6,12 +6,8 @@ public struct PostgreSQLUpsert: SQLSerializable {
     public typealias Expression = PostgreSQLExpression
     
     /// See `SQLUpsert`.
-    public static func upsert(_ columns: [PostgreSQLColumnIdentifier]?, _ values: [(Identifier, Expression)]) -> PostgreSQLUpsert {
-        if let columns = columns, !columns.isEmpty {
-            return self.init(columns: columns, values: values)
-        } else {
-            return self.init(columns: [.column(nil, .identifier("id"))], values: values)
-        }
+    public static func upsert(_ columns: [PostgreSQLColumnIdentifier], _ values: [(Identifier, Expression)]) -> PostgreSQLUpsert {
+        return self.init(columns: columns, values: values)
     }
     
     /// See `SQLUpsert`.
@@ -24,7 +20,7 @@ public struct PostgreSQLUpsert: SQLSerializable {
     public func serialize(_ binds: inout [Encodable]) -> String {
         var sql: [String] = []
         sql.append("ON CONFLICT")
-        sql.append("(" + columns.serialize(&binds) + ")")
+        sql.append("(" + columns.map { $0.identifier }.serialize(&binds) + ")")
         sql.append("DO UPDATE SET")
         sql.append(values.map { $0.0.serialize(&binds) + " = " + $0.1.serialize(&binds) }.joined(separator: ", "))
         return sql.joined(separator: " ")
