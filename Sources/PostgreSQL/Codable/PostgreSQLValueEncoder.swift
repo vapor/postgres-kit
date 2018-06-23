@@ -141,11 +141,13 @@ public struct PostgreSQLDataEncoder {
         }
         
         mutating func encode<T>(_ value: T) throws where T : Encodable {
+            let data: PostgreSQLData
             if let convertible = value as? PostgreSQLDataConvertible {
-                try encoder.array.append(convertible.convertToPostgreSQLData())
+                data = try convertible.convertToPostgreSQLData()
             } else {
-                try value.encode(to: encoder)
+                data = try PostgreSQLDataEncoder().encode(value)
             }
+            encoder.array.append(data)
         }
         
         mutating func nestedContainer<NestedKey>(keyedBy keyType: NestedKey.Type) -> KeyedEncodingContainer<NestedKey> where NestedKey : CodingKey {
