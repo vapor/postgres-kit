@@ -32,14 +32,14 @@ extension PostgreSQLConnection {
             self.tableNames = tableNames
         }
     }
-    
+
     /// Fetches a struct that can convert table OIDs to table names.
     ///
     ///     SELECT oid, relname FROM pg_class
     ///
     /// The table names will be cached on the connection after fetching.
-    public func tableNames() -> Future<TableNameCache> {
-        if let existing = tableNameCache {
+    public func tableNames(refresh: Bool = false) -> Future<TableNameCache> {
+        if let existing = tableNameCache, !refresh {
             return future(existing)
         } else {
             struct PGClass: PostgreSQLTable {
