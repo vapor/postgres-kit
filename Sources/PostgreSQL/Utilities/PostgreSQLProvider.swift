@@ -3,8 +3,14 @@ import Service
 
 /// Provides base `PostgreSQL` services such as database and connection.
 public final class PostgreSQLProvider: Provider {
+    let defaultIdentifier: DatabaseIdentifier<PostgreSQLDatabase>
+    
     /// Creates a new `PostgreSQLProvider`.
-    public init() {}
+    ///
+    /// - Parameter defaultIdentifier: Set the default identifier for the required Database.
+    public init(defaultIdentifier: DatabaseIdentifier<PostgreSQLDatabase> = .psql) {
+        self.defaultIdentifier = defaultIdentifier
+    }
 
     /// See `Provider.register`
     public func register(_ services: inout Services) throws {
@@ -12,7 +18,7 @@ public final class PostgreSQLProvider: Provider {
         services.register(PostgreSQLDatabaseConfig.self)
         services.register(PostgreSQLDatabase.self)
         var databases = DatabasesConfig()
-        databases.add(database: PostgreSQLDatabase.self, as: .psql)
+        databases.add(database: PostgreSQLDatabase.self, as: self.defaultIdentifier)
         services.register(databases)
     }
 
