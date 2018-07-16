@@ -178,7 +178,7 @@ public enum PostgreSQLBinaryOperator: SQLBinaryOperator, Equatable {
         case ._like: return "LIKE"
         case ._glob: return "GLOB"
         case ._match: return "MATCH"
-        case ._regexp: return "REGEXP"
+        case ._regexp: return "~"
         case ._notLike: return "NOT LIKE"
         case ._notGlob: return "NOT GLOB"
         case ._notMatch: return "NOT MATCH"
