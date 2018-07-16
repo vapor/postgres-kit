@@ -183,54 +183,52 @@ class PostgreSQLConnectionTests: XCTestCase {
         CREATE TABLE "users" ("id" UUID PRIMARY KEY, "name" TEXT NOT NULL, "username" TEXT NOT NULL)
         """).wait()
         defer { _ = try! client.simpleQuery("DROP TABLE users").wait() }
-        let _ = try client.query("""
+        let _ = try client.raw("""
         CREATE TABLE "acronyms" ("id" \(idtype) PRIMARY KEY, "short" TEXT NOT NULL, "long" TEXT NOT NULL, "userID" UUID NOT NULL, FOREIGN KEY ("userID") REFERENCES "users" ("id"), FOREIGN KEY ("userID") REFERENCES "users" ("id"))
-        """).wait()
+        """).run().wait()
         defer { _ = try! client.simpleQuery("DROP TABLE acronyms").wait() }
-        let _ = try client.query("""
+        let _ = try client.raw("""
         CREATE TABLE "categories" ("id" \(idtype) PRIMARY KEY, "name" TEXT NOT NULL)
-        """).wait()
+        """).run().wait()
         defer { _ = try! client.simpleQuery("DROP TABLE categories").wait() }
-        let _ = try client.query("""
+        let _ = try client.raw("""
         CREATE TABLE "acronym+category" ("id" UUID PRIMARY KEY, "acronymID" BIGINT NOT NULL, "categoryID" BIGINT NOT NULL, FOREIGN KEY ("acronymID") REFERENCES "acronyms" ("id"), FOREIGN KEY ("categoryID") REFERENCES "categories" ("id"), FOREIGN KEY ("acronymID") REFERENCES "acronyms" ("id"), FOREIGN KEY ("categoryID") REFERENCES "categories" ("id"))
-        """).wait()
+        """).run().wait()
         defer { _ = try! client.simpleQuery("DROP TABLE \"acronym+category\"").wait() }
 
         /// INSERT
         let userUUID = UUID()
-        let _ = try client.query(
-            """
-            INSERT INTO "users" ("id", "name", "username") VALUES ($1, $2, $3)
-            """,
-            [userUUID, "Vapor Test", "vapor" ]
-        ).wait()
-        let _ = try client.query(
-            """
-            INSERT INTO "acronyms" ("id", "userID", "short", "long") VALUES ($1, $2, $3, $4)
-            """,
-            [1, userUUID, "ilv", "i love vapor"]
-        ).wait()
-        let _ = try client.query(
-            """
-            INSERT INTO "categories" ("id", "name") VALUES ($1, $2);
-            """,
-            [1, "all"]
-        ).wait()
+        let _ = try client.raw(
+        """
+        INSERT INTO "users" ("id", "name", "username") VALUES ($1, $2, $3)
+        """)
+        .bind(userUUID).bind("Vapor Test").bind("vapor")
+        .run().wait()
+        let _ = try client.raw(
+        """
+        INSERT INTO "acronyms" ("id", "userID", "short", "long") VALUES ($1, $2, $3, $4)
+        """)
+        .bind(1).bind(userUUID).bind("ilv").bind("i love vapor")
+        .run().wait()
+        let _ = try client.raw(
+        """
+        INSERT INTO "categories" ("id", "name") VALUES ($1, $2);
+        """)
+        .bind(1).bind("all")
+        .run().wait()
 
 
         /// SELECT
-        let acronyms = client.query(
-            """
-            SELECT "acronyms".* FROM "acronyms" WHERE ("acronyms"."id" = $1) LIMIT 1 OFFSET 0
-            """,
-            [1]
-        )
-        let categories = client.query(
-            """
-            SELECT "categories".* FROM "categories" WHERE ("categories"."id" = $1) LIMIT 1 OFFSET 0
-            """,
-            [1]
-        )
+        let acronyms = client.raw(
+        """
+        SELECT "acronyms".* FROM "acronyms" WHERE ("acronyms"."id" = $1) LIMIT 1 OFFSET 0
+        """)
+        .bind(1).run()
+        let categories = client.raw(
+        """
+        SELECT "categories".* FROM "categories" WHERE ("categories"."id" = $1) LIMIT 1 OFFSET 0
+        """)
+        .bind(1).run()
 
         _ = try acronyms.wait()
         _ = try categories.wait()
