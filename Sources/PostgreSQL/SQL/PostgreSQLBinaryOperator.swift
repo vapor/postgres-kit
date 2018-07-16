@@ -21,6 +21,9 @@ public enum PostgreSQLBinaryOperator: SQLBinaryOperator, Equatable {
     public static var like: PostgreSQLBinaryOperator { return ._like }
     
     /// See `SQLBinaryOperator`.
+    public static var notLike: PostgreSQLBinaryOperator { return ._notLike }
+    
+    /// See `SQLBinaryOperator`.
     public static var `in`: PostgreSQLBinaryOperator { return ._in }
     
     /// See `SQLBinaryOperator`.
@@ -31,6 +34,25 @@ public enum PostgreSQLBinaryOperator: SQLBinaryOperator, Equatable {
     
     /// See `SQLBinaryOperator`.
     public static var or: PostgreSQLBinaryOperator { return ._or }
+    
+    /// See `SQLBinaryOperator`.
+    public static var concatenate: PostgreSQLBinaryOperator { return ._concatenate }
+    
+    /// See `SQLBinaryOperator`.
+    public static var multiply: PostgreSQLBinaryOperator { return ._multiply }
+    
+    /// See `SQLBinaryOperator`.
+    public static var divide: PostgreSQLBinaryOperator { return ._divide }
+    
+    /// See `SQLBinaryOperator`.
+    public static var modulo: PostgreSQLBinaryOperator { return ._modulo }
+    
+    /// See `SQLBinaryOperator`.
+    public static var add: PostgreSQLBinaryOperator { return ._add }
+    
+    /// See `SQLBinaryOperator`.
+    public static var subtract: PostgreSQLBinaryOperator { return ._subtract }
+    
     
     /// `||`
     case _concatenate

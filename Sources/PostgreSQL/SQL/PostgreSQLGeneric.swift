@@ -20,7 +20,7 @@ public typealias PostgreSQLColumnIdentifier = GenericSQLColumnIdentifier<
 
 /// See `SQLQuery`.
 public typealias PostgreSQLCreateIndex = GenericSQLCreateIndex<
-    PostgreSQLIndexModifier, PostgreSQLIdentifier, PostgreSQLTableIdentifier
+    PostgreSQLIndexModifier, PostgreSQLIdentifier, PostgreSQLColumnIdentifier
 >
 
 /// See `SQLQuery`.
@@ -84,7 +84,7 @@ public typealias PostgreSQLSelect = GenericSQLSelect<
 >
 
 /// See `SQLQuery`.
-public typealias PostgreSQLSelectExpression = GenericSQLSelectExpression<PostgreSQLExpression, PostgreSQLIdentifier>
+public typealias PostgreSQLSelectExpression = GenericSQLSelectExpression<PostgreSQLExpression, PostgreSQLIdentifier, PostgreSQLTableIdentifier>
 
 /// See `SQLQuery`.
 public typealias PostgreSQLTableConstraintAlgorithm = GenericSQLTableConstraintAlgorithm<
