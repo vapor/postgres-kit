@@ -1,6 +1,6 @@
 public struct PostgreSQLDefaultLiteral: SQLDefaultLiteral {
     /// See `SQLDefaultLiteral`.
-    public static func `default`() -> PostgreSQLDefaultLiteral {
+    public static var `default`: PostgreSQLDefaultLiteral {
         return .init()
     }
     
