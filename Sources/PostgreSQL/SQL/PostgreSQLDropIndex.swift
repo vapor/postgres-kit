@@ -1,4 +1,6 @@
+/// PostgreSQL specific `SQLDropIndex`.
 public struct PostgreSQLDropIndex: SQLDropIndex {
+    /// See `SQLDropIndex`.
     public var identifier: PostgreSQLIdentifier
     
     /// See `SQLSerializable`.
@@ -10,6 +12,7 @@ public struct PostgreSQLDropIndex: SQLDropIndex {
     }
 }
 
+/// Builds `PostgreSQLDropIndex` queries.
 public final class PostgreSQLDropIndexBuilder<Connection>: SQLQueryBuilder
     where Connection: SQLConnection, Connection.Query == PostgreSQLQuery
 {
@@ -33,6 +36,7 @@ public final class PostgreSQLDropIndexBuilder<Connection>: SQLQueryBuilder
 
 
 extension SQLConnection where Query == PostgreSQLQuery {
+    /// Creates a `PostgreSQLDropIndexBuilder` for this connection.
     public func drop(index identifier: PostgreSQLIdentifier) -> PostgreSQLDropIndexBuilder<Self> {
         return .init(PostgreSQLDropIndex(identifier: identifier), on: self)
     }

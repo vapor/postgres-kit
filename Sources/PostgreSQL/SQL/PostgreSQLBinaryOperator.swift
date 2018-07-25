@@ -1,3 +1,4 @@
+/// PostgreSQL specific `SQLBinaryOperator`.
 public enum PostgreSQLBinaryOperator: SQLBinaryOperator, Equatable {
     /// See `SQLBinaryOperator`.
     public static var equal: PostgreSQLBinaryOperator { return ._equal }

@@ -6,6 +6,7 @@ public struct PostgreSQLColumn: Hashable, Equatable {
     /// The column's name.
     public var name: String
     
+    /// Creates a new `PostgreSQLColumn`.
     public init(tableOID: UInt32 = 0, name: String) {
         self.tableOID = tableOID
         self.name = name

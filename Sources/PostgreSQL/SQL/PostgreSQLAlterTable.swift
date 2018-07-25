@@ -23,33 +23,44 @@ public struct PostgreSQLAlterTable: SQLAlterTable {
     /// DROP [ COLUMN ] [ IF EXISTS ] column_name [ RESTRICT | CASCADE ]
     /// DROP CONSTRAINT [ IF EXISTS ]  constraint_name [ RESTRICT | CASCADE ]
     public struct DropAction: SQLSerializable {
+        /// Algorithm to use while dropping.
         public enum Method {
+            /// `RESTRICT`
             case restrict
+            /// `CASCADE`
             case cascade
         }
         
+        /// Type of entity to drop.
         public enum Kind {
+            /// Table column.
             case column
+            /// Table constraint.
             case constraint
         }
         
+        /// See `Kind`.
         public var kind: Kind
         
+        /// If `true`, no error will be thrown if the entity does not exist.
         public var ifExists: Bool
         
-        public var column: PostgreSQLIdentifier
+        /// Name of the constraint or column to drop.
+        public var identifier: PostgreSQLIdentifier
         
+        /// Algorithm to use.
         public var method: Method?
         
+        /// Creates a new `DropAction`.
         public init(
             _ kind: Kind,
             ifExists: Bool = false,
-            _ column: PostgreSQLIdentifier,
+            _ identifier: PostgreSQLIdentifier,
             _ method: Method? = nil
         ) {
             self.kind = kind
             self.ifExists = ifExists
-            self.column = column
+            self.identifier = identifier
             self.method = method
         }
         
@@ -64,7 +75,7 @@ public struct PostgreSQLAlterTable: SQLAlterTable {
             if ifExists {
                 sql.append("IF EXISTS")
             }
-            sql.append(column.serialize(&binds))
+            sql.append(identifier.serialize(&binds))
             if let method = method {
                 switch method {
                 case .cascade: sql.append("CASCADE")
@@ -75,6 +86,7 @@ public struct PostgreSQLAlterTable: SQLAlterTable {
         }
     }
     
+    /// Things to drop.
     public var dropActions: [DropAction]
     
     /// Creates a new `AlterTable`.

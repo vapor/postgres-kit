@@ -1,4 +1,4 @@
-import PostgreSQL
+@testable import PostgreSQL
 import SQLBenchmark
 import XCTest
 
@@ -579,9 +579,7 @@ extension PostgreSQLConnection {
         #endif
         
         let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-        let client = try PostgreSQLConnection.connect(hostname: hostname, port: 5432, transport: transport, on: group) { error in
-            XCTFail("\(error)")
-        }.wait()
+        let client = try PostgreSQLConnection.connect(hostname: hostname, port: 5432, transport: transport, on: group).wait()
         _ = try client.authenticate(username: "vapor_username", database: "vapor_database", password: "vapor_password").wait()
         client.logger = DatabaseLogger(database: .psql, handler: PrintLogHandler())
         return client

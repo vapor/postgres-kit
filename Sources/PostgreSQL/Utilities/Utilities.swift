@@ -67,14 +67,14 @@ extension ByteBuffer {
     }
 }
 
-public enum Regproc: PostgreSQLDataConvertible, Codable {
-    public func convertToPostgreSQLData() throws -> PostgreSQLData {
+enum Regproc: PostgreSQLDataConvertible, Codable {
+    func convertToPostgreSQLData() throws -> PostgreSQLData {
         switch self {
         case .function(let string): return try string.convertToPostgreSQLData()
         case .functionID(let id): return try id.convertToPostgreSQLData()
         }
     }
-    public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> Regproc {
+    static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> Regproc {
         if data.binary != nil {
             return try .functionID(.convertFromPostgreSQLData(data))
         } else {
@@ -82,12 +82,12 @@ public enum Regproc: PostgreSQLDataConvertible, Codable {
         }
     }
     
-    public init(from decoder: Decoder) throws {
+    init(from decoder: Decoder) throws {
         let single = try decoder.singleValueContainer()
         self = try .function(single.decode(String.self))
     }
     
-    public func encode(to encoder: Encoder) throws {
+    func encode(to encoder: Encoder) throws {
         var single = encoder.singleValueContainer()
         switch self {
         case .function(let string): try single.encode(string)

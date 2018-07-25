@@ -1,8 +1,8 @@
-public struct PostgreSQLDataDecoder {
+struct PostgreSQLDataDecoder {
     /// Creates a new `PostgreSQLDataDecoder`.
-    public init() {}
+    init() {}
     
-    public func decode<D>(_ type: D.Type, from data: PostgreSQLData) throws -> D where D: Decodable {
+    func decode<D>(_ type: D.Type, from data: PostgreSQLData) throws -> D where D: Decodable {
         if let convertible = type as? PostgreSQLDataConvertible.Type {
             return try convertible.convertFromPostgreSQLData(data) as! D
         }

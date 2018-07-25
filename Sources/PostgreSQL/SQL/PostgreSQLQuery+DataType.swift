@@ -1,3 +1,4 @@
+/// PostgreSQL specific `SQLDataType`.
 public struct PostgreSQLDataType: SQLDataType, Equatable {
     /// See `Equatable`.
     public static func == (lhs: PostgreSQLDataType, rhs: PostgreSQLDataType) -> Bool {
@@ -334,6 +335,7 @@ public struct PostgreSQLDataType: SQLDataType, Equatable {
         return .init(.custom(name))
     }
     
+    /// Creates an array type from a `PostgreSQLDataType`.
     public static func array(_ dataType: PostgreSQLDataType) -> PostgreSQLDataType {
         return .init(dataType.primitive, isArray: true)
     }

@@ -1,22 +1,27 @@
 extension PostgreSQLConnection {
     /// Specifies how to connect to a PostgreSQL server.
     public struct ServerAddress {
+        /// Default PostgreSQL server address and port.
         public static var `default`: ServerAddress {
             return .tcp(hostname: "localhost", port: 5432)
         }
         
+        /// Default PostgreSQL socket file.
         public static var socketDefault: ServerAddress {
             return .unixSocket(path: "/tmp/.s.PGSQL.5432")
         }
         
+        /// TCP PostgreSQL address.
         public static func tcp(hostname: String, port: Int) -> ServerAddress {
             return .init(.tcp(hostname: hostname, port: port))
         }
         
+        /// Unix socket PostgreSQL address.
         public static func unixSocket(path: String) -> ServerAddress {
             return .init(.unixSocket(path: path))
         }
         
+        /// Custom PostgreSQL socket address.
         public static func socketAddress(_ socketAddress: SocketAddress) -> ServerAddress {
             return .init(.socketAddress(socketAddress))
         }

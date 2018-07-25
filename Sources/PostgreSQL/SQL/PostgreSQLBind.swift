@@ -1,7 +1,10 @@
+/// Representable as a `PostgreSQLExpression`.
 public protocol PostgreSQLExpressionRepresentable {
+    /// Self converted to a `PostgreSQLExpression`.
     var postgreSQLExpression: PostgreSQLExpression { get }
 }
 
+/// PostgreSQL specific `SQLBind`.
 public struct PostgreSQLBind: SQLBind {
     /// See `SQLBind`.
     public static func encodable<E>(_ value: E) -> PostgreSQLBind
@@ -14,11 +17,16 @@ public struct PostgreSQLBind: SQLBind {
         }
     }
     
+    /// Specific type of bind.
     public enum Value {
+        /// A `PostgreSQLExpression`.
         case expression(PostgreSQLExpression)
+        
+        /// A bound `Encodable` type.
         case encodable(Encodable)
     }
     
+    /// Bind value.
     public var value: Value
     
     /// See `SQLSerializable`.

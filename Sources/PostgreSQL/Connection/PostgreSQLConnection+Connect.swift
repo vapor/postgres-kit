@@ -1,21 +1,23 @@
 extension PostgreSQLConnection {
+    /// Connects to PostgreSQL server via TCP.
     public static func connect(
         hostname: String = "localhost",
         port: Int = 5432,
         transport: TransportConfig = .cleartext,
-        on worker: Worker,
-        onError: @escaping (Error) -> ()
+        on worker: Worker
     ) throws -> Future<PostgreSQLConnection> {
-        return try connect(to: .tcp(hostname: hostname, port: port), transport: transport, on: worker, onError: onError)
+        return try connect(to: .tcp(hostname: hostname, port: port), transport: transport, on: worker)
     }
     
+    /// Connects to PostgreSQL server specified by a `ServerAddress`.
     public static func connect(
         to serverAddress: ServerAddress,
         transport: TransportConfig = .cleartext,
-        on worker: Worker,
-        onError: @escaping (Error) -> ()
+        on worker: Worker
     ) throws -> Future<PostgreSQLConnection> {
-        let handler = QueueHandler<PostgreSQLMessage, PostgreSQLMessage>(on: worker, onError: onError)
+        let handler = QueueHandler<PostgreSQLMessage, PostgreSQLMessage>(on: worker) { error in
+            ERROR(error.localizedDescription)
+        }
         let bootstrap = ClientBootstrap(group: worker.eventLoop)
             // Enable SO_REUSEADDR.
             .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
