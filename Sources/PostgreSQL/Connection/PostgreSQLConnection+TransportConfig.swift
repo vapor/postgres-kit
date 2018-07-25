@@ -1,6 +1,7 @@
 import NIOOpenSSL
 
 extension PostgreSQLConnection {
+    /// Transport-layer security configuration for the PostgreSQL connection.
     public struct TransportConfig {
         /// Does not attempt to enable TLS (this is the default).
         public static var cleartext: TransportConfig {

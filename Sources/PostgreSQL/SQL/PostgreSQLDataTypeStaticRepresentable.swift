@@ -1,3 +1,4 @@
+/// Statically representable as a `PostgreSQLDataType`.
 public protocol PostgreSQLDataTypeStaticRepresentable {
     /// Appropriate PostgreSQL column type for storing this type.
     static var postgreSQLDataType: PostgreSQLDataType { get }

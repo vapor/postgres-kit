@@ -1,48 +1,89 @@
 /// The data type's raw object ID.
 /// Use `select * from pg_type where oid = <idhere>;` to lookup more information.
 public struct PostgreSQLDataFormat: Codable, Equatable, ExpressibleByIntegerLiteral {
-    /// Recognized types
+    /// `0`
     public static let null = PostgreSQLDataFormat(0)
+    /// `16`
     public static let bool = PostgreSQLDataFormat(16)
+    /// `17`
     public static let bytea = PostgreSQLDataFormat(17)
+    /// `18`
     public static let char = PostgreSQLDataFormat(18)
+    /// `19`
     public static let name = PostgreSQLDataFormat(19)
+    /// `20`
     public static let int8 = PostgreSQLDataFormat(20)
+    /// `21`
     public static let int2 = PostgreSQLDataFormat(21)
+    /// `23`
     public static let int4 = PostgreSQLDataFormat(23)
+    /// `24`
     public static let regproc = PostgreSQLDataFormat(24)
+    /// `25`
     public static let text = PostgreSQLDataFormat(25)
+    /// `26`
     public static let oid = PostgreSQLDataFormat(26)
+    /// `114`
     public static let json = PostgreSQLDataFormat(114)
+    /// `194`
     public static let pg_node_tree = PostgreSQLDataFormat(194)
+    /// `600`
     public static let point = PostgreSQLDataFormat(600)
+    /// `700`
     public static let float4 = PostgreSQLDataFormat(700)
+    /// `701`
     public static let float8 = PostgreSQLDataFormat(701)
+    /// `1000`
     public static let _bool = PostgreSQLDataFormat(1000)
+    /// `1001`
     public static let _bytea = PostgreSQLDataFormat(1001)
+    /// `1002`
     public static let _char = PostgreSQLDataFormat(1002)
+    /// `1003`
     public static let _name = PostgreSQLDataFormat(1003)
+    /// `1005`
     public static let _int2 = PostgreSQLDataFormat(1005)
+    /// `1007`
     public static let _int4 = PostgreSQLDataFormat(1007)
+    /// `1009`
     public static let _text = PostgreSQLDataFormat(1009)
+    /// `1016`
     public static let _int8 = PostgreSQLDataFormat(1016)
+    /// `1017`
     public static let _point = PostgreSQLDataFormat(1017)
+    /// `1021`
     public static let _float4 = PostgreSQLDataFormat(1021)
+    /// `1022`
     public static let _float8 = PostgreSQLDataFormat(1022)
+    /// `1034`
     public static let _aclitem = PostgreSQLDataFormat(1034)
+    /// `1042`
     public static let bpchar = PostgreSQLDataFormat(1042)
+    /// `1043`
     public static let varchar = PostgreSQLDataFormat(1043)
+    /// `1082`
     public static let date = PostgreSQLDataFormat(1082)
+    /// `1083`
     public static let time = PostgreSQLDataFormat(1083)
+    /// `1114`
     public static let timestamp = PostgreSQLDataFormat(1114)
+    /// `1115`
     public static let _timestamp = PostgreSQLDataFormat(1115)
+    /// `1184`
     public static let timestamptz = PostgreSQLDataFormat(1184)
+    /// `1266`
     public static let timetz = PostgreSQLDataFormat(1266)
+    /// `1700`
     public static let numeric = PostgreSQLDataFormat(1700)
+    /// `2278`
     public static let void = PostgreSQLDataFormat(2278)
+    /// `2950`
     public static let uuid = PostgreSQLDataFormat(2950)
+    /// `2951`
     public static let _uuid = PostgreSQLDataFormat(2951)
+    /// `3802`
     public static let jsonb = PostgreSQLDataFormat(3802)
+    /// `3807`
     public static let _jsonb = PostgreSQLDataFormat(3807)
 
     /// See `Equatable.==`

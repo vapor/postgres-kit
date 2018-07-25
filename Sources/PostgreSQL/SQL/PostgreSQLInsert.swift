@@ -1,3 +1,4 @@
+/// PostgreSQL specific `SQLInsert`.
 public struct PostgreSQLInsert: SQLInsert {
     /// See `SQLInsert`.
     public static func insert(_ table: PostgreSQLTableIdentifier) -> PostgreSQLInsert {
@@ -50,6 +51,7 @@ public struct PostgreSQLInsert: SQLInsert {
 }
 
 extension SQLInsertBuilder where Connection.Query.Insert == PostgreSQLInsert {
+    /// Adds a `RETURNING` expression to the insert query.
     public func returning(_ exprs: PostgreSQLSelectExpression...) -> Self {
         insert.returning += exprs
         return self

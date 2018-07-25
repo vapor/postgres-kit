@@ -1,3 +1,4 @@
+/// PostgreSQL specific `SQLQuery`.
 public enum PostgreSQLQuery: SQLQuery {
     /// See `SQLQuery`.
     public typealias AlterTable = PostgreSQLAlterTable
@@ -25,9 +26,6 @@ public enum PostgreSQLQuery: SQLQuery {
     
     /// See `SQLQuery`.
     public typealias Update = PostgreSQLUpdate
-    
-    /// See `SQLQuery`.
-    public typealias RowDecoder = PostgreSQLRowDecoder
     
     /// See `SQLQuery`.
     public static func alterTable(_ alterTable: AlterTable) -> PostgreSQLQuery {
@@ -129,6 +127,7 @@ public enum PostgreSQLQuery: SQLQuery {
 }
 
 extension PostgreSQLQuery: ExpressibleByStringLiteral {
+    /// See `ExpressibleByStringLiteral`.
     public init(stringLiteral value: String) {
         self = ._raw(value, [])
     }

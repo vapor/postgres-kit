@@ -1,3 +1,4 @@
+/// PostgreSQL specific `SQLBoolLiteral`.
 public enum PostgreSQLBoolLiteral: SQLBoolLiteral {
     /// See `SQLBoolLiteral`.
     public static var `true`: PostgreSQLBoolLiteral {
@@ -9,7 +10,10 @@ public enum PostgreSQLBoolLiteral: SQLBoolLiteral {
         return ._false
     }
     
+    /// See `SQLBoolLiteral`.
     case _true
+    
+    /// See `SQLBoolLiteral`.
     case _false
     
     /// See `SQLSerializable`.

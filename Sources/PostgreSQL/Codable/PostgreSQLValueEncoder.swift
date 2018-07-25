@@ -3,9 +3,9 @@
 ///     let data = try PostgreSQLDataEncoder().encode("hello")
 ///     print(data) // PostgreSQLData
 ///
-public struct PostgreSQLDataEncoder {
+struct PostgreSQLDataEncoder {
     /// Creates a new `PostgreSQLDataEncoder`.
-    public init() { }
+    init() { }
 
     /// Encodes the supplied `Encodable` object to `PostgreSQLData`.
     ///
@@ -15,7 +15,7 @@ public struct PostgreSQLDataEncoder {
     /// - parameters:
     ///     - encodable: `Encodable` object to encode.
     /// - returns: Encoded `PostgreSQLData`.
-    public func encode(_ encodable: Encodable) throws -> PostgreSQLData {
+    func encode(_ encodable: Encodable) throws -> PostgreSQLData {
         if let convertible = encodable as? PostgreSQLDataConvertible {
             return try convertible.convertToPostgreSQLData()
         }

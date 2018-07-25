@@ -1,3 +1,4 @@
+/// PostgreSQL specific `SQLDefaultLiteral`.
 public struct PostgreSQLDefaultLiteral: SQLDefaultLiteral {
     /// See `SQLDefaultLiteral`.
     public static var `default`: PostgreSQLDefaultLiteral {

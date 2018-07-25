@@ -1,8 +1,10 @@
 extension PostgreSQLConnection {
+    /// Performs a non-parameterized (text protocol) query to PostgreSQL.
     public func simpleQuery(_ query: String) -> Future<Void> {
         return operation { self._simpleQuery(query) { _ in }}
     }
     
+    /// Performs a non-parameterized (text protocol) query to PostgreSQL.
     public func simpleQuery(_ query: String, _ onRow: @escaping ([PostgreSQLColumn: PostgreSQLData]) throws -> ()) -> Future<Void> {
         return operation { self._simpleQuery(query, onRow) }
     }

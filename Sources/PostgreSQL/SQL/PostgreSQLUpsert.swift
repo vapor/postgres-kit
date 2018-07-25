@@ -1,3 +1,4 @@
+/// `ON CONFLICT ... DO UPDATE SET` clause.
 public struct PostgreSQLUpsert: SQLSerializable {
     /// See `SQLUpsert`.
     public typealias Identifier = PostgreSQLIdentifier
@@ -28,6 +29,7 @@ public struct PostgreSQLUpsert: SQLSerializable {
 }
 
 extension SQLInsertBuilder where Connection.Query.Insert == PostgreSQLInsert {
+    /// Adds an `ON CONFLICT ... DO UPDATE SET` clause to the insert.
     public func onConflict<T, V, E>(_ key: KeyPath<T, V>, set value: E) -> Self where
         T: PostgreSQLTable, E: Encodable
     {

@@ -1,4 +1,16 @@
 extension PostgreSQLConnection {
+    /// Runs a query, returning each row to the supplied handler.
+    ///
+    ///     try conn.query(.select(.all, from: "users")) { row in
+    ///         print(row)
+    ///     }
+    ///
+    /// Any values bound to the `DataQuery` as placeholders will be sent as query parameters.
+    ///
+    /// - parameters:
+    ///     - query: `Query` to execute.
+    ///     - onRow: PostgreSQL row accepting closure to handle results, if any.
+    /// - returns: A future that signals query completion.
     public func query(_ query: PostgreSQLQuery, _ onRow: @escaping ([PostgreSQLColumn: PostgreSQLData]) throws -> ()) -> Future<Void> {
         return self.query(query, resultFormat: .binary, onRow)
     }
