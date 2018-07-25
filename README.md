@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="https://user-images.githubusercontent.com/1342803/36623751-7f1f2884-18d5-11e8-9fd8-5a94c23ec7ce.png" height="64" alt="PostgreSQL">
+    <img src="https://user-images.githubusercontent.com/1342803/43222823-387a185a-901f-11e8-9582-84ba7af7bf5f.png" height="64" alt="PostgreSQL">
     <br>
     <br>
     <a href="http://docs.vapor.codes/3.0/">
