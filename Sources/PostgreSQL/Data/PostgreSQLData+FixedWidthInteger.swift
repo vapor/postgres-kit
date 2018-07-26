@@ -10,11 +10,16 @@ extension FixedWidthInteger {
                     throw PostgreSQLError.decode(self, from: data)
                 }
                 i = value.as(Int16.self, default: 0).bigEndian.cast(to: Self.self)
-            case .int4, .oid, .regproc:
+            case .int4, .regproc:
                 guard value.count == 4 else {
                     throw PostgreSQLError.decode(self, from: data)
                 }
                 i = value.as(Int32.self, default: 0).bigEndian.cast(to: Self.self)
+            case .oid:
+                guard value.count == 4 else {
+                    throw PostgreSQLError.decode(self, from: data)
+                }
+                i = value.as(UInt32.self, default: 0).bigEndian.cast(to: Self.self)
             case .int8:
                 guard value.count == 8 else {
                     throw PostgreSQLError.decode(self, from: data)
