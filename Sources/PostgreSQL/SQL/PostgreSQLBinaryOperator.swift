@@ -151,6 +151,9 @@ public enum PostgreSQLBinaryOperator: SQLBinaryOperator, Equatable {
     /// `NOT ILIKE`
     case notILike
     
+    /// Custom operator
+    case custom(String)
+    
     /// See `SQLSerializable`.
     public func serialize(_ binds: inout [Encodable]) -> String {
         switch self {
@@ -186,6 +189,7 @@ public enum PostgreSQLBinaryOperator: SQLBinaryOperator, Equatable {
         case ._notRegexp: return "NOT REGEXP"
         case .ilike: return "ILIKE"
         case .notILike: return "NOT ILIKE"
+        case .custom(let op): return op
         }
     }
 }
