@@ -1,195 +1,112 @@
 /// PostgreSQL specific `SQLBinaryOperator`.
-public enum PostgreSQLBinaryOperator: SQLBinaryOperator, Equatable {
+public struct PostgreSQLBinaryOperator: SQLBinaryOperator, Equatable, ExpressibleByStringLiteral {
     /// See `SQLBinaryOperator`.
-    public static var equal: PostgreSQLBinaryOperator { return ._equal }
-    
+    public static let add = PostgreSQLBinaryOperator("+")
+
     /// See `SQLBinaryOperator`.
-    public static var notEqual: PostgreSQLBinaryOperator { return ._notEqual }
-    
+    public static let bitwiseAnd = PostgreSQLBinaryOperator("&")
+
     /// See `SQLBinaryOperator`.
-    public static var greaterThan: PostgreSQLBinaryOperator { return ._greaterThan }
-    
+    public static let bitwiseOr = PostgreSQLBinaryOperator("|")
+
     /// See `SQLBinaryOperator`.
-    public static var lessThan: PostgreSQLBinaryOperator { return ._lessThan }
-    
+    public static let bitwiseShiftLeft = PostgreSQLBinaryOperator("<<")
+
     /// See `SQLBinaryOperator`.
-    public static var greaterThanOrEqual: PostgreSQLBinaryOperator { return ._greaterThanOrEqual }
-    
+    public static let bitwiseShiftRight = PostgreSQLBinaryOperator(">>")
+
     /// See `SQLBinaryOperator`.
-    public static var lessThanOrEqual: PostgreSQLBinaryOperator { return ._lessThanOrEqual }
-    
+    public static let concatenate = PostgreSQLBinaryOperator("||")
+
     /// See `SQLBinaryOperator`.
-    public static var like: PostgreSQLBinaryOperator { return ._like }
-    
+    public static let divide = PostgreSQLBinaryOperator("/")
+
     /// See `SQLBinaryOperator`.
-    public static var notLike: PostgreSQLBinaryOperator { return ._notLike }
-    
+    public static let equal = PostgreSQLBinaryOperator("=")
+
     /// See `SQLBinaryOperator`.
-    public static var `in`: PostgreSQLBinaryOperator { return ._in }
-    
+    public static let greaterThan = PostgreSQLBinaryOperator(">")
+
     /// See `SQLBinaryOperator`.
-    public static var `notIn`: PostgreSQLBinaryOperator { return ._notIn }
-    
+    public static let greaterThanOrEqual = PostgreSQLBinaryOperator(">=")
+
     /// See `SQLBinaryOperator`.
-    public static var and: PostgreSQLBinaryOperator { return ._and }
-    
+    public static let lessThan = PostgreSQLBinaryOperator("<")
+
     /// See `SQLBinaryOperator`.
-    public static var or: PostgreSQLBinaryOperator { return ._or }
-    
+    public static let lessThanOrEqual = PostgreSQLBinaryOperator("<=")
+
     /// See `SQLBinaryOperator`.
-    public static var concatenate: PostgreSQLBinaryOperator { return ._concatenate }
-    
+    public static let modulo = PostgreSQLBinaryOperator("%")
+
     /// See `SQLBinaryOperator`.
-    public static var multiply: PostgreSQLBinaryOperator { return ._multiply }
-    
+    public static let multiply = PostgreSQLBinaryOperator("*")
+
     /// See `SQLBinaryOperator`.
-    public static var divide: PostgreSQLBinaryOperator { return ._divide }
-    
+    public static let notEqual = PostgreSQLBinaryOperator("!=")
+
     /// See `SQLBinaryOperator`.
-    public static var modulo: PostgreSQLBinaryOperator { return ._modulo }
-    
+    public static let subtract = PostgreSQLBinaryOperator("-")
+
     /// See `SQLBinaryOperator`.
-    public static var add: PostgreSQLBinaryOperator { return ._add }
-    
+    public static let and = PostgreSQLBinaryOperator("AND")
+
     /// See `SQLBinaryOperator`.
-    public static var subtract: PostgreSQLBinaryOperator { return ._subtract }
-    
-    
-    /// `||`
-    case _concatenate
-    
-    /// `*`
-    case _multiply
-    
-    /// `/`
-    case _divide
-    
-    /// `%`
-    case _modulo
-    
-    /// `+`
-    case _add
-    
-    /// `-`
-    case _subtract
-    
-    /// `<<`
-    case _bitwiseShiftLeft
-    
-    /// `>>`
-    case _bitwiseShiftRight
-    
-    /// `&`
-    case _bitwiseAnd
-    
-    /// `|`
-    case _bitwiseOr
-    
-    /// `<`
-    case _lessThan
-    
-    /// `<=`
-    case _lessThanOrEqual
-    
-    /// `>`
-    case _greaterThan
-    
-    /// `>=`
-    case _greaterThanOrEqual
-    
-    /// `=` or `==`
-    case _equal
-    
-    /// `!=` or `<>`
-    case _notEqual
-    
-    /// `AND`
-    case _and
-    
-    /// `OR`
-    case _or
-    
-    /// `IS`
-    case _is
-    
-    /// `IS NOT`
-    case _isNot
-    
-    /// `IN`
-    case _in
-    
-    /// `NOT IN`
-    case _notIn
-    
-    /// `LIKE`
-    case _like
-    
-    /// `NOT LIKE`
-    case _notLike
-    
-    /// `GLOB`
-    case _glob
-    
-    /// `NOT GLOB`
-    case _notGlob
-    
-    /// `MATCH`
-    case _match
-    
-    /// `NOT MATCH`
-    case _notMatch
-    
-    /// `REGEXP`
-    case _regexp
-    
-    /// `NOT REGEXP`
-    case _notRegexp
-    
-    /// `ILIKE`
-    case ilike
-    
-    /// `NOT ILIKE`
-    case notILike
-    
-    /// Custom operator
-    case custom(String)
-    
-    /// See `SQLSerializable`.
+    public static let or = PostgreSQLBinaryOperator("OR")
+
+    /// See `SQLBinaryOperator`.
+    public static let `in` = PostgreSQLBinaryOperator("IN")
+
+    /// See `SQLBinaryOperator`.
+    public static let notIn = PostgreSQLBinaryOperator("NOT IN")
+
+    /// See `SQLBinaryOperator`.
+    public static let `is` = PostgreSQLBinaryOperator("IS")
+
+    /// See `SQLBinaryOperator`.
+    public static let isNot = PostgreSQLBinaryOperator("IS NOT")
+
+    /// See `SQLBinaryOperator`.
+    public static let like = PostgreSQLBinaryOperator("LIKE")
+
+    /// See `SQLBinaryOperator`.
+    public static let glob = PostgreSQLBinaryOperator("GLOB")
+
+    /// See `SQLBinaryOperator`.
+    public static let match = PostgreSQLBinaryOperator("MATCH")
+
+    /// See `SQLBinaryOperator`.
+    public static let regexp = PostgreSQLBinaryOperator("~")
+
+    /// See `SQLBinaryOperator`.
+    public static let notLike = PostgreSQLBinaryOperator("NOT LIKE")
+
+    /// See `SQLBinaryOperator`.
+    public static let notGlob = PostgreSQLBinaryOperator("NOT GLOB")
+
+    /// See `SQLBinaryOperator`.
+    public static let notMatch = PostgreSQLBinaryOperator("NOT MATCH")
+
+    /// See `SQLBinaryOperator`.
+    public static let notRegexp = PostgreSQLBinaryOperator("NOT REGEXP")
+
+    /// See `SQLBinaryOperator`.
+    public static let ilike = PostgreSQLBinaryOperator("ILIKE")
+
+    /// See `SQLBinaryOperator`.
+    public static let notILike = PostgreSQLBinaryOperator("NOT ILIKE")
+
+    public let op: String
+
+    public init(_ op: String) {
+        self.op = op
+    }
+
+    public init(stringLiteral value: String) {
+        self.init(value)
+    }
+
     public func serialize(_ binds: inout [Encodable]) -> String {
-        switch self {
-        case ._add: return "+"
-        case ._bitwiseAnd: return "&"
-        case ._bitwiseOr: return "|"
-        case ._bitwiseShiftLeft: return "<<"
-        case ._bitwiseShiftRight: return ">>"
-        case ._concatenate: return "||"
-        case ._divide: return "/"
-        case ._equal: return "="
-        case ._greaterThan: return ">"
-        case ._greaterThanOrEqual: return ">="
-        case ._lessThan: return "<"
-        case ._lessThanOrEqual: return "<="
-        case ._modulo: return "%"
-        case ._multiply: return "*"
-        case ._notEqual: return "!="
-        case ._subtract: return "-"
-        case ._and: return "AND"
-        case ._or: return "OR"
-        case ._in: return "IN"
-        case ._notIn: return "NOT IN"
-        case ._is: return "IS"
-        case ._isNot: return "IS NOT"
-        case ._like: return "LIKE"
-        case ._glob: return "GLOB"
-        case ._match: return "MATCH"
-        case ._regexp: return "~"
-        case ._notLike: return "NOT LIKE"
-        case ._notGlob: return "NOT GLOB"
-        case ._notMatch: return "NOT MATCH"
-        case ._notRegexp: return "NOT REGEXP"
-        case .ilike: return "ILIKE"
-        case .notILike: return "NOT ILIKE"
-        case .custom(let op): return op
-        }
+        return op
     }
 }
