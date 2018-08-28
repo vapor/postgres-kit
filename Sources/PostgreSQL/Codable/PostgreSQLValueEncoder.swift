@@ -19,47 +19,14 @@ struct PostgreSQLDataEncoder {
         if let convertible = encodable as? PostgreSQLDataConvertible {
             return try convertible.convertToPostgreSQLData()
         }
-        
+
         do {
             let encoder = _Encoder()
             try encodable.encode(to: encoder)
             if let data = encoder.data {
                 return data
             } else {
-                let type: PostgreSQLDataFormat
-                if let present = encoder.array.first?.type {
-                    type = present
-                } else if
-                    let array = Swift.type(of: encodable) as? AnyArray.Type,
-                    let psql = array.anyElementType as? PostgreSQLDataTypeStaticRepresentable.Type
-                {
-                    if let format = psql.postgreSQLDataType.dataFormat {
-                        type = format
-                    } else {
-                        WARNING("Could not determine PostgreSQL array data type: \(psql.postgreSQLDataType)")
-                        type = .null
-                    }
-                } else {
-                    WARNING("Could not determine PostgreSQL array data type: \(Swift.type(of: encodable))")
-                    type = .null
-                }
-                // encode array
-                var data = Data()
-                data += Data.of(Int32(1).bigEndian) // non-null
-                data += Data.of(Int32(0).bigEndian) // b
-                data += Data.of(type.raw.bigEndian)
-                data += Data.of(Int32(encoder.array.count).bigEndian) // length
-                data += Data.of(Int32(1).bigEndian) // dimensions
-                
-                for element in encoder.array {
-                    switch element.storage {
-                    case .binary(let value):
-                        data += Data.of(Int32(value.count).bigEndian)
-                        data += value
-                    default: data += Data.of(Int32(0).bigEndian)
-                    }
-                }
-                return PostgreSQLData(type.arrayType ?? .null, binary: data)
+                return try encoder.array.convertToPostgreSQLData()
             }
         } catch is _KeyedError {
             struct AnyEncodable: Encodable {
