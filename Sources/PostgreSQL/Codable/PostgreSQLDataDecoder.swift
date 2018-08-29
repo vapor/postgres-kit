@@ -45,41 +45,17 @@ struct PostgreSQLDataDecoder {
             let unwrapper = try JSONDecoder().decode(DecoderUnwrapper.self, from: json)
             return try unwrapper.decoder.container(keyedBy: Key.self)
         }
-        
+
         func unkeyedContainer() throws -> UnkeyedDecodingContainer {
-            switch data.storage {
-            case .binary(var value):
-                /// Extract and convert each element.
-                var array: [PostgreSQLData] = []
-                let hasData = value.extract(Int32.self).bigEndian
-                if hasData == 1 {
-                    /// Unknown
-                    let _ = value.extract(Int32.self).bigEndian
-                    /// The big-endian array element type
-                    let type: PostgreSQLDataFormat = .init(value.extract(Int32.self).bigEndian)
-                    /// The big-endian length of the array
-                    let count = value.extract(Int32.self).bigEndian
-                    /// The big-endian number of dimensions
-                    let _ = value.extract(Int32.self).bigEndian
-                    for _ in 0..<count {
-                        let count = Int(value.extract(Int32.self).bigEndian)
-                        let subValue = value.extract(count: count)
-                        let psqlData = PostgreSQLData(type, binary: subValue)
-                        array.append(psqlData)
-                    }
-                } else {
-                    array = []
-                }
-                return _UnkeyedDecodingContainer(data: array)
-            default: throw PostgreSQLError(identifier: "array", reason: "Cannot decode array from: \(data).")
-            }
+            let array = try Array<Any>.extractPostgreSQLArrayValues(from: data)
+            return _UnkeyedDecodingContainer(data: array)
         }
-        
+
         func singleValueContainer() throws -> SingleValueDecodingContainer {
             return _SingleValueDecodingContainer(data: data)
         }
     }
-    
+
     private struct _UnkeyedDecodingContainer: UnkeyedDecodingContainer {
         let codingPath: [CodingKey] = []
         let data: [PostgreSQLData]
