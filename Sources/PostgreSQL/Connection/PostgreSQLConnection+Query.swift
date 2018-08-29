@@ -39,7 +39,29 @@ extension PostgreSQLConnection {
             }
         }
     }
-    
+
+    /// Executes a raw query with the given parameters returning each row to the supplied handler.
+    ///
+    ///     try conn.query("SELECT id, firstName FROM users WHERE firstName = $1", ["Billy"]) { row in
+    ///         print(row)
+    ///     }
+    ///
+    /// - parameters:
+    ///   - query: The raw query string to execute.
+    ///   - resultFormat: Desired `PostgreSQLResultFormat` to request from PostgreSQL. Defaults to `.binary`.
+    ///   - onRow: PostgreSQL row accepting closure to handle results, if any.
+    public func query(_ query: String, _ parameters: [PostgreSQLDataConvertible] = [], resultFormat: PostgreSQLResultFormat = .binary,
+                      _ onRow: @escaping ([PostgreSQLColumn: PostgreSQLData]) throws -> ()) -> Future<Void>
+    {
+        return operation {
+            do {
+                return try self._query(query, parameters.map { try $0.convertToPostgreSQLData() }, resultFormat: resultFormat, onRow)
+            } catch {
+                return self.eventLoop.newFailedFuture(error: error)
+            }
+        }
+    }
+
     // MARK: Private
 
     /// Non-operation bounded query.
