@@ -12,8 +12,17 @@ extension PostgreSQLConnection {
         }
         
         /// TCP PostgreSQL address.
+        ///
+        /// - note: If the hostname begins with a slash, this method actually returns a Unix socket PostgreSQL address.
+        ///         `hostname` is used as the path of the directory in which the socket file is stored and `port` as the
+        ///         socket file extension.
         public static func tcp(hostname: String, port: Int) -> ServerAddress {
-            return .init(.tcp(hostname: hostname, port: port))
+            if hostname.hasPrefix("/") {
+                let path = "\(hostname)/.s.PGSQL.\(port)"
+                return .unixSocket(path: path)
+            } else {
+                return .init(.tcp(hostname: hostname, port: port))
+            }
         }
         
         /// Unix socket PostgreSQL address.

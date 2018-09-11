@@ -237,7 +237,25 @@ class PostgreSQLConnectionTests: XCTestCase {
     func testURLParsing() throws {
         let databaseURL = "postgres://username:password@localhost:5432/database"
         let config = PostgreSQLDatabaseConfig(url: databaseURL)!
-        XCTAssertEqual("\(config.serverAddress)", "ServerAddress(storage: PostgreSQL.PostgreSQLConnection.ServerAddress.Storage.tcp(hostname: \"localhost\", port: 5432))")
+        if case let .tcp(hostname, port) = config.serverAddress.storage {
+            XCTAssertEqual(hostname, "localhost")
+            XCTAssertEqual(port, 5432)
+        } else {
+            XCTFail("\(config.serverAddress) is not a TCP address")
+        }
+        XCTAssertEqual(config.username, "username")
+        XCTAssertEqual(config.password, "password")
+        XCTAssertEqual(config.database, "database")
+    }
+
+    func testURLSocketParsing() throws {
+        let databaseURL = "postgres://username:password@%2Fprivate%2Ftmp:5433/database"
+        let config = PostgreSQLDatabaseConfig(url: databaseURL)!
+        if case let .unixSocket(path) = config.serverAddress.storage {
+            XCTAssertEqual(path, "/private/tmp/.s.PGSQL.5433")
+        } else {
+            XCTFail("\(config.serverAddress) is not a Unix socket")
+        }
         XCTAssertEqual(config.username, "username")
         XCTAssertEqual(config.password, "password")
         XCTAssertEqual(config.database, "database")
@@ -547,6 +565,7 @@ class PostgreSQLConnectionTests: XCTestCase {
         ("testNull", testNull),
         ("testGH24", testGH24),
         ("testURLParsing", testURLParsing),
+        ("testURLSocketParsing", testURLSocketParsing),
         ("testGH46", testGH46),
         ("testDataDecoder", testDataDecoder),
         ("testRowDecoder", testRowDecoder),
