@@ -25,6 +25,11 @@ extension FixedWidthInteger {
                     throw PostgreSQLError.decode(self, from: data)
                 }
                 i = value.as(Int64.self, default: 0).bigEndian.cast(to: Self.self)
+            case .numeric:
+                guard let int = try Self(String.convertFromPostgreSQLData(data)) else {
+                    throw PostgreSQLError.decode(Int.self, from: data)
+                }
+                i = int
             default: throw PostgreSQLError.decode(self, from: data)
             }
             guard let value = i else {
