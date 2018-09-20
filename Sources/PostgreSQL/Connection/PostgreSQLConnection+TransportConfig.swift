@@ -44,25 +44,27 @@ extension PostgreSQLConnection {
             case .tls: return true
             }
         }
-        
+
         /// Internal storage type.
         internal enum Storage {
             case cleartext
             case tls(TLSConfiguration)
         }
-        
+
         /// Internal storage.
         internal let storage: Storage
-        
+
         /// Internal init.
         internal init(method: Storage) {
             self.storage = method
         }
     }
-    
+
     /// Ask the server if it supports SSL and adds a new OpenSSLClientHandler to pipeline if it does
     /// This will throw an error if the server does not support SSL
-    internal func addSSLClientHandler(using tlsConfiguration: TLSConfiguration) -> Future<Void> {
+    ///
+    /// NOTE: This also accepts `hostname` of the server. This helps with verifying certificates.
+    internal func addSSLClientHandler(using tlsConfiguration: TLSConfiguration, forHost hostname: String? = nil) -> Future<Void> {
         return queue.enqueue([.sslSupportRequest(.init())]) { message in
             guard case .sslSupportResponse(let response) = message else {
                 throw PostgreSQLError(identifier: "SSL support check", reason: "Unsupported message encountered during SSL support check: \(message).")
@@ -73,7 +75,7 @@ extension PostgreSQLConnection {
             return true
         }.flatMap {
             let sslContext = try SSLContext(configuration: tlsConfiguration)
-            let handler = try OpenSSLClientHandler(context: sslContext)
+            let handler = try OpenSSLClientHandler(context: sslContext, serverHostname: hostname)
             return self.channel.pipeline.add(handler: handler, first: true)
         }
     }

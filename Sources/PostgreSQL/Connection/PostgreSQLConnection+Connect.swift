@@ -32,7 +32,7 @@ extension PostgreSQLConnection {
             case .cleartext:
                 return worker.future(connection)
             case .tls(let tlsConfig):
-                return connection.addSSLClientHandler(using: tlsConfig).transform(to: connection)
+                return connection.addSSLClientHandler(using: tlsConfig, forHost: serverAddress.hostname).transform(to: connection)
             }
         }
     }
