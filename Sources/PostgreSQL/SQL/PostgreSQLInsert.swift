@@ -50,7 +50,7 @@ public struct PostgreSQLInsert: SQLInsert {
     }
 }
 
-extension SQLInsertBuilder where Connection.Query.Insert == PostgreSQLInsert {
+extension SQLInsertBuilder where Connectable.Connection.Query.Insert == PostgreSQLInsert {
     /// Adds a `RETURNING` expression to the insert query.
     public func returning(_ exprs: PostgreSQLSelectExpression...) -> Self {
         insert.returning += exprs

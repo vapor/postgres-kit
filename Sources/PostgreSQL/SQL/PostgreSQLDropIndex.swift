@@ -13,14 +13,14 @@ public struct PostgreSQLDropIndex: SQLDropIndex {
 }
 
 /// Builds `PostgreSQLDropIndex` queries.
-public final class PostgreSQLDropIndexBuilder<Connection>: SQLQueryBuilder
-    where Connection: SQLConnection, Connection.Query == PostgreSQLQuery
+public final class PostgreSQLDropIndexBuilder<Connectable>: SQLQueryBuilder
+    where Connectable: SQLConnectable, Connectable.Connection.Query == PostgreSQLQuery
 {
     /// `AlterTable` query being built.
     public var dropIndex: PostgreSQLDropIndex
     
     /// See `SQLQueryBuilder`.
-    public var connection: Connection
+    public var connectable: Connectable
     
     /// See `SQLQueryBuilder`.
     public var query: PostgreSQLQuery {
@@ -28,14 +28,14 @@ public final class PostgreSQLDropIndexBuilder<Connection>: SQLQueryBuilder
     }
     
     /// Creates a new `SQLCreateIndexBuilder`.
-    public init(_ dropIndex: PostgreSQLDropIndex, on connection: Connection) {
+    public init(_ dropIndex: PostgreSQLDropIndex, on connectable: Connectable) {
         self.dropIndex = dropIndex
-        self.connection = connection
+        self.connectable = connectable
     }
 }
 
 
-extension SQLConnection where Query == PostgreSQLQuery {
+extension SQLConnectable where Connection.Query == PostgreSQLQuery {
     /// Creates a `PostgreSQLDropIndexBuilder` for this connection.
     public func drop(index identifier: PostgreSQLIdentifier) -> PostgreSQLDropIndexBuilder<Self> {
         return .init(PostgreSQLDropIndex(identifier: identifier), on: self)
