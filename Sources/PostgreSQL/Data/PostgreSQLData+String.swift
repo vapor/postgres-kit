@@ -37,7 +37,7 @@ extension String: PostgreSQLDataConvertible {
                         value = value.advanced(by: 2)
                     }
                     
-                    /// conver the current char to its string form
+                    /// convert the current char to its string form
                     let string: String
                     if char == 0 {
                         /// 0 means 4 zeros
