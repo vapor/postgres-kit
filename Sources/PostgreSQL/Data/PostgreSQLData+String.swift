@@ -26,6 +26,10 @@ extension String: PostgreSQLDataConvertible {
                 /// grab the numeric metadata from the beginning of the array
                 let metadata = value.extract(PostgreSQLNumericMetadata.self)
                 
+                guard metadata.ndigits.bigEndian > 0 else {
+                    return "0"
+                }
+                
                 var integer = ""
                 var fractional = ""
                 for offset in 0..<metadata.ndigits.bigEndian {
