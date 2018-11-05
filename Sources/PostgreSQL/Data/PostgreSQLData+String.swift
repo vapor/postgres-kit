@@ -48,9 +48,13 @@ extension String: PostgreSQLDataConvertible {
                     
                     /// depending on our offset, append the string to before or after the decimal point
                     if offset < metadata.weight.bigEndian + 1 {
-                        integer += offset == 0 ? string : String(repeating: "0", count: 4 - string.count) + string
+                        // insert zeros (skip leading)
+                        if offset > 0 {
+                            integer += String(repeating: "0", count: 4 - string.count)
+                        }
+                        integer += string
                     } else {
-                        // Leading zeros matter with fractional
+                        // leading zeros matter with fractional
                         fractional += String(repeating: "0", count: 4 - string.count) + string
                     }
                 }
