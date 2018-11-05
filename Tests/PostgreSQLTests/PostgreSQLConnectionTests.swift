@@ -538,6 +538,26 @@ class PostgreSQLConnectionTests: XCTestCase {
             print(c)
         }
     }
+    
+    // https://github.com/vapor/postgresql/pull/109
+    func testZeroNumeric() throws {
+        let conn = try PostgreSQLConnection.makeTest()
+        struct ZeroNumeric: PostgreSQLTable, Equatable {
+            static let sqlTableIdentifierString = "zeronumerictest"
+            var foo: Int
+        }
+        
+        defer { try? conn.drop(table: ZeroNumeric.self).ifExists().run().wait() }
+        try conn.create(table: ZeroNumeric.self).column(for: \ZeroNumeric.foo, type: .numeric).run().wait()
+        
+        let a = ZeroNumeric(foo: 0)
+        try conn.insert(into: ZeroNumeric.self).value(a).run().wait()
+        let fetch: [ZeroNumeric] = try conn.select().all().from(ZeroNumeric.self).all(decoding: ZeroNumeric.self).wait()
+        switch fetch.count {
+        case 1: XCTAssertEqual(fetch[0].foo, 0)
+        default: XCTFail("invalid row count")
+        }
+    }
 
     static var allTests = [
         ("testBenchmark", testBenchmark),
@@ -558,6 +578,7 @@ class PostgreSQLConnectionTests: XCTestCase {
         ("testOrderBy", testOrderBy),
         ("testInvalidDate", testInvalidDate),
         ("testEmptyArray", testEmptyArray),
+        ("testZeroNumeric", testZeroNumeric),
     ]
 }
 
