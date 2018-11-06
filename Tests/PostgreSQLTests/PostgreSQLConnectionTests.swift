@@ -563,8 +563,8 @@ class PostgreSQLConnectionTests: XCTestCase {
     func testNumericDecode() throws {
         let conn = try PostgreSQLConnection.makeTest()
 
-        let sum = { (value: String) -> PostgreSQLSelectExpression in
-            .expression(.function(.function("SUM", [.expression(.literal(.numeric(value)))])), alias: .identifier("value"))
+        let expression = { (value: String) -> PostgreSQLSelectExpression in
+            .expression(.literal(.numeric(value)), alias: .identifier("value"))
         }
 
         var testValues = ["0.543201203", "1000.1", "10000.1", "42.0001", "42.00001", "10234.543201", "102340567.8"]
@@ -575,7 +575,7 @@ class PostgreSQLConnectionTests: XCTestCase {
         }
 
         for value in testValues {
-            let result = try conn.select().column(sum(value)).first(decoding: NumericString.self).wait()?.value
+            let result = try conn.select().column(expression(value)).first(decoding: NumericString.self).wait()?.value
             XCTAssert(result == value)
         }
 
@@ -584,7 +584,7 @@ class PostgreSQLConnectionTests: XCTestCase {
         }
 
         for value in testValues {
-            let result = try conn.select().column(sum(value)).first(decoding: NumericDouble.self).wait()?.value
+            let result = try conn.select().column(expression(value)).first(decoding: NumericDouble.self).wait()?.value
             XCTAssert(result == Double(value))
         }
     }
