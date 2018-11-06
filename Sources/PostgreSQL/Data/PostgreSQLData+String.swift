@@ -14,7 +14,8 @@ extension String: PostgreSQLDataConvertible {
                     var ndigits: Int16
                     /// How many of the digits are before the decimal point (always add 1)
                     var weight: Int16
-                    /// If 1, this number is negative. Otherwise, positive.
+                    /// If 0x4000, this number is negative. See NUMERIC_NEG in
+                    /// https://github.com/postgres/postgres/blob/master/src/backend/utils/adt/numeric.c
                     var sign: Int16
                     /// The number of sig digits after the decimal place (get rid of trailing 0s)
                     var dscale: Int16
@@ -41,7 +42,7 @@ extension String: PostgreSQLDataConvertible {
                         value = value.advanced(by: 2)
                     }
                     
-                    /// conver the current char to its string form
+                    /// convert the current char to its string form
                     let string: String
                     if char == 0 {
                         /// 0 means 4 zeros
@@ -52,11 +53,19 @@ extension String: PostgreSQLDataConvertible {
                     
                     /// depending on our offset, append the string to before or after the decimal point
                     if offset < metadata.weight.bigEndian + 1 {
+                        // insert zeros (skip leading)
+                        if offset > 0 {
+                            integer += String(repeating: "0", count: 4 - string.count)
+                        }
                         integer += string
                     } else {
-                        // Leading zeros matter with fractional
-                        fractional += fractional.count == 0 ? String(repeating: "0", count: 4 - string.count) + string : string
+                        // leading zeros matter with fractional
+                        fractional += String(repeating: "0", count: 4 - string.count) + string
                     }
+                }
+
+                if integer.count == 0 {
+                    integer = "0"
                 }
                 
                 if fractional.count > metadata.dscale.bigEndian {
@@ -74,7 +83,7 @@ extension String: PostgreSQLDataConvertible {
                 }
                 
                 /// use sign to determine adding a leading `-`
-                if metadata.sign.bigEndian == 1 {
+                if (metadata.sign.bigEndian & 0x4000) != 0 {
                     return "-" + numeric
                 } else {
                     return numeric
