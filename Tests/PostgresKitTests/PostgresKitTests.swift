@@ -4,7 +4,7 @@ import PostgresKit
 import SQLKitBenchmark
 import XCTest
 
-class PostgreSQLConnectionTests: XCTestCase {
+class PostgresKitTests: XCTestCase {
     private var group: EventLoopGroup!
     private var eventLoop: EventLoop {
         return self.group.next()
