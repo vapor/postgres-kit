@@ -3,13 +3,8 @@ import SQLKit
 extension PostgresQuery {
     /// PostgreSQL specific `SQLDataType`.
     public struct DataType: SQLDataType, Equatable {
-        #warning("rm these?")
-        public static var string: PostgresQuery.DataType {
-            return .text
-        }
-        
-        public static var double: PostgresQuery.DataType {
-            return .double
+        public static var blob: PostgresQuery.DataType {
+            return .varbit
         }
         
         /// See `Equatable`.

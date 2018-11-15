@@ -1,163 +1,84 @@
 import SQLKit
 
 public struct PostgresQuery: SQLQuery {
-    public struct AlterTable: SQLAlterTable {
-        public typealias Identifier = PostgresQuery.Identifier
-        public typealias ColumnDefinition = PostgresQuery.ColumnDefinition
-        
-        public static func alterTable(name: PostgresQuery.Identifier) -> AlterTable {
-            return .init(table: name, columns: [])
-        }
-        
-        public var table: PostgresQuery.Identifier
-        public var columns: [PostgresQuery.ColumnDefinition]
-        
-        public func serialize(_ binds: inout [Encodable]) -> String {
-            #warning("implement me")
-            fatalError()
-        }
+    public typealias ColumnConstraint = ColumnDefinition.ColumnConstraint
+    public typealias IndexModifier = CreateIndex.Modifier
+    public typealias ForeignKeyAction = ForeignKey.Action
+    
+    public static func alterTable(_ alterTable: AlterTable) -> PostgresQuery {
+        return self.init(.alterTable(alterTable))
     }
     
-    public struct Identifier: SQLIdentifier {
-        public static func identifier(_ string: String) -> Identifier {
-            return self.init(stringLiteral: string)
-        }
-        
-        public var string: String
-        
-        #warning("auto implement this?")
-        public init(stringLiteral value: String) {
-            self.string = value
-        }
-        
-        public func serialize(_ binds: inout [Encodable]) -> String {
-            return "\"" + string + "\""
-        }
+    public static func createIndex(_ createIndex: CreateIndex) -> PostgresQuery {
+        return self.init(.createIndex(createIndex))
     }
     
-    public struct ColumnDefinition: SQLColumnDefinition {
-        public typealias ColumnIdentifier = PostgresQuery.ColumnIdentifier
-        public typealias DataType = PostgresQuery.DataType
-        public typealias ColumnConstraint = PostgresQuery.ColumnConstraint
-        
-        let column: PostgresQuery.ColumnIdentifier
-        let dataType: PostgresQuery.DataType
-        let constraints: [PostgresQuery.ColumnConstraint]
-        
-        public static func columnDefinition(
-            _ column: PostgresQuery.ColumnIdentifier,
-            _ dataType: PostgresQuery.DataType,
-            _ constraints: [PostgresQuery.ColumnConstraint]
-        ) -> PostgresQuery.ColumnDefinition {
-            return self.init(column: column, dataType: dataType, constraints: constraints)
-        }
-        
-        
-        public func serialize(_ binds: inout [Encodable]) -> String {
-            #warning("implement me")
-            fatalError()
-        }
+    public static func createTable(_ createTable: CreateTable) -> PostgresQuery {
+        return self.init(.createTable(createTable))
     }
     
-    public struct ColumnConstraint: SQLColumnConstraint {
-        public typealias Identifier = PostgresQuery.Identifier
-        public typealias ConstraintAlgorithm = PostgresQuery.ConstraintAlgorithm
-        
-        public let algorithm: PostgresQuery.ConstraintAlgorithm
-        public let name: PostgresQuery.Identifier?
-        
-        public static func constraint(
-            algorithm: PostgresQuery.ConstraintAlgorithm,
-            name: PostgresQuery.Identifier?
-        ) -> PostgresQuery.ColumnConstraint {
-            return self.init(algorithm: algorithm, name: name)
-        }
-        
-        public func serialize(_ binds: inout [Encodable]) -> String {
-            #warning("implement me")
-            fatalError()
-        }
+    public static func delete(_ delete: Delete) -> PostgresQuery {
+        return self.init(.delete(delete))
     }
     
-    public struct ColumnIdentifier: SQLColumnIdentifier {
-        public static func column(name: PostgresQuery.Identifier, table: PostgresQuery.Identifier?) -> PostgresQuery.ColumnIdentifier {
-            return self.init(name: name, table: table)
-        }
-        
-        public var table: PostgresQuery.Identifier?
-        public var name: PostgresQuery.Identifier
-        
-        public typealias Identifier = PostgresQuery.Identifier
-        
-        public typealias StringLiteralType = String
-        
-        public init(name: PostgresQuery.Identifier, table: PostgresQuery.Identifier? = nil) {
-            self.name = name
-            self.table = table
-        }
-        
-        public init(stringLiteral value: String) {
-            self = .column(name: .identifier(value), table: nil)
-        }
-        
-        public func serialize(_ binds: inout [Encodable]) -> String {
-            if let table = table {
-                return table.serialize(&binds) + "." + self.name.serialize(&binds)
-            } else {
-                return self.name.serialize(&binds)
-            }
-        }
+    public static func dropIndex(_ dropIndex: DropIndex) -> PostgresQuery {
+        return self.init(.dropIndex(dropIndex))
     }
     
-    public struct ConstraintAlgorithm: SQLConstraintAlgorithm {
-        public typealias Expression = <#type#>
-        
-        public typealias Collation = <#type#>
-        
-        public typealias ForeignKey = <#type#>
-        
-        
+    public static func dropTable(_ dropTable: DropTable) -> PostgresQuery {
+        return self.init(.dropTable(dropTable))
     }
     
-    public typealias BinaryOperator = <#type#>
+    public static func insert(_ insert: Insert) -> PostgresQuery {
+        return self.init(.insert(insert))
+    }
     
-    public typealias Bind = <#type#>
+    public static func select(_ select: Select) -> PostgresQuery {
+        return self.init(.select(select))
+    }
     
-    public typealias CreateIndex = <#type#>
+    public static func update(_ update: Update) -> PostgresQuery {
+        return self.init(.update(update))
+    }
     
-    public typealias CreateTable = <#type#>
+    public static func raw(_ sql: String, binds: [Encodable]) -> PostgresQuery {
+        return self.init(.raw(sql, binds))
+    }
     
-    public typealias Collation = <#type#>
     
-    public typealias Delete = <#type#>
+    enum Storage {
+        case alterTable(AlterTable)
+        case createIndex(CreateIndex)
+        case createTable(CreateTable)
+        case delete(Delete)
+        case dropIndex(DropIndex)
+        case dropTable(DropTable)
+        case insert(Insert)
+        case select(Select)
+        case update(Update)
+        case raw(String, [Encodable])
+    }
     
-    public typealias Distinct = <#type#>
+    let storage: Storage
     
-    public typealias DropIndex = <#type#>
+    init(_ storage: Storage) {
+        self.storage = storage
+    }
     
-    public typealias DropTable = <#type#>
-    
-    public typealias Expression = <#type#>
-    
-    public typealias ForeignKey = <#type#>
-    
-    public typealias ForeignKeyAction = <#type#>
-    
-    public typealias GroupBy = <#type#>
-    
-    public typealias Insert = <#type#>
-    
-    public typealias IndexModifier = <#type#>
-    
-    public typealias Join = <#type#>
-    
-    public typealias Literal = <#type#>
-    
-    public typealias OrderBy = <#type#>
-    
-    public typealias Select = <#type#>
-    
-    public typealias TableConstraint = <#type#>
-    
-    public typealias Update = <#type#>
+    public func serialize(_ binds: inout [Encodable]) -> String {
+        switch self.storage {
+        case .alterTable(let alterTable): return alterTable.serialize(&binds)
+        case .createIndex(let createIndex): return createIndex.serialize(&binds)
+        case .createTable(let createTable): return createTable.serialize(&binds)
+        case .delete(let delete): return delete.serialize(&binds)
+        case .dropIndex(let dropIndex): return dropIndex.serialize(&binds)
+        case .dropTable(let dropTable): return dropTable.serialize(&binds)
+        case .insert(let insert): return insert.serialize(&binds)
+        case .select(let select): return select.serialize(&binds)
+        case .update(let update): return update.serialize(&binds)
+        case .raw(let sql, let values):
+            binds = values
+            return sql
+        }
+    }
 }

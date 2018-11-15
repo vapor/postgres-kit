@@ -125,13 +125,19 @@ extension PostgresRow: SQLRow {
 }
 
 extension PostgresConnection: SQLDatabase {
-    
     public func execute(_ query: PostgresQuery, _ onRow: @escaping (PostgresRow) throws -> ()) -> EventLoopFuture<Void> {
         var binds: [Encodable] = []
         let sql = query.serialize(&binds)
         var b = PostgresBinds()
         binds.forEach { b.encode($0) }
-        return self.query(sql, binds, onRow)
+        return self.query(sql, b, onRow).then {
+            switch query.storage {
+            case .alterTable, .createTable, .dropTable:
+                return self.loadTableNames()
+            default:
+                return self.eventLoop.newSucceededFuture(result: ())
+            }
+        }
     }
 }
 
