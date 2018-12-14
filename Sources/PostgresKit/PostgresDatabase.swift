@@ -55,7 +55,7 @@ public final class PostgresDatabase: Database {
             tlsConfig: TLSConfiguration? = nil
         ) {
             self.address = {
-                return try .newAddressResolving(host: hostname, port: port)
+                return try SocketAddress.makeAddressResolvingHost(hostname, port: port)
             }
             self.username = username
             self.database = database
@@ -77,7 +77,7 @@ public final class PostgresDatabase: Database {
         do {
             address = try self.config.address()
         } catch {
-            return self.eventLoop.newFailedFuture(error: error)
+            return self.eventLoop.makeFailedFuture(error: error)
         }
         return PostgresConnection.connect(to: address, on: self.eventLoop).then { conn in
             return conn.authenticate(
@@ -95,7 +95,7 @@ public final class PostgresDatabase: Database {
                     return conn
                 }
             } else {
-                return self.eventLoop.newSucceededFuture(result: conn)
+                return self.eventLoop.makeSucceededFuture(result: conn)
             }
         }
     }
@@ -135,7 +135,7 @@ extension PostgresConnection: SQLDatabase {
             case .alterTable, .createTable, .dropTable:
                 return self.loadTableNames()
             default:
-                return self.eventLoop.newSucceededFuture(result: ())
+                return self.eventLoop.makeSucceededFuture(result: ())
             }
         }
     }
