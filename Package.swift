@@ -5,6 +5,7 @@ let package = Package(
     name: "postgres-kit",
     products: [
         .library(name: "PostgresKit", targets: ["PostgresKit"]),
+        .executable(name: "PostgresKitPerformance", targets: ["PostgresKitPerformance"]),
     ],
     dependencies: [
         .package(url: "https://github.com/vapor-community/nio-postgres.git", .branch("master")),
@@ -14,5 +15,6 @@ let package = Package(
     targets: [
         .target(name: "PostgresKit", dependencies: ["DatabaseKit", "NIOPostgres", "SQLKit"]),
         .testTarget(name: "PostgresKitTests", dependencies: ["PostgresKit", "SQLKitBenchmark"]),
+        .target(name: "PostgresKitPerformance", dependencies: ["PostgresKit"]),
     ]
 )

@@ -3,6 +3,7 @@ import NIOPostgres
 import PostgresKit
 import SQLKitBenchmark
 import XCTest
+import DatabaseKit
 
 class PostgresKitTests: XCTestCase {
     private var group: EventLoopGroup!
@@ -24,6 +25,18 @@ class PostgresKitTests: XCTestCase {
         let conn = try PostgresConnection.test(on: self.eventLoop).wait()
         let benchmark = SQLBenchmarker(on: conn)
         try benchmark.run()
+    }
+    
+    func testPerformance() throws {
+        let db = PostgresDatabase(config: .init(hostname: "localhost", username: "vapor_username", password: "vapor_password", database: "vapor_database"), on: self.eventLoop)
+        let pool = db.newConnectionPool(config: .init(maxConnections: 12))
+        self.measure {
+            for i in 1...100 {
+                _ = try! pool.withConnection { conn in
+                    return conn.query("SELECT 1;")
+                }.wait()
+            }
+        }
     }
 //    struct VersionMetadata: Codable {
 //        var version: String
