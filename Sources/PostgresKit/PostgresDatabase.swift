@@ -3,6 +3,7 @@ import Foundation
 import NIO
 import NIOPostgres
 import NIOOpenSSL
+import SQLKit
 
 public final class PostgresDatabase: Database {
     public struct Config {
@@ -108,14 +109,13 @@ extension PostgresConnection: DatabaseConnection {
     }
 }
 
-import SQLKit
 
 extension PostgresRow: SQLRow {
-    public func decode<D>(_ type: D.Type, table: String?) throws -> D
-        where D: Decodable
-    {
-        #warning("TODO: implement decoding")
-        fatalError()
+    public func decode<D>(column: String, as type: D.Type) throws -> D where D : Decodable {
+        guard let data = self.column(column) else {
+            fatalError()
+        }
+        return try PostgresDataDecoder().decode(D.self, from: data)
     }
 }
 
@@ -165,12 +165,11 @@ struct PostgresDialect: SQLDialect {
 }
 
 extension PostgresConnection: SQLDatabase {
-    public func execute(_ query: SQLExpression, _ onRow: @escaping (SQLRow) throws -> ()) -> EventLoopFuture<Void> {
+    public func sqlQuery(_ query: SQLExpression, _ onRow: @escaping (SQLRow) throws -> ()) -> EventLoopFuture<Void> {
         var serializer = SQLSerializer(dialect: PostgresDialect())
         query.serialize(to: &serializer)
-        print(serializer.sql)
         return self.query(serializer.sql, serializer.binds.map { encodable in
-            return PostgresData.null
+            return try! PostgresDataEncoder().encode(encodable)
         }) { row in
             try onRow(row)
         }
@@ -178,9 +177,9 @@ extension PostgresConnection: SQLDatabase {
 }
 
 extension PostgresDatabase: SQLDatabase {
-    public func execute(_ query: SQLExpression, _ onRow: @escaping (SQLRow) throws -> ()) -> EventLoopFuture<Void> {
+    public func sqlQuery(_ query: SQLExpression, _ onRow: @escaping (SQLRow) throws -> ()) -> EventLoopFuture<Void> {
         return self.newConnection().flatMap { conn in
-            return conn.execute(query, onRow)
+            return conn.sqlQuery(query, onRow)
         }
     }
 }
