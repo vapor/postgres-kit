@@ -70,7 +70,7 @@ public struct PostgreSQLBinaryOperator: SQLBinaryOperator, Equatable, Expressibl
     public static let contains: PostgreSQLBinaryOperator = "@>"
 
     /// See `SQLBinaryOperator`.
-    public static let containsBy: PostgreSQLBinaryOperator = "<@"
+    public static let isContainedBy: PostgreSQLBinaryOperator = "<@"
 
     /// See `SQLBinaryOperator`.
     public static let overlap: PostgreSQLBinaryOperator = "&&"
