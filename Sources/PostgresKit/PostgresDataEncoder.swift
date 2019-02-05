@@ -2,9 +2,13 @@ public struct PostgresDataEncoder {
     public init() { }
     
     public func encode(_ type: Encodable) throws -> PostgresData {
-        let encoder = _Encoder()
-        try type.encode(to: encoder)
-        return encoder.data
+        if let custom = type as? PostgresDataCustomConvertible {
+            return custom.postgresData ?? .null
+        } else {
+            let encoder = _Encoder()
+            try type.encode(to: encoder)
+            return encoder.data
+        }
     }
     
     private final class _Encoder: Encoder {
