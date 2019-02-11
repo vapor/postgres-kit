@@ -1,3 +1,13 @@
+import Foundation
+
+#warning("TODO: move to codable kit")
+struct DecoderUnwrapper: Decodable {
+    let decoder: Decoder
+    init(from decoder: Decoder) {
+        self.decoder = decoder
+    }
+}
+
 public struct PostgresDataDecoder {
     public init() {}
     
@@ -28,7 +38,11 @@ public struct PostgresDataDecoder {
         }
         
         func container<Key>(keyedBy type: Key.Type) throws -> KeyedDecodingContainer<Key> where Key : CodingKey {
-            fatalError()
+            #warning("TODO: use NIOFoundationCompat")
+            var buffer = self.data.value!
+            let data = buffer.readBytes(length: buffer.readableBytes)!
+            let unwrapper = try JSONDecoder().decode(DecoderUnwrapper.self, from: Data(data))
+            return try unwrapper.decoder.container(keyedBy: Key.self)
         }
         
         func singleValueContainer() throws -> SingleValueDecodingContainer {

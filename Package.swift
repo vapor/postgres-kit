@@ -9,8 +9,8 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/vapor-community/nio-postgres.git", .branch("master")),
-        .package(url: "https://github.com/vapor/sql.git", .branch("3")),
-        .package(url: "https://github.com/vapor/database-kit.git", .branch("2")),
+        .package(url: "https://github.com/vapor/sql.git", .branch("master")),
+        .package(url: "https://github.com/vapor/database-kit.git", .branch("master")),
     ],
     targets: [
         .target(name: "PostgresKit", dependencies: ["DatabaseKit", "NIOPostgres", "SQLKit"]),

@@ -73,7 +73,7 @@ public final class PostgresDatabase: Database {
         self.eventLoop = eventLoop
     }
     
-    public func newConnection() -> EventLoopFuture<PostgresConnection> {
+    public func makeConnection() -> EventLoopFuture<PostgresConnection> {
         let address: SocketAddress
         do {
             address = try self.config.address()
@@ -178,7 +178,7 @@ extension PostgresConnection: SQLDatabase {
 
 extension PostgresDatabase: SQLDatabase {
     public func sqlQuery(_ query: SQLExpression, _ onRow: @escaping (SQLRow) throws -> ()) -> EventLoopFuture<Void> {
-        return self.newConnection().flatMap { conn in
+        return self.makeConnection().flatMap { conn in
             return conn.sqlQuery(query, onRow)
         }
     }
