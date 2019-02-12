@@ -1,3 +1,28 @@
+import SQLKit
+
+public enum PostgresBinaryOperator: SQLExpression {
+    /// @>
+    case contains
+    
+    /// <@
+    case isContainedBy
+    
+    /// &&
+    case overlap
+    
+    /// `SQLExpression` conformance.
+    public func serialize(to serializer: inout SQLSerializer) {
+        switch self {
+        case .contains:
+            serializer.write("@>")
+        case .isContainedBy:
+            serializer.write("<@")
+        case .overlap:
+            serializer.write("&&")
+        }
+    }
+}
+
 //import SQLKit
 //
 //extension PostgresQuery {
