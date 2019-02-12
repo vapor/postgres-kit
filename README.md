@@ -15,10 +15,11 @@
         <img src="https://circleci.com/gh/vapor/postgresql.svg?style=shield" alt="Continuous Integration">
     </a>
     <a href="https://swift.org">
-        <img src="http://img.shields.io/badge/swift-4.1-brightgreen.svg" alt="Swift 4.1">
+        <img src="http://img.shields.io/badge/swift-5-brightgreen.svg" alt="Swift 5">
     </a>
 </p>
 
 <hr>
 
 See [vapor-community/postgresql](https://github.com/vapor-community/postgresql/) for `libpq` based version.
+

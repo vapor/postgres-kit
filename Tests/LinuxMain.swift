@@ -1,6 +1,6 @@
 import XCTest
-@testable import PostgreSQLTests
+@testable import PostgresKitTests
 
 XCTMain([
-    testCase(PostgreSQLConnectionTests.allTests),
+    testCase(PostgresKitTests.allTests),
 ])
