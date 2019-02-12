@@ -1,9 +1,6 @@
-import NIO
-import NIOPostgres
 import PostgresKit
 import SQLKitBenchmark
 import XCTest
-import DatabaseKit
 
 class PostgresKitTests: XCTestCase {
     private var group: EventLoopGroup!

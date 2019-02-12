@@ -1,12 +1,11 @@
-import NIO
-import NIOPostgres
+import PostgresKit
 
 extension PostgresConnection {
     static func test(on eventLoop: EventLoop) -> EventLoopFuture<PostgresConnection> {
         do {
             let address: SocketAddress
             #if os(Linux)
-            address = try .newAddressResolving(host: "psql", port: 5432)
+            address = try .makeAddressResolvingHost("psql", port: 5432)
             #else
             address = try .init(ipAddress: "127.0.0.1", port: 5432)
             #endif
@@ -15,7 +14,7 @@ extension PostgresConnection {
                     .map { conn }
             }
         } catch {
-            return eventLoop.makeFailedFuture(error: error)
+            return eventLoop.makeFailedFuture(error)
         }
     }
 }
