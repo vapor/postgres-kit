@@ -22,11 +22,14 @@ let package = Package(
         // Event-driven network application framework for high performance protocol servers & clients, non-blocking.
         .package(url: "https://github.com/apple/swift-nio.git", from: "1.0.0"),
         
+        // SSL support for Swift NIO
+        .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "1.0.0"),
+        
         // *️⃣ Build SQL queries in Swift. Extensible, protocol-based design that supports DQL, DML, and DDL.
         .package(url: "https://github.com/vapor/sql.git", from: "2.1.0"),
     ],
     targets: [
-        .target(name: "PostgreSQL", dependencies: ["Async", "Bits", "Core", "Crypto", "DatabaseKit", "NIO", "Service", "SQL"]),
+        .target(name: "PostgreSQL", dependencies: ["Async", "Bits", "Core", "Crypto", "DatabaseKit", "NIO", "NIOOpenSSL", "Service", "SQL"]),
         .testTarget(name: "PostgreSQLTests", dependencies: ["Core", "PostgreSQL", "SQLBenchmark"]),
     ]
 )
