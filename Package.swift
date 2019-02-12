@@ -8,7 +8,7 @@ let package = Package(
         .executable(name: "PostgresKitPerformance", targets: ["PostgresKitPerformance"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/vapor-community/nio-postgres.git", .branch("master")),
+        .package(url: "https://github.com/vapor/nio-postgres.git", .branch("master")),
         .package(url: "https://github.com/vapor/sql.git", .branch("master")),
         .package(url: "https://github.com/vapor/database-kit.git", .branch("master")),
     ],
