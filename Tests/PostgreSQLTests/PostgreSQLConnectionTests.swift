@@ -332,6 +332,12 @@ class PostgreSQLConnectionTests: XCTestCase {
         print(row)
     }
 
+    func testRowCodableEmptyKeyed() throws {
+        let components = DateComponents()
+        let row = try PostgreSQLDataEncoder().encode(components)
+        XCTAssert(row.type == .jsonb)
+    }
+
     func testRowCodableTypes() throws {
         let conn = try PostgreSQLConnection.makeTest()
         
@@ -633,6 +639,7 @@ class PostgreSQLConnectionTests: XCTestCase {
         ("testDataDecoder", testDataDecoder),
         ("testRowDecoder", testRowDecoder),
         ("testRowCodableNested", testRowCodableNested),
+        ("testRowCodableEmptyKeyed", testRowCodableEmptyKeyed),
         ("testRowCodableTypes", testRowCodableTypes),
         ("testTimeTz", testTimeTz),
         ("testListen", testListen),
