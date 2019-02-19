@@ -39,9 +39,9 @@ public final class PostgreSQLConnection: DatabaseConnection, BasicWorker, Databa
         self.isClosed = false
         self.extend = [:]
         self.pipeline = channel.eventLoop.newSucceededFuture(result: ())
-        channel.closeFuture.always {
-            self.isClosed = true
-            if let current = self.currentSend {
+        channel.closeFuture.always { [weak self] in
+            self?.isClosed = true
+            if let current = self?.currentSend {
                 current.fail(error: closeError)
             }
         }

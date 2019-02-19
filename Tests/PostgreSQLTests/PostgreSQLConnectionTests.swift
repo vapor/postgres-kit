@@ -606,6 +606,20 @@ class PostgreSQLConnectionTests: XCTestCase {
             }
         }
     }
+    
+    func testClosureRetainCycle() throws {
+        weak var connection: PostgreSQLConnection?
+        let request: EventLoopFuture<Void>
+        do {
+            let conn = try PostgreSQLConnection.makeTest()
+            request = conn.simpleQuery("SELECT true")
+            connection = conn
+        }
+        XCTAssertNotNil(connection)
+        try request.wait()
+        try request.eventLoop.future().wait()
+        XCTAssertNil(connection)
+    }
 
     static var allTests = [
         ("testBenchmark", testBenchmark),
@@ -628,6 +642,7 @@ class PostgreSQLConnectionTests: XCTestCase {
         ("testEmptyArray", testEmptyArray),
         ("testZeroNumeric", testZeroNumeric),
         ("testNumericDecode", testNumericDecode),
+        ("testClosureRetainCycle", testClosureRetainCycle),
     ]
 }
 
