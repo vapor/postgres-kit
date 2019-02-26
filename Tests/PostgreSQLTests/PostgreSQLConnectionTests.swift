@@ -360,6 +360,7 @@ class PostgreSQLConnectionTests: XCTestCase {
             var float: Float
             var date: Date
             var decimal: Decimal
+            var point: PostgreSQLPoint
         }
 
         defer {
@@ -383,9 +384,29 @@ class PostgreSQLConnectionTests: XCTestCase {
             .column(for: \Types.float)
             .column(for: \Types.date)
             .column(for: \Types.decimal)
+            .column(for: \Types.point)
             .run().wait()
         
-        let typesA = Types(id: nil, bool: true, string: "hello", int: 1, int8: 2, int16: 3, int32: 4, int64: 5, uint: 6, uint8: 7, uint16: 8, uint32: 9, uint64: 10, double: 13.37, float: 3.14, date: Date(), decimal: .init(-1.234))
+        let typesA = Types(
+            id: nil,
+            bool: true,
+            string: "hello",
+            int: 1,
+            int8: 2,
+            int16: 3,
+            int32: 4,
+            int64: 5,
+            uint: 6,
+            uint8: 7,
+            uint16: 8,
+            uint32: 9,
+            uint64: 10,
+            double: 13.37,
+            float: 3.14,
+            date: Date(),
+            decimal: .init(-1.234),
+            point: .init(x: 1.570, y: -42)
+        )
         try conn.insert(into: Types.self).value(typesA).run().wait()
         let rows = try conn.select().all().from(Types.self).all(decoding: Types.self).wait()
         switch rows.count {
@@ -407,6 +428,7 @@ class PostgreSQLConnectionTests: XCTestCase {
             XCTAssertEqual(typesA.float, typesB.float)
             XCTAssertEqual(typesA.date, typesB.date)
             XCTAssertEqual(typesA.decimal, typesB.decimal)
+            XCTAssertEqual(typesA.point, typesB.point)
         default: XCTFail("Invalid row count")
         }
     }
@@ -626,6 +648,20 @@ class PostgreSQLConnectionTests: XCTestCase {
         try request.eventLoop.future().wait()
         XCTAssertNil(connection)
     }
+    
+    // https://github.com/vapor/postgresql/issues/125
+    func testGH125() throws {
+        let conn = try PostgreSQLConnection.makeTest()
+        let decoder = PostgreSQLRowDecoder()
+        struct Test: Codable {
+            var point: PostgreSQLPoint
+        }
+        try conn.query("SELECT '(1.57, -42)'::POINT as point") { row in
+            let point = try decoder.decode(Test.self, from: row)
+            XCTAssertEqual(point.point.x, 1.57)
+            XCTAssertEqual(point.point.y, -42)
+        }.wait()
+    }
 
     static var allTests = [
         ("testBenchmark", testBenchmark),
@@ -650,6 +686,7 @@ class PostgreSQLConnectionTests: XCTestCase {
         ("testZeroNumeric", testZeroNumeric),
         ("testNumericDecode", testNumericDecode),
         ("testClosureRetainCycle", testClosureRetainCycle),
+        ("testGH125", testGH125),
     ]
 }
 
