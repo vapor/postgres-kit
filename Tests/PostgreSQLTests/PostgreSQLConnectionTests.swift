@@ -686,7 +686,7 @@ class PostgreSQLConnectionTests: XCTestCase {
         ("testZeroNumeric", testZeroNumeric),
         ("testNumericDecode", testNumericDecode),
         ("testClosureRetainCycle", testClosureRetainCycle),
-        ("testGH125", testGH125testGH125),
+        ("testGH125", testGH125),
     ]
 }
 
