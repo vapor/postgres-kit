@@ -661,6 +661,8 @@ class PostgreSQLConnectionTests: XCTestCase {
             XCTAssertEqual(point.point.x, 1.57)
             XCTAssertEqual(point.point.y, -42)
         }.wait()
+        let x = PostgreSQLPoint(x: 3.14, y: -42).endiannessflipped()
+        print(x)
     }
 
     static var allTests = [
