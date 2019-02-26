@@ -650,7 +650,6 @@ class PostgreSQLConnectionTests: XCTestCase {
     }
     
     // https://github.com/vapor/postgresql/issues/125
-    
     func testGH125() throws {
         let conn = try PostgreSQLConnection.makeTest()
         let decoder = PostgreSQLRowDecoder()
@@ -687,6 +686,7 @@ class PostgreSQLConnectionTests: XCTestCase {
         ("testZeroNumeric", testZeroNumeric),
         ("testNumericDecode", testNumericDecode),
         ("testClosureRetainCycle", testClosureRetainCycle),
+        ("testGH125", testGH125testGH125),
     ]
 }
 
