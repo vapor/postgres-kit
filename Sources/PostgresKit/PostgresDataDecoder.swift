@@ -120,7 +120,7 @@ public struct PostgresDataDecoder {
         }
         
         func decode<T>(_ type: T.Type) throws -> T where T : Decodable {
-            fatalError()
+            return try T.init(from: self.decoder)
         }
         
     }
