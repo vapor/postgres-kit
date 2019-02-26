@@ -1,74 +1,69 @@
-import DatabaseKit
-import Foundation
-import NIO
-import NIOPostgres
-import NIOOpenSSL
-import SQLKit
+@_exported import struct Foundation.URL
 
-public final class PostgresDatabase: Database {
-    public struct Config {
-        public let address: () throws -> SocketAddress
-        public let username: String
-        public let password: String
-        public let database: String?
-        public let tlsConfig: TLSConfiguration?
-        
-        public init?(url: URL) {
-            guard url.scheme == "postgres" else {
-                return nil
-            }
-            guard let username = url.user else {
-                return nil
-            }
-            guard let password = url.password else {
-                return nil
-            }
-            guard let hostname = url.host else {
-                return nil
-            }
-            guard let port = url.port else {
-                return nil
-            }
-            
-            let tlsConfig: TLSConfiguration?
-            if url.query == "ssl=true" {
-                tlsConfig = TLSConfiguration.forClient(certificateVerification: .none)
-            } else {
-                tlsConfig = nil
-            }
-            
-            self.init(
-                hostname: hostname,
-                port: port,
-                username: username,
-                password: password,
-                database: url.databaseName,
-                tlsConfig: tlsConfig
-            )
+public struct PostgresConfig {
+    public let address: () throws -> SocketAddress
+    public let username: String
+    public let password: String
+    public let database: String?
+    public let tlsConfig: TLSConfiguration?
+    
+    public init?(url: URL) {
+        guard url.scheme == "postgres" else {
+            return nil
+        }
+        guard let username = url.user else {
+            return nil
+        }
+        guard let password = url.password else {
+            return nil
+        }
+        guard let hostname = url.host else {
+            return nil
+        }
+        guard let port = url.port else {
+            return nil
         }
         
-        public init(
-            hostname: String,
-            port: Int = 5432,
-            username: String,
-            password: String,
-            database: String? = nil,
-            tlsConfig: TLSConfiguration? = nil
-        ) {
-            self.address = {
-                return try SocketAddress.makeAddressResolvingHost(hostname, port: port)
-            }
-            self.username = username
-            self.database = database
-            self.password = password
-            self.tlsConfig = tlsConfig
+        let tlsConfig: TLSConfiguration?
+        if url.query == "ssl=true" {
+            tlsConfig = TLSConfiguration.forClient(certificateVerification: .none)
+        } else {
+            tlsConfig = nil
         }
+        
+        self.init(
+            hostname: hostname,
+            port: port,
+            username: username,
+            password: password,
+            database: url.path.split(separator: "/").last.flatMap(String.init),
+            tlsConfig: tlsConfig
+        )
     }
     
+    public init(
+        hostname: String,
+        port: Int = 5432,
+        username: String,
+        password: String,
+        database: String? = nil,
+        tlsConfig: TLSConfiguration? = nil
+    ) {
+        self.address = {
+            return try SocketAddress.makeAddressResolvingHost(hostname, port: port)
+        }
+        self.username = username
+        self.database = database
+        self.password = password
+        self.tlsConfig = tlsConfig
+    }
+}
+
+public struct PostgresConnectionSource: ConnectionPoolSource {
     public var eventLoop: EventLoop
-    public let config: Config
+    public let config: PostgresConfig
     
-    public init(config: Config, on eventLoop: EventLoop) {
+    public init(config: PostgresConfig, on eventLoop: EventLoop) {
         self.config = config
         self.eventLoop = eventLoop
     }
@@ -102,7 +97,7 @@ public final class PostgresDatabase: Database {
     }
 }
 
-extension PostgresConnection: DatabaseConnection {
+extension PostgresConnection: ConnectionPoolItem {
     public var isClosed: Bool {
         #warning("implement is closed")
         return false
@@ -164,7 +159,8 @@ struct PostgresDialect: SQLDialect {
     }
 }
 
-extension PostgresConnection: SQLDatabase {
+extension PostgresConnection: SQLDatabase { }
+extension SQLDatabase where Self: PostgresDatabase {
     public func sqlQuery(_ query: SQLExpression, _ onRow: @escaping (SQLRow) throws -> ()) -> EventLoopFuture<Void> {
         var serializer = SQLSerializer(dialect: PostgresDialect())
         query.serialize(to: &serializer)
@@ -176,10 +172,21 @@ extension PostgresConnection: SQLDatabase {
     }
 }
 
-extension PostgresDatabase: SQLDatabase {
-    public func sqlQuery(_ query: SQLExpression, _ onRow: @escaping (SQLRow) throws -> ()) -> EventLoopFuture<Void> {
-        return self.makeConnection().flatMap { conn in
-            return conn.sqlQuery(query, onRow)
-        }
+#warning("TODO: move to NIOPostgres?")
+extension ConnectionPool: PostgresDatabase where Source.Connection: PostgresDatabase {
+    public var eventLoop: EventLoop {
+        return self.source.eventLoop
+    }
+    
+    public func send(_ request: PostgresRequestHandler) -> EventLoopFuture<Void> {
+        return self.withConnection { $0.send(request) }
     }
 }
+
+#warning("TODO: move to SQLKit?")
+extension ConnectionPool: SQLDatabase where Source.Connection: SQLDatabase {
+    public func sqlQuery(_ query: SQLExpression, _ onRow: @escaping (SQLRow) throws -> ()) -> EventLoopFuture<Void> {
+        return self.withConnection { $0.sqlQuery(query, onRow) }
+    }
+}
+

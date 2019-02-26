@@ -10,10 +10,10 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/vapor/nio-postgres.git", .branch("master")),
         .package(url: "https://github.com/vapor/sql.git", .branch("master")),
-        .package(url: "https://github.com/vapor/database-kit.git", .branch("master")),
+        .package(url: "https://github.com/vapor/nio-kit.git", .branch("master")),
     ],
     targets: [
-        .target(name: "PostgresKit", dependencies: ["DatabaseKit", "NIOPostgres", "SQLKit"]),
+        .target(name: "PostgresKit", dependencies: ["NIOKit", "NIOPostgres", "SQLKit"]),
         .testTarget(name: "PostgresKitTests", dependencies: ["PostgresKit", "SQLKitBenchmark"]),
         .target(name: "PostgresKitPerformance", dependencies: ["PostgresKit"]),
     ]

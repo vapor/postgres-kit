@@ -1,2 +1,3 @@
 @_exported import NIOPostgres
-@_exported import DatabaseKit
+@_exported import NIOKit
+@_exported import SQLKit
