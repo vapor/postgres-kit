@@ -5,7 +5,7 @@ public struct PostgreSQLPolygon: Codable, Equatable {
     /// The points that make up the polygon.
     public var points: [PostgreSQLPoint]
 
-    /// Create a new `Point`
+    /// Create a new `Polygon`
     public init(points: [PostgreSQLPoint]) {
         self.points = points
     }
@@ -19,7 +19,6 @@ extension PostgreSQLPolygon: CustomStringConvertible {
 }
 
 extension PostgreSQLPolygon: PostgreSQLDataConvertible {
-
     /// See `PostgreSQLDataConvertible`.
     public static func convertFromPostgreSQLData(_ data: PostgreSQLData) throws -> PostgreSQLPolygon {
         guard case .polygon = data.type else {
