@@ -122,11 +122,11 @@ public final class PostgreSQLConnection: DatabaseConnection, BasicWorker, Databa
 
     /// Closes this client.
     public func close() {
-        _ = executeCloseHandlersThenClose()
+        _ = _executeCloseHandlersThenClose()
     }
 
     /// Executes close handlers before closing.
-    private  func executeCloseHandlersThenClose() -> Future<Void> {
+    public func _executeCloseHandlersThenClose() -> Future<Void> {
         return channel.close(mode: .all)
     }
 
