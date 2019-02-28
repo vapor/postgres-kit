@@ -58,9 +58,9 @@ extension PostgreSQLPolygon: PostgreSQLDataConvertible {
             var points = [PostgreSQLPoint]()
             var count = 4
             while count < value.count {
-                let x = Data(bytes: value[count..<count+8].reversed()).as(Double.self, default: 0)
-                let y = Data(bytes: value[count+8..<count+16].reversed()).as(Double.self, default: 0)
-                points.append(PostgreSQLPoint(x: x, y: y))
+                let x = Data(value[count..<count+8].reversed())
+                let y = Data(value[count+8..<count+16].reversed())
+                points.append(PostgreSQLPoint(x: x.as(Double.self, default: 0), y: y.as(Double.self, default: 0)))
                 count += 16
             }
             
@@ -72,11 +72,11 @@ extension PostgreSQLPolygon: PostgreSQLDataConvertible {
     
     /// See `PostgreSQLDataConvertible`.
     public func convertToPostgreSQLData() throws -> PostgreSQLData {
-        var binary = Data.of(Int32(self.points.count).bigEndian)
+        var data = Data.of(Int32(self.points.count).bigEndian)
         for point in self.points {
-            binary += Data(bytes: Data.of(point.x).reversed())
-            binary += Data(bytes: Data.of(point.y).reversed())
+            data += Data.of(point.x).reversed()
+            data += Data.of(point.y).reversed()
         }
-        return PostgreSQLData(.polygon, binary: binary)
+        return PostgreSQLData(.polygon, binary: data)
     }
 }
