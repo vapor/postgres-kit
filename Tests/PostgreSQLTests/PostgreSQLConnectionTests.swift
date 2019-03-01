@@ -361,6 +361,7 @@ class PostgreSQLConnectionTests: XCTestCase {
             var date: Date
             var decimal: Decimal
             var point: PostgreSQLPoint
+            var polygon: PostgreSQLPolygon
         }
 
         defer {
@@ -385,6 +386,7 @@ class PostgreSQLConnectionTests: XCTestCase {
             .column(for: \Types.date)
             .column(for: \Types.decimal)
             .column(for: \Types.point)
+            .column(for: \Types.polygon)
             .run().wait()
         
         let typesA = Types(
@@ -405,7 +407,8 @@ class PostgreSQLConnectionTests: XCTestCase {
             float: 3.14,
             date: Date(),
             decimal: .init(-1.234),
-            point: .init(x: 1.570, y: -42)
+            point: .init(x: 1.570, y: -42),
+            polygon: .init(points: [PostgreSQLPoint(x: 100, y: 100), PostgreSQLPoint(x: 200, y: 100), PostgreSQLPoint(x: 200, y: 200), PostgreSQLPoint(x: 100, y: 200)])
         )
         try conn.insert(into: Types.self).value(typesA).run().wait()
         let rows = try conn.select().all().from(Types.self).all(decoding: Types.self).wait()
@@ -429,6 +432,7 @@ class PostgreSQLConnectionTests: XCTestCase {
             XCTAssertEqual(typesA.date, typesB.date)
             XCTAssertEqual(typesA.decimal, typesB.decimal)
             XCTAssertEqual(typesA.point, typesB.point)
+            XCTAssertEqual(typesA.polygon, typesB.polygon)
         default: XCTFail("Invalid row count")
         }
     }
@@ -665,6 +669,26 @@ class PostgreSQLConnectionTests: XCTestCase {
         print(x)
     }
 
+    func testPolygon() throws {
+        let conn = try PostgreSQLConnection.makeTest()
+        let decoder = PostgreSQLRowDecoder()
+        struct Test: Codable {
+            var polygon: PostgreSQLPolygon
+        }
+        try conn.query("SELECT '((100,100),(200,100),(200,200),(100,200))'::POLYGON as polygon") { row in
+            let polygon = try decoder.decode(Test.self, from: row)
+            XCTAssertEqual(polygon.polygon.points.count, 4)
+            XCTAssertEqual(polygon.polygon.points[0].x, 100)
+            XCTAssertEqual(polygon.polygon.points[0].y, 100)
+            XCTAssertEqual(polygon.polygon.points[1].x, 200)
+            XCTAssertEqual(polygon.polygon.points[1].y, 100)
+            XCTAssertEqual(polygon.polygon.points[2].x, 200)
+            XCTAssertEqual(polygon.polygon.points[2].y, 200)
+            XCTAssertEqual(polygon.polygon.points[3].x, 100)
+            XCTAssertEqual(polygon.polygon.points[3].y, 200)
+        }.wait()
+    }
+
     static var allTests = [
         ("testBenchmark", testBenchmark),
         ("testVersion", testVersion),
@@ -689,6 +713,7 @@ class PostgreSQLConnectionTests: XCTestCase {
         ("testNumericDecode", testNumericDecode),
         ("testClosureRetainCycle", testClosureRetainCycle),
         ("testGH125", testGH125),
+        ("testPolygon", testPolygon),
     ]
 }
 
