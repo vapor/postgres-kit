@@ -332,6 +332,12 @@ class PostgreSQLConnectionTests: XCTestCase {
         print(row)
     }
 
+    func testRowCodableEmptyKeyed() throws {
+        let components = DateComponents()
+        let row = try PostgreSQLDataEncoder().encode(components)
+        XCTAssert(row.type == .jsonb)
+    }
+
     func testRowCodableTypes() throws {
         let conn = try PostgreSQLConnection.makeTest()
         
@@ -354,6 +360,8 @@ class PostgreSQLConnectionTests: XCTestCase {
             var float: Float
             var date: Date
             var decimal: Decimal
+            var point: PostgreSQLPoint
+            var polygon: PostgreSQLPolygon
         }
 
         defer {
@@ -377,9 +385,31 @@ class PostgreSQLConnectionTests: XCTestCase {
             .column(for: \Types.float)
             .column(for: \Types.date)
             .column(for: \Types.decimal)
+            .column(for: \Types.point)
+            .column(for: \Types.polygon)
             .run().wait()
         
-        let typesA = Types(id: nil, bool: true, string: "hello", int: 1, int8: 2, int16: 3, int32: 4, int64: 5, uint: 6, uint8: 7, uint16: 8, uint32: 9, uint64: 10, double: 13.37, float: 3.14, date: Date(), decimal: .init(-1.234))
+        let typesA = Types(
+            id: nil,
+            bool: true,
+            string: "hello",
+            int: 1,
+            int8: 2,
+            int16: 3,
+            int32: 4,
+            int64: 5,
+            uint: 6,
+            uint8: 7,
+            uint16: 8,
+            uint32: 9,
+            uint64: 10,
+            double: 13.37,
+            float: 3.14,
+            date: Date(),
+            decimal: .init(-1.234),
+            point: .init(x: 1.570, y: -42),
+            polygon: .init(points: [PostgreSQLPoint(x: 100, y: 100), PostgreSQLPoint(x: 200, y: 100), PostgreSQLPoint(x: 200, y: 200), PostgreSQLPoint(x: 100, y: 200)])
+        )
         try conn.insert(into: Types.self).value(typesA).run().wait()
         let rows = try conn.select().all().from(Types.self).all(decoding: Types.self).wait()
         switch rows.count {
@@ -401,6 +431,8 @@ class PostgreSQLConnectionTests: XCTestCase {
             XCTAssertEqual(typesA.float, typesB.float)
             XCTAssertEqual(typesA.date, typesB.date)
             XCTAssertEqual(typesA.decimal, typesB.decimal)
+            XCTAssertEqual(typesA.point, typesB.point)
+            XCTAssertEqual(typesA.polygon, typesB.polygon)
         default: XCTFail("Invalid row count")
         }
     }
@@ -606,6 +638,56 @@ class PostgreSQLConnectionTests: XCTestCase {
             }
         }
     }
+    
+    func testClosureRetainCycle() throws {
+        weak var connection: PostgreSQLConnection?
+        let request: EventLoopFuture<Void>
+        do {
+            let conn = try PostgreSQLConnection.makeTest()
+            request = conn.simpleQuery("SELECT true")
+            connection = conn
+        }
+        XCTAssertNotNil(connection)
+        try request.wait()
+        try request.eventLoop.future().wait()
+        XCTAssertNil(connection)
+    }
+    
+    // https://github.com/vapor/postgresql/issues/125
+    func testGH125() throws {
+        let conn = try PostgreSQLConnection.makeTest()
+        let decoder = PostgreSQLRowDecoder()
+        struct Test: Codable {
+            var point: PostgreSQLPoint
+        }
+        try conn.query("SELECT '(1.57, -42)'::POINT as point") { row in
+            let point = try decoder.decode(Test.self, from: row)
+            XCTAssertEqual(point.point.x, 1.57)
+            XCTAssertEqual(point.point.y, -42)
+        }.wait()
+        let x = PostgreSQLPoint(x: 3.14, y: -42).endiannessflipped()
+        print(x)
+    }
+
+    func testPolygon() throws {
+        let conn = try PostgreSQLConnection.makeTest()
+        let decoder = PostgreSQLRowDecoder()
+        struct Test: Codable {
+            var polygon: PostgreSQLPolygon
+        }
+        try conn.query("SELECT '((100,100),(200,100),(200,200),(100,200))'::POLYGON as polygon") { row in
+            let polygon = try decoder.decode(Test.self, from: row)
+            XCTAssertEqual(polygon.polygon.points.count, 4)
+            XCTAssertEqual(polygon.polygon.points[0].x, 100)
+            XCTAssertEqual(polygon.polygon.points[0].y, 100)
+            XCTAssertEqual(polygon.polygon.points[1].x, 200)
+            XCTAssertEqual(polygon.polygon.points[1].y, 100)
+            XCTAssertEqual(polygon.polygon.points[2].x, 200)
+            XCTAssertEqual(polygon.polygon.points[2].y, 200)
+            XCTAssertEqual(polygon.polygon.points[3].x, 100)
+            XCTAssertEqual(polygon.polygon.points[3].y, 200)
+        }.wait()
+    }
 
     // Stores the current date in timestamp and timestamptz fields and compares it with the result of now()
     func testTimestampDecode() throws {
@@ -660,6 +742,7 @@ class PostgreSQLConnectionTests: XCTestCase {
         ("testDataDecoder", testDataDecoder),
         ("testRowDecoder", testRowDecoder),
         ("testRowCodableNested", testRowCodableNested),
+        ("testRowCodableEmptyKeyed", testRowCodableEmptyKeyed),
         ("testRowCodableTypes", testRowCodableTypes),
         ("testTimeTz", testTimeTz),
         ("testListen", testListen),
@@ -669,6 +752,9 @@ class PostgreSQLConnectionTests: XCTestCase {
         ("testEmptyArray", testEmptyArray),
         ("testZeroNumeric", testZeroNumeric),
         ("testNumericDecode", testNumericDecode),
+        ("testClosureRetainCycle", testClosureRetainCycle),
+        ("testGH125", testGH125),
+        ("testPolygon", testPolygon),
         ("testTimestampDecode", testTimestampDecode),
     ]
 }
