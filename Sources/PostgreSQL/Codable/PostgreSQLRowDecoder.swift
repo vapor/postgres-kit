@@ -67,7 +67,7 @@ struct PostgreSQLRowDecoder {
         private func data(for key: Key) -> PostgreSQLData? {
             let columnName = key.stringValue
             var column = PostgreSQLColumn(tableOID: self.tableOID, name: columnName)
-            // First, check for an exact (0, columnName) match.
+            // First, check for an exact (tableOID, columnName) match.
             var data = row[column]
             if data == nil {
                 if self.tableOID != 0 {
