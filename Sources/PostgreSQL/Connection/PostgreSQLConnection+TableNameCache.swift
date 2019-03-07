@@ -43,7 +43,7 @@ extension PostgreSQLConnection {
             self.tableOIDs = tableOIDs
         }
     }
-    
+
     /// Fetches a struct that can convert table OIDs to table names.
     ///
     ///     SELECT oid, relname FROM pg_class
