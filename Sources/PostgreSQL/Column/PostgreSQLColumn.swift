@@ -25,8 +25,8 @@ extension PostgreSQLColumn: CustomStringConvertible {
 
 extension Dictionary where Key == PostgreSQLColumn {
     /// Accesses the _first_ value from this dictionary with a matching field name.
-	///
-	/// - Note: This performs a linear search over the dictionary and thus is fairly slow.
+    ///
+    /// - Note: This performs a linear search over the dictionary and thus is fairly slow.
     public func firstValue(tableOID: UInt32 = 0, name: String) -> Value? {
         for (column, data) in self {
             if (tableOID == 0 || column.tableOID == 0 || column.tableOID == tableOID) && column.name == name {
