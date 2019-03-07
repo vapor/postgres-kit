@@ -47,26 +47,50 @@ struct PostgreSQLRowDecoder {
         let codingPath: [CodingKey] = []
         let row: [PostgreSQLColumn: PostgreSQLData]
         let tableOID: UInt32
-        let allKeys: [Key]
+        var allKeys: [Key] {
+            // Unlikely to be called (mostly present for protocol conformance), so we don't need to cache this property.
+            return row.keys
+                .compactMap { col in
+                    if tableOID == 0 || col.tableOID == tableOID || col.tableOID == 0 {
+                        return col.name
+                    } else {
+                        return nil
+                    }
+                }.compactMap(Key.init(stringValue:))
+        }
         
         init(row: [PostgreSQLColumn: PostgreSQLData], tableOID: UInt32) {
             self.row = row
             self.tableOID = tableOID
-            self.allKeys = row.keys.compactMap { col in
-                if tableOID == 0 || col.tableOID == tableOID || col.tableOID == 0 {
-                    return col.name
+        }
+        
+        private func data(for key: Key) -> PostgreSQLData? {
+            let columnName = key.stringValue
+            var column = PostgreSQLColumn(tableOID: self.tableOID, name: columnName)
+            // First, check for an exact (0, columnName) match.
+            var data = row[column]
+            if data == nil {
+                if self.tableOID != 0 {
+                    // No column with our exact table OID; check for a (0, columnName) match instead.
+                    column.tableOID = 0
+                    data = row[column]
                 } else {
-                    return nil
+                    // No (0, columnName) match; check via (slow!) linear search for _any_ matching column name,
+                    // regardless of tableOID.
+                    // Note: This path is hit in `PostgreSQLConnection.tableNames`, but luckily the `PGClass` only has
+                    // two keys, so the performance impact of linear search is acceptable there.
+                    return row.firstValue(tableOID: tableOID, name: columnName)
                 }
-            }.compactMap(Key.init(stringValue:))
+            }
+            return data
         }
         
         func contains(_ key: Key) -> Bool {
-            return allKeys.contains { $0.stringValue == key.stringValue }
+            return data(for: key) != nil
         }
         
         func decodeNil(forKey key: Key) throws -> Bool {
-            guard let data = row.firstValue(tableOID: tableOID, name: key.stringValue) else {
+            guard let data = data(for: key) else {
                 return true
             }
             switch data.storage {
@@ -76,7 +100,7 @@ struct PostgreSQLRowDecoder {
         }
         
         func decode<T>(_ type: T.Type, forKey key: Key) throws -> T where T : Decodable {
-            guard let data = row.firstValue(tableOID: tableOID, name: key.stringValue) else {
+            guard let data = data(for: key) else {
                 throw DecodingError.valueNotFound(T.self, .init(codingPath: codingPath + [key], debugDescription: "Could not decode \(T.self)."))
             }
             return try PostgreSQLDataDecoder().decode(T.self, from: data)
