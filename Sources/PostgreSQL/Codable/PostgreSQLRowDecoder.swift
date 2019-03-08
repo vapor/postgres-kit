@@ -68,21 +68,19 @@ struct PostgreSQLRowDecoder {
             let columnName = key.stringValue
             var column = PostgreSQLColumn(tableOID: self.tableOID, name: columnName)
             // First, check for an exact (tableOID, columnName) match.
-            var data = row[column]
-            if data == nil {
-                if self.tableOID != 0 {
-                    // No column with our exact table OID; check for a (0, columnName) match instead.
-                    column.tableOID = 0
-                    data = row[column]
-                } else {
-                    // No (0, columnName) match; check via (slow!) linear search for _any_ matching column name,
-                    // regardless of tableOID.
-                    // Note: This path is hit in `PostgreSQLConnection.tableNames`, but luckily the `PGClass` only has
-                    // two keys, so the performance impact of linear search is acceptable there.
-                    return row.firstValue(tableOID: tableOID, name: columnName)
-                }
+            if let data = row[column] { return data }
+            
+            if self.tableOID != 0 {
+                // No column with our exact table OID; check for a (0, columnName) match instead.
+                column.tableOID = 0
+                return row[column]
+            } else {
+                // No (0, columnName) match; check via (slow!) linear search for _any_ matching column name,
+                // regardless of tableOID.
+                // Note: This path is hit in `PostgreSQLConnection.tableNames`, but luckily the `PGClass` only has
+                // two keys, so the performance impact of linear search is acceptable there.
+                return row.firstValue(tableOID: tableOID, name: columnName)
             }
-            return data
         }
         
         func contains(_ key: Key) -> Bool {
