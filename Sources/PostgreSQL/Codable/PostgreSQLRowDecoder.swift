@@ -106,6 +106,16 @@ struct PostgreSQLRowDecoder {
             return try PostgreSQLDataDecoder().decode(T.self, from: data)
         }
         
+        // This specialization avoids two dictionary lookups (caused by calls to `contains` and `decodeNil`) present in
+        // the default implementation of `decodeIfPresent`.
+        func decodeIfPresent<T>(_ type: T.Type, forKey key: Key) throws -> T? where T : Decodable {
+            guard let data = data(for: key) else { return nil }
+            switch data.storage {
+            case .null: return nil
+            default: return try PostgreSQLDataDecoder().decode(T.self, from: data)
+            }
+        }
+        
         func nestedContainer<NestedKey>(keyedBy type: NestedKey.Type, forKey key: Key) throws -> KeyedDecodingContainer<NestedKey> where NestedKey : CodingKey {
             fatalError()
         }
