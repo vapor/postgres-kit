@@ -11,12 +11,7 @@ extension Date: PostgreSQLDataConvertible {
             }
         case .binary(let value):
             switch data.type {
-            case .timestamp:
-                let microseconds = value.as(Int64.self, default: 0).bigEndian
-                var seconds = Double(microseconds) / Double(_microsecondsPerSecond)
-                seconds -= Double(TimeZone.current.secondsFromGMT())
-                return Date(timeInterval: seconds, since: _psqlDateStart)
-            case .timestamptz:
+            case .timestamp, .timestamptz:
                 let microseconds = value.as(Int64.self, default: 0).bigEndian
                 let seconds = Double(microseconds) / Double(_microsecondsPerSecond)
                 return Date(timeInterval: seconds, since: _psqlDateStart)
@@ -33,7 +28,7 @@ extension Date: PostgreSQLDataConvertible {
 
     /// See `PostgreSQLDataConvertible`.
     public func convertToPostgreSQLData() throws -> PostgreSQLData {
-        return PostgreSQLData(.timestamptz, binary: Data.of(Int64(self.timeIntervalSince(_psqlDateStart) * Double(_microsecondsPerSecond)).bigEndian))
+        return PostgreSQLData(.timestamp, binary: Data.of(Int64(self.timeIntervalSince(_psqlDateStart) * Double(_microsecondsPerSecond)).bigEndian))
     }
 }
 
