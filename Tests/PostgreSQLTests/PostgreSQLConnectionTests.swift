@@ -2,7 +2,7 @@
 import SQLBenchmark
 import XCTest
 
-class PostgreSQLConnectionTests: XCTestCase {
+class ConnectionTests: XCTestCase {
     struct VersionMetadata: Codable {
         var version: String
     }
@@ -618,24 +618,6 @@ class PostgreSQLConnectionTests: XCTestCase {
         for value in testValues {
             let result = try conn.select().column(expression(value)).first(decoding: NumericDouble.self).wait()?.value
             XCTAssert(result == Double(value))
-        }
-    }
-    
-    func testRangeSelectDecodePerformance() throws {
-        struct Series: Decodable {
-            var num: Int
-        }
-        
-        let conn = try PostgreSQLConnection.makeTest()
-        measure {
-            let decoder = PostgreSQLRowDecoder()
-            do {
-                try conn.simpleQuery("SELECT * FROM generate_series(1, 10000) num") { row in
-                    _ = try decoder.decode(Series.self, from: row)
-                }.wait()
-            } catch {
-                XCTFail("\(error)")
-            }
         }
     }
     

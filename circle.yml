@@ -111,6 +111,14 @@ jobs:
       - run: 
           name: Compile code with optimizations
           command: swift build -c release
+  linux-performance:
+    docker:
+      - image: vapor/swift:5.0
+    steps:
+      - checkout
+      - run:
+          name: swift test
+          command: swift test -c release --filter "PostgreSQLTests.PerformanceTests"
 workflows:
   version: 2
   tests:
@@ -121,13 +129,6 @@ workflows:
       - 9-linux
       - 9-linux-fluent
       - linux-release
-  nightly:
-    triggers:
-      - schedule:
-          cron: "0 0 * * *"
-          filters:
-            branches:
-              only:
-                - master
-    jobs:
-      - linux
+notify:
+  webhooks:
+    - url: https://bot-gh.vapor.codes/circle/result
