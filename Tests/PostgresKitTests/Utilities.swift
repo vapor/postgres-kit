@@ -18,3 +18,11 @@ extension PostgresConnection {
         }
     }
 }
+
+var hostname: String {
+    #if os(Linux)
+    return "psql"
+    #else
+    return "127.0.0.1"
+    #endif
+}

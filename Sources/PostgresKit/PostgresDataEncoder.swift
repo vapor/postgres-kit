@@ -16,7 +16,7 @@ public struct PostgresDataEncoder {
                 let data = try json.encode(Wrapper(type))
                 var buffer = ByteBufferAllocator().buffer(capacity: data.count)
                 #warning("TODO: use nio foundation compat write")
-                buffer.write(bytes: data)
+                buffer.writeBytes(data)
                 return PostgresData(type: .jsonb, value: buffer)
             }
         }

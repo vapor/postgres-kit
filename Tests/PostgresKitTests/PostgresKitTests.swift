@@ -26,7 +26,7 @@ class PostgresKitTests: XCTestCase {
     
     func testPerformance() throws {
         let db = PostgresConnectionSource(
-            config: .init(hostname: "localhost", username: "vapor_username", password: "vapor_password", database: "vapor_database"),
+            config: .init(hostname: hostname, username: "vapor_username", password: "vapor_password", database: "vapor_database"),
             on: self.eventLoop
         )
         let pool = ConnectionPool(config: .init(maxConnections: 12), source: db)
@@ -641,30 +641,6 @@ class PostgresKitTests: XCTestCase {
 //            }
 //        }
 //    }
-
-    static var allTests = [
-        ("testSQLKitBenchmark", testSQLKitBenchmark)
-//        ("testBenchmark", testBenchmark),
-//        ("testVersion", testVersion),
-//        ("testSelectTypes", testSelectTypes),
-//        ("testStruct", testStruct),
-//        ("testNull", testNull),
-//        ("testGH24", testGH24),
-//        ("testURLParsing", testURLParsing),
-//        ("testGH46", testGH46),
-//        ("testDataDecoder", testDataDecoder),
-//        ("testRowDecoder", testRowDecoder),
-//        ("testRowCodableNested", testRowCodableNested),
-//        ("testRowCodableTypes", testRowCodableTypes),
-//        ("testTimeTz", testTimeTz),
-//        ("testListen", testListen),
-//        ("testSum", testSum),
-//        ("testOrderBy", testOrderBy),
-//        ("testInvalidDate", testInvalidDate),
-//        ("testEmptyArray", testEmptyArray),
-//        ("testZeroNumeric", testZeroNumeric),
-//        ("testNumericDecode", testNumericDecode),
-    ]
 }
 
 //extension PostgreSQLConnection {

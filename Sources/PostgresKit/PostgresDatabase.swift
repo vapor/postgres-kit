@@ -7,6 +7,8 @@ public struct PostgresConfig {
     public let database: String?
     public let tlsConfig: TLSConfiguration?
     
+    internal var _hostname: String?
+    
     public init?(url: URL) {
         guard url.scheme == "postgres" else {
             return nil
@@ -56,6 +58,7 @@ public struct PostgresConfig {
         self.database = database
         self.password = password
         self.tlsConfig = tlsConfig
+        self._hostname = hostname
     }
 }
 
@@ -83,7 +86,7 @@ public struct PostgresConnectionSource: ConnectionPoolSource {
             ).map { conn }
         }.flatMap { conn in
             if let tlsConfig = self.config.tlsConfig {
-                return conn.requestTLS(using: tlsConfig).map { upgraded in
+                return conn.requestTLS(using: tlsConfig, serverHostname: self.config._hostname).map { upgraded in
                     if !upgraded {
                         #warning("throw an error here?")
                         print("[Postgres] Server does not support TLS")
