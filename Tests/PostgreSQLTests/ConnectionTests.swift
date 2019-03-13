@@ -2,7 +2,7 @@
 import SQLBenchmark
 import XCTest
 
-class PostgreSQLConnectionTests: XCTestCase {
+class ConnectionTests: XCTestCase {
     struct VersionMetadata: Codable {
         var version: String
     }
@@ -97,7 +97,7 @@ class PostgreSQLConnectionTests: XCTestCase {
     }
     
     struct Hello: Codable, ReflectionDecodable, Equatable {
-        static func reflectDecoded() throws -> (PostgreSQLConnectionTests.Hello, PostgreSQLConnectionTests.Hello) {
+        static func reflectDecoded() throws -> (Hello, Hello) {
             return (.init(message: "0"), .init(message: "1"))
         }
         
@@ -621,24 +621,6 @@ class PostgreSQLConnectionTests: XCTestCase {
         }
     }
     
-    func testRangeSelectDecodePerformance() throws {
-        struct Series: Decodable {
-            var num: Int
-        }
-        
-        let conn = try PostgreSQLConnection.makeTest()
-        measure {
-            let decoder = PostgreSQLRowDecoder()
-            do {
-                try conn.simpleQuery("SELECT * FROM generate_series(1, 10000) num") { row in
-                    _ = try decoder.decode(Series.self, from: row)
-                }.wait()
-            } catch {
-                XCTFail("\(error)")
-            }
-        }
-    }
-    
     func testClosureRetainCycle() throws {
         weak var connection: PostgreSQLConnection?
         let request: EventLoopFuture<Void>
@@ -688,33 +670,6 @@ class PostgreSQLConnectionTests: XCTestCase {
             XCTAssertEqual(polygon.polygon.points[3].y, 200)
         }.wait()
     }
-
-    static var allTests = [
-        ("testBenchmark", testBenchmark),
-        ("testVersion", testVersion),
-        ("testSelectTypes", testSelectTypes),
-        ("testStruct", testStruct),
-        ("testNull", testNull),
-        ("testGH24", testGH24),
-        ("testURLParsing", testURLParsing),
-        ("testGH46", testGH46),
-        ("testDataDecoder", testDataDecoder),
-        ("testRowDecoder", testRowDecoder),
-        ("testRowCodableNested", testRowCodableNested),
-        ("testRowCodableEmptyKeyed", testRowCodableEmptyKeyed),
-        ("testRowCodableTypes", testRowCodableTypes),
-        ("testTimeTz", testTimeTz),
-        ("testListen", testListen),
-        ("testSum", testSum),
-        ("testOrderBy", testOrderBy),
-        ("testInvalidDate", testInvalidDate),
-        ("testEmptyArray", testEmptyArray),
-        ("testZeroNumeric", testZeroNumeric),
-        ("testNumericDecode", testNumericDecode),
-        ("testClosureRetainCycle", testClosureRetainCycle),
-        ("testGH125", testGH125),
-        ("testPolygon", testPolygon),
-    ]
 }
 
 extension PostgreSQLConnection {
