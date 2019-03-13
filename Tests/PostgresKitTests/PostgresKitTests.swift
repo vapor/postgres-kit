@@ -641,30 +641,6 @@ class PostgresKitTests: XCTestCase {
 //            }
 //        }
 //    }
-
-    static var allTests = [
-        ("testSQLKitBenchmark", testSQLKitBenchmark)
-//        ("testBenchmark", testBenchmark),
-//        ("testVersion", testVersion),
-//        ("testSelectTypes", testSelectTypes),
-//        ("testStruct", testStruct),
-//        ("testNull", testNull),
-//        ("testGH24", testGH24),
-//        ("testURLParsing", testURLParsing),
-//        ("testGH46", testGH46),
-//        ("testDataDecoder", testDataDecoder),
-//        ("testRowDecoder", testRowDecoder),
-//        ("testRowCodableNested", testRowCodableNested),
-//        ("testRowCodableTypes", testRowCodableTypes),
-//        ("testTimeTz", testTimeTz),
-//        ("testListen", testListen),
-//        ("testSum", testSum),
-//        ("testOrderBy", testOrderBy),
-//        ("testInvalidDate", testInvalidDate),
-//        ("testEmptyArray", testEmptyArray),
-//        ("testZeroNumeric", testZeroNumeric),
-//        ("testNumericDecode", testNumericDecode),
-    ]
 }
 
 //extension PostgreSQLConnection {
