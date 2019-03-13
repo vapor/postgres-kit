@@ -97,7 +97,7 @@ class ConnectionTests: XCTestCase {
     }
     
     struct Hello: Codable, ReflectionDecodable, Equatable {
-        static func reflectDecoded() throws -> (PostgreSQLConnectionTests.Hello, PostgreSQLConnectionTests.Hello) {
+        static func reflectDecoded() throws -> (Hello, Hello) {
             return (.init(message: "0"), .init(message: "1"))
         }
         
@@ -670,33 +670,6 @@ class ConnectionTests: XCTestCase {
             XCTAssertEqual(polygon.polygon.points[3].y, 200)
         }.wait()
     }
-
-    static var allTests = [
-        ("testBenchmark", testBenchmark),
-        ("testVersion", testVersion),
-        ("testSelectTypes", testSelectTypes),
-        ("testStruct", testStruct),
-        ("testNull", testNull),
-        ("testGH24", testGH24),
-        ("testURLParsing", testURLParsing),
-        ("testGH46", testGH46),
-        ("testDataDecoder", testDataDecoder),
-        ("testRowDecoder", testRowDecoder),
-        ("testRowCodableNested", testRowCodableNested),
-        ("testRowCodableEmptyKeyed", testRowCodableEmptyKeyed),
-        ("testRowCodableTypes", testRowCodableTypes),
-        ("testTimeTz", testTimeTz),
-        ("testListen", testListen),
-        ("testSum", testSum),
-        ("testOrderBy", testOrderBy),
-        ("testInvalidDate", testInvalidDate),
-        ("testEmptyArray", testEmptyArray),
-        ("testZeroNumeric", testZeroNumeric),
-        ("testNumericDecode", testNumericDecode),
-        ("testClosureRetainCycle", testClosureRetainCycle),
-        ("testGH125", testGH125),
-        ("testPolygon", testPolygon),
-    ]
 }
 
 extension PostgreSQLConnection {

@@ -1,7 +1,8 @@
 import XCTest
-@testable import PostgreSQLTests
 
-XCTMain([
-    testCase(ConnectionTests.allTests),
-    testCase(PerformanceTests.allTests),
-])
+import PostgreSQLTests
+
+var tests = [XCTestCaseEntry]()
+tests += PostgreSQLTests.__allTests()
+
+XCTMain(tests)

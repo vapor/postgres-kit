@@ -118,7 +118,7 @@ jobs:
       - checkout
       - run:
           name: swift test
-          command: swift test -c release --filter "PostgreSQLTests.PerformanceTests"
+          command: swift test -c release -Xswiftc -enable-testing --filter "PostgreSQLTests.PerformanceTests"
 workflows:
   version: 2
   tests:
