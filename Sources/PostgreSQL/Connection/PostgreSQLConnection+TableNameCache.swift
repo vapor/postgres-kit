@@ -1,8 +1,17 @@
+private struct PGClass: PostgreSQLTable {
+    static let sqlTableIdentifierString = "pg_class"
+    var oid: UInt32
+    var relname: String
+}
+
 extension PostgreSQLConnection {
     /// Caches table OID to string name associations.
     public struct TableNameCache {
         /// Stores table names. [OID: Name]
         private let tableNames: [UInt32: String]
+        /// Stores table OIDs. [Name: OID]
+        /// Used to accelerate the Name -> OID lookup.
+        private let tableOIDs: [String: UInt32]
         
         /// Fetches the table name for a given table OID. Returns `nil` if no table with that OID is known.
         ///
@@ -19,17 +28,19 @@ extension PostgreSQLConnection {
         ///     - name: Table name.
         /// - returns: Table OID.
         public func tableOID(name: String) -> UInt32? {
-            for (key, val) in tableNames {
-                if val == name {
-                    return key
-                }
-            }
-            return nil
+            return tableOIDs[name]
         }
         
         /// Creates a new cache.
-        init(_ tableNames: [UInt32: String]) {
+        fileprivate init(_ tableClasses: [PGClass]) {
+            var tableNames: [UInt32: String] = [:]
+            var tableOIDs: [String: UInt32] = [:]
+            for tableClass in tableClasses {
+                tableNames[tableClass.oid] = tableClass.relname
+                tableOIDs[tableClass.relname] = tableClass.oid
+            }
             self.tableNames = tableNames
+            self.tableOIDs = tableOIDs
         }
     }
 
@@ -42,18 +53,9 @@ extension PostgreSQLConnection {
         if let existing = tableNameCache, !refresh {
             return future(existing)
         } else {
-            struct PGClass: PostgreSQLTable {
-                static let sqlTableIdentifierString = "pg_class"
-                var oid: UInt32
-                var relname: String
-            }
             return select().column("oid").column("relname").from(PGClass.self).all().map { rows in
-                var cache: [UInt32: String] = [:]
                 let rows = try rows.map { try self.decode(PGClass.self, from: $0, table: nil) }
-                for row in rows {
-                    cache[row.oid] = row.relname
-                }
-                let new = TableNameCache(cache)
+                let new = TableNameCache(rows)
                 self.tableNameCache = new
                 return new
             }
