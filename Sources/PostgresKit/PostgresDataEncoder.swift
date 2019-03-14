@@ -175,7 +175,7 @@ public struct PostgresDataEncoder {
         }
         
         mutating func encode<T>(_ value: T) throws where T : Encodable {
-            fatalError()
+            try value.encode(to: self.encoder)
         }
     }
 }
