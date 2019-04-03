@@ -163,7 +163,7 @@ struct PostgresDialect: SQLDialect {
 }
 
 extension PostgresConnection: SQLDatabase { }
-extension SQLDatabase where Self: PostgresDatabase {
+extension SQLDatabase where Self: PostgresClient {
     public func sqlQuery(_ query: SQLExpression, _ onRow: @escaping (SQLRow) throws -> ()) -> EventLoopFuture<Void> {
         var serializer = SQLSerializer(dialect: PostgresDialect())
         query.serialize(to: &serializer)
@@ -176,7 +176,7 @@ extension SQLDatabase where Self: PostgresDatabase {
 }
 
 #warning("TODO: move to NIOPostgres?")
-extension ConnectionPool: PostgresDatabase where Source.Connection: PostgresDatabase {
+extension ConnectionPool: PostgresClient where Source.Connection: PostgresClient {
     public var eventLoop: EventLoop {
         return self.source.eventLoop
     }

@@ -20,6 +20,7 @@ class PostgresKitTests: XCTestCase {
     
     func testSQLKitBenchmark() throws {
         let conn = try PostgresConnection.test(on: self.eventLoop).wait()
+        defer { try! conn.close().wait() }
         let benchmark = SQLBenchmarker(on: conn)
         try benchmark.run()
     }
@@ -30,6 +31,7 @@ class PostgresKitTests: XCTestCase {
             on: self.eventLoop
         )
         let pool = ConnectionPool(config: .init(maxConnections: 12), source: db)
+        defer { try! pool.close().wait() }
         self.measure {
             for i in 1...100 {
                 _ = try! pool.withConnection { conn in
