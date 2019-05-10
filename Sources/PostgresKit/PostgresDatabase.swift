@@ -1,11 +1,11 @@
 @_exported import struct Foundation.URL
 
-public struct PostgresConfig {
+public struct PostgresConfiguration {
     public let address: () throws -> SocketAddress
     public let username: String
     public let password: String
     public let database: String?
-    public let tlsConfig: TLSConfiguration?
+    public let tlsConfiguration: TLSConfiguration?
     
     internal var _hostname: String?
     
@@ -26,11 +26,11 @@ public struct PostgresConfig {
             return nil
         }
         
-        let tlsConfig: TLSConfiguration?
+        let tlsConfiguration: TLSConfiguration?
         if url.query == "ssl=true" {
-            tlsConfig = TLSConfiguration.forClient(certificateVerification: .none)
+            tlsConfiguration = TLSConfiguration.forClient(certificateVerification: .none)
         } else {
-            tlsConfig = nil
+            tlsConfiguration = nil
         }
         
         self.init(
@@ -39,7 +39,7 @@ public struct PostgresConfig {
             username: username,
             password: password,
             database: url.path.split(separator: "/").last.flatMap(String.init),
-            tlsConfig: tlsConfig
+            tlsConfiguration: tlsConfiguration
         )
     }
     
@@ -49,7 +49,7 @@ public struct PostgresConfig {
         username: String,
         password: String,
         database: String? = nil,
-        tlsConfig: TLSConfiguration? = nil
+        tlsConfiguration: TLSConfiguration? = nil
     ) {
         self.address = {
             return try SocketAddress.makeAddressResolvingHost(hostname, port: port)
@@ -57,45 +57,37 @@ public struct PostgresConfig {
         self.username = username
         self.database = database
         self.password = password
-        self.tlsConfig = tlsConfig
+        self.tlsConfiguration = tlsConfiguration
         self._hostname = hostname
     }
 }
 
 public struct PostgresConnectionSource: ConnectionPoolSource {
     public var eventLoop: EventLoop
-    public let config: PostgresConfig
+    public let configuration: PostgresConfiguration
     
-    public init(config: PostgresConfig, on eventLoop: EventLoop) {
-        self.config = config
+    public init(configuration: PostgresConfiguration, on eventLoop: EventLoop) {
+        self.configuration = configuration
         self.eventLoop = eventLoop
     }
     
     public func makeConnection() -> EventLoopFuture<PostgresConnection> {
         let address: SocketAddress
         do {
-            address = try self.config.address()
+            address = try self.configuration.address()
         } catch {
             return self.eventLoop.makeFailedFuture(error)
         }
-        return PostgresConnection.connect(to: address, on: self.eventLoop).flatMap { conn in
+        return PostgresConnection.connect(
+            to: address,
+            tlsConfiguration: self.configuration.tlsConfiguration,
+            on: self.eventLoop
+        ).flatMap { conn in
             return conn.authenticate(
-                username: self.config.username,
-                database: self.config.database,
-                password: self.config.password
+                username: self.configuration.username,
+                database: self.configuration.database,
+                password: self.configuration.password
             ).map { conn }
-        }.flatMap { conn in
-            if let tlsConfig = self.config.tlsConfig {
-                return conn.requestTLS(using: tlsConfig, serverHostname: self.config._hostname).map { upgraded in
-                    if !upgraded {
-                        #warning("throw an error here?")
-                        print("[Postgres] Server does not support TLS")
-                    }
-                    return conn
-                }
-            } else {
-                return self.eventLoop.makeSucceededFuture(conn)
-            }
         }
     }
 }
@@ -181,7 +173,7 @@ extension ConnectionPool: PostgresClient where Source.Connection: PostgresClient
         return self.source.eventLoop
     }
     
-    public func send(_ request: PostgresRequestHandler) -> EventLoopFuture<Void> {
+    public func send(_ request: PostgresRequest) -> EventLoopFuture<Void> {
         return self.withConnection { $0.send(request) }
     }
 }

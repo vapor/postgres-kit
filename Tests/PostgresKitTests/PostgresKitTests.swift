@@ -27,7 +27,7 @@ class PostgresKitTests: XCTestCase {
     
     func testPerformance() throws {
         let db = PostgresConnectionSource(
-            config: .init(hostname: hostname, username: "vapor_username", password: "vapor_password", database: "vapor_database"),
+            configuration: .init(hostname: hostname, username: "vapor_username", password: "vapor_password", database: "vapor_database"),
             on: self.eventLoop
         )
         let pool = ConnectionPool(config: .init(maxConnections: 12), source: db)
