@@ -5,16 +5,14 @@ let package = Package(
     name: "postgres-kit",
     products: [
         .library(name: "PostgresKit", targets: ["PostgresKit"]),
-        .executable(name: "PostgresKitPerformance", targets: ["PostgresKitPerformance"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/vapor/nio-postgres.git", .branch("master")),
-        .package(url: "https://github.com/vapor/sql.git", .branch("master")),
-        .package(url: "https://github.com/vapor/nio-kit.git", .branch("master")),
+        .package(url: "https://github.com/vapor/postgres-nio.git", from: "1.0.0-alpha"),
+        .package(url: "https://github.com/vapor/sql-kit.git", from: "3.0.0-alpha"),
+        .package(url: "https://github.com/vapor/async-kit.git", from: "1.0.0-alpha"),
     ],
     targets: [
-        .target(name: "PostgresKit", dependencies: ["NIOKit", "NIOPostgres", "SQLKit"]),
+        .target(name: "PostgresKit", dependencies: ["AsyncKit", "PostgresNIO", "SQLKit"]),
         .testTarget(name: "PostgresKitTests", dependencies: ["PostgresKit", "SQLKitBenchmark"]),
-        .target(name: "PostgresKitPerformance", dependencies: ["PostgresKit"]),
     ]
 )

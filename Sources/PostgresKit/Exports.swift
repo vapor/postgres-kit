@@ -1,3 +1,3 @@
-@_exported import NIOPostgres
-@_exported import NIOKit
+@_exported import AsyncKit
+@_exported import PostgresNIO
 @_exported import SQLKit

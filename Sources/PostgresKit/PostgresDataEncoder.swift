@@ -4,7 +4,7 @@ public struct PostgresDataEncoder {
     public init() { }
 
     public func encode(_ type: Encodable) throws -> PostgresData {
-        if let custom = type as? PostgresDataCustomConvertible {
+        if let custom = type as? PostgresDataConvertible {
             return custom.postgresData ?? .null
         } else {
             do {
