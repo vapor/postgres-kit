@@ -3,19 +3,18 @@ import Foundation
 public struct PostgresDataEncoder {
     public init() { }
 
-    public func encode(_ type: Encodable) throws -> PostgresData {
-        if let custom = type as? PostgresDataConvertible {
-            return custom.postgresData ?? .null
+    public func encode(_ value: Encodable) throws -> PostgresData {
+        if let custom = value as? PostgresDataConvertible {
+            return custom.postgresData!
         } else {
             do {
                 let encoder = _Encoder()
-                try type.encode(to: encoder)
+                try value.encode(to: encoder)
                 return encoder.data
             } catch is DoJSON {
                 let json = JSONEncoder()
-                let data = try json.encode(Wrapper(type))
+                let data = try json.encode(Wrapper(value))
                 var buffer = ByteBufferAllocator().buffer(capacity: data.count)
-                #warning("TODO: use nio foundation compat write")
                 buffer.writeBytes(data)
                 return PostgresData(type: .jsonb, value: buffer)
             }
@@ -175,7 +174,11 @@ public struct PostgresDataEncoder {
         }
 
         mutating func encode<T>(_ value: T) throws where T : Encodable {
-            try value.encode(to: self.encoder)
+            if let value = value as? PostgresDataConvertible, let data = value.postgresData {
+                self.encoder.data = data
+            } else {
+                try value.encode(to: self.encoder)
+            }
         }
     }
 }
