@@ -174,8 +174,8 @@ public struct PostgresDataEncoder {
         }
 
         mutating func encode<T>(_ value: T) throws where T : Encodable {
-            if let value = value as? PostgresDataConvertible, let data = value.postgresData {
-                self.encoder.data = data
+            if let value = value as? PostgresDataConvertible {
+                self.encoder.data = value.postgresData!
             } else {
                 try value.encode(to: self.encoder)
             }
