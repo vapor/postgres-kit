@@ -33,7 +33,7 @@ class PostgresKitTests: XCTestCase {
         let pool = ConnectionPool(config: .init(maxConnections: 12), source: db)
         defer { try! pool.close().wait() }
         self.measure {
-            for i in 1...100 {
+            for _ in 1...100 {
                 _ = try! pool.withConnection { conn in
                     return conn.query("SELECT 1;")
                 }.wait()
