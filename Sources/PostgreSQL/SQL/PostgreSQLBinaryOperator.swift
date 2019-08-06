@@ -23,7 +23,7 @@ public struct PostgreSQLBinaryOperator: SQLBinaryOperator, Equatable, Expressibl
 
     /// See `SQLBinaryOperator`.
     public static let equal: PostgreSQLBinaryOperator = "="
-    
+
     /// See `SQLBinaryOperator`.
     public static let greaterThan: PostgreSQLBinaryOperator = ">"
 
@@ -65,7 +65,7 @@ public struct PostgreSQLBinaryOperator: SQLBinaryOperator, Equatable, Expressibl
 
     /// See `SQLBinaryOperator`.
     public static let isNot: PostgreSQLBinaryOperator = "IS NOT"
-    
+
     /// See `SQLBinaryOperator`.
     public static let contains: PostgreSQLBinaryOperator = "@>"
 
@@ -74,7 +74,7 @@ public struct PostgreSQLBinaryOperator: SQLBinaryOperator, Equatable, Expressibl
 
     /// See `SQLBinaryOperator`.
     public static let overlap: PostgreSQLBinaryOperator = "&&"
-    
+
     /// See `SQLBinaryOperator`.
     public static let like: PostgreSQLBinaryOperator = "LIKE"
 
@@ -88,6 +88,9 @@ public struct PostgreSQLBinaryOperator: SQLBinaryOperator, Equatable, Expressibl
     public static let regexp: PostgreSQLBinaryOperator = "~"
 
     /// See `SQLBinaryOperator`.
+    public static let caseInsensitiveRegexp: PostgreSQLBinaryOperator = "~*"
+
+    /// See `SQLBinaryOperator`.
     public static let notLike: PostgreSQLBinaryOperator = "NOT LIKE"
 
     /// See `SQLBinaryOperator`.
@@ -97,7 +100,10 @@ public struct PostgreSQLBinaryOperator: SQLBinaryOperator, Equatable, Expressibl
     public static let notMatch: PostgreSQLBinaryOperator = "NOT MATCH"
 
     /// See `SQLBinaryOperator`.
-    public static let notRegexp: PostgreSQLBinaryOperator = "NOT REGEXP"
+    public static let notRegexp: PostgreSQLBinaryOperator = "!~"
+
+    /// See `SQLBinaryOperator`.
+    public static let caseInsensitiveNotRegexp: PostgreSQLBinaryOperator = "!~*"
 
     /// See `SQLBinaryOperator`.
     public static let ilike: PostgreSQLBinaryOperator = "ILIKE"
