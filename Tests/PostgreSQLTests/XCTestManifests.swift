@@ -11,6 +11,7 @@ extension ConnectionTests {
         ("testDataDecoder", testDataDecoder),
         ("testEmptyArray", testEmptyArray),
         ("testGH125", testGH125),
+        ("testGH141", testGH141),
         ("testGH24", testGH24),
         ("testGH46", testGH46),
         ("testInvalidDate", testInvalidDate),
