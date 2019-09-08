@@ -670,6 +670,22 @@ class ConnectionTests: XCTestCase {
             XCTAssertEqual(polygon.polygon.points[3].y, 200)
         }.wait()
     }
+
+    func testGH141() throws {
+        let conn = try PostgreSQLConnection.makeTest()
+        defer { conn.close() }
+
+        struct Test: Decodable {
+            let arr: [String?]
+        }
+
+        let result = try conn.raw("SELECT ARRAY[NULL, 'foo', NULL, 'bar'] AS arr")
+            .all(decoding: Test.self)
+            .wait()
+
+        XCTAssertEqual(1, result.count)
+        XCTAssertEqual([nil, "foo", nil, "bar"], result[0].arr)
+    }
 }
 
 extension PostgreSQLConnection {

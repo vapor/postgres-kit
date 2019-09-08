@@ -63,6 +63,13 @@ struct PostgreSQLDataDecoder {
                     let _ = value.extract(Int32.self).bigEndian
                     for _ in 0..<count {
                         let count = Int(value.extract(Int32.self).bigEndian)
+
+                        // Postgres sends -1 to distinguish an empty byte sequence from NULLs
+                        guard count != -1 else {
+                            array.append(.null)
+                            continue
+                        }
+
                         let subValue = value.extract(count: count)
                         let psqlData = PostgreSQLData(type, binary: subValue)
                         array.append(psqlData)
