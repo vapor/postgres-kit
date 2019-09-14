@@ -31,10 +31,22 @@ public struct PostgreSQLDataFormat: Codable, Equatable, ExpressibleByIntegerLite
     public static let point = PostgreSQLDataFormat(600)
     /// `604`
     public static let polygon = PostgreSQLDataFormat(604)
+    /// `650`
+    public static let cidr = PostgreSQLDataFormat(650)
+    /// `651`
+    public static let _cidr = PostgreSQLDataFormat(651)
     /// `700`
     public static let float4 = PostgreSQLDataFormat(700)
     /// `701`
     public static let float8 = PostgreSQLDataFormat(701)
+    /// `774`
+    public static let macaddr8 = PostgreSQLDataFormat(774)
+    /// `775`
+    public static let _macaddr8 = PostgreSQLDataFormat(775)
+    /// `829`
+    public static let macaddr = PostgreSQLDataFormat(829)
+    /// `869`
+    public static let inet = PostgreSQLDataFormat(869)
     /// `1000`
     public static let _bool = PostgreSQLDataFormat(1000)
     /// `1001`
@@ -59,6 +71,10 @@ public struct PostgreSQLDataFormat: Codable, Equatable, ExpressibleByIntegerLite
     public static let _float8 = PostgreSQLDataFormat(1022)
     /// `1034`
     public static let _aclitem = PostgreSQLDataFormat(1034)
+    /// `1040`
+    public static let _macaddr = PostgreSQLDataFormat(1040)
+    /// `1041`
+    public static let _inet = PostgreSQLDataFormat(1041)
     /// `1042`
     public static let bpchar = PostgreSQLDataFormat(1042)
     /// `1043`
@@ -152,6 +168,14 @@ extension PostgreSQLDataFormat {
         case ._uuid: return "UUID[]"
         case .jsonb: return "JSONB"
         case ._jsonb: return "JSONB[]"
+        case .cidr: return "CIDR"
+        case ._cidr: return "CIDR[]"
+        case .inet: return "INET"
+        case ._inet: return "INET[]"
+        case .macaddr: return "MACADDR"
+        case ._macaddr: return "MACADDR[]"
+        case .macaddr8: return "MACADDR8"
+        case ._macaddr8: return "MACADDR8[]"
         default: return nil
         }
     }
@@ -172,6 +196,10 @@ extension PostgreSQLDataFormat {
         case .uuid: return ._uuid
         case .jsonb: return ._jsonb
         case .text: return ._text
+        case .cidr: return ._cidr
+        case .inet: return ._inet
+        case .macaddr: return ._macaddr
+        case .macaddr8: return ._macaddr8
         default: return nil
         }
     }
@@ -195,6 +223,10 @@ extension PostgreSQLDataType {
         case .time: return .time
         case .timestamptz: return .timestamptz
         case .uuid: return .uuid
+        case .cidr: return .cidr
+        case .inet: return .inet
+        case .macaddr: return .macaddr
+        case .macaddr8: return .macaddr8
         default: return nil
         }
     }

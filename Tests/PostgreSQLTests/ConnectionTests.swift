@@ -362,6 +362,12 @@ class ConnectionTests: XCTestCase {
             var decimal: Decimal
             var point: PostgreSQLPoint
             var polygon: PostgreSQLPolygon
+            var macaddr: PostgreSQLMacaddr
+            var macaddr8: PostgreSQLMacaddr8
+            var inetV4: PostgreSQLInet
+            var inetV6: PostgreSQLInet
+            var cidrV4: PostgreSQLCidr
+            var cidrV6: PostgreSQLCidr
         }
 
         defer {
@@ -387,6 +393,12 @@ class ConnectionTests: XCTestCase {
             .column(for: \Types.decimal)
             .column(for: \Types.point)
             .column(for: \Types.polygon)
+            .column(for: \Types.macaddr)
+            .column(for: \Types.macaddr8)
+            .column(for: \Types.inetV4)
+            .column(for: \Types.inetV6)
+            .column(for: \Types.cidrV4)
+            .column(for: \Types.cidrV6)
             .run().wait()
         
         let typesA = Types(
@@ -408,7 +420,13 @@ class ConnectionTests: XCTestCase {
             date: Date(),
             decimal: .init(-1.234),
             point: .init(x: 1.570, y: -42),
-            polygon: .init(points: [PostgreSQLPoint(x: 100, y: 100), PostgreSQLPoint(x: 200, y: 100), PostgreSQLPoint(x: 200, y: 200), PostgreSQLPoint(x: 100, y: 200)])
+            polygon: .init(points: [PostgreSQLPoint(x: 100, y: 100), PostgreSQLPoint(x: 200, y: 100), PostgreSQLPoint(x: 200, y: 200), PostgreSQLPoint(x: 100, y: 200)]),
+            macaddr: try .init(string: "12:34:56:78:9a:bc"),
+            macaddr8: try .init(string: "12:34:56:78:9a:bc:12:34"),
+            inetV4: try .init(string: "191.168.2.3/16"),
+            inetV6: try .init(string: "123a:3456:45:135:78:5646:ac56:ff/64"),
+            cidrV4: try .init(string: "191.168.2.3"),
+            cidrV6: try .init(string: "123a:3456:45:135:78:5646:ac56:ff")
         )
         try conn.insert(into: Types.self).value(typesA).run().wait()
         let rows = try conn.select().all().from(Types.self).all(decoding: Types.self).wait()
@@ -433,6 +451,12 @@ class ConnectionTests: XCTestCase {
             XCTAssertEqual(typesA.decimal, typesB.decimal)
             XCTAssertEqual(typesA.point, typesB.point)
             XCTAssertEqual(typesA.polygon, typesB.polygon)
+            XCTAssertEqual(typesA.macaddr, typesB.macaddr)
+            XCTAssertEqual(typesA.macaddr8, typesB.macaddr8)
+            XCTAssertEqual(typesA.inetV4, typesB.inetV4)
+            XCTAssertEqual(typesA.inetV6, typesB.inetV6)
+            XCTAssertEqual(typesA.cidrV4, typesB.cidrV4)
+            XCTAssertEqual(typesA.cidrV6, typesB.cidrV6)
         default: XCTFail("Invalid row count")
         }
     }
@@ -685,6 +709,138 @@ class ConnectionTests: XCTestCase {
 
         XCTAssertEqual(1, result.count)
         XCTAssertEqual([nil, "foo", nil, "bar"], result[0].arr)
+    }
+    
+    func testMacaddr() throws {
+        let conn = try PostgreSQLConnection.makeTest()
+        let decoder = PostgreSQLRowDecoder()
+        struct Test: Codable {
+            var macaddr: PostgreSQLMacaddr
+        }
+        try conn.query("SELECT '12:34:56:78:9A:BC'::MACADDR AS macaddr") { row in
+            let response = try decoder.decode(Test.self, from: row)
+            XCTAssertEqual(response.macaddr.description, "12:34:56:78:9a:bc")
+            }.wait()
+        
+        XCTAssertEqual(try PostgreSQLMacaddr(string: "12:34:56:78:9a:bc").description, "12:34:56:78:9a:bc")
+        XCTAssertEqual(try PostgreSQLMacaddr(string: "12-34-56-78-9a-bc").description, "12:34:56:78:9a:bc")
+        XCTAssertEqual(try PostgreSQLMacaddr(bytes: [1,2,3,4,5,6]).description, "01:02:03:04:05:06")
+        
+        XCTAssertThrowsError(try PostgreSQLMacaddr(string: "12:34:56:78")) // not enough addresses
+        XCTAssertThrowsError(try PostgreSQLMacaddr(string: "12|34|56|78|9a|bc")) // invalid delimeter
+    }
+    
+    func testMacaddr8() throws {
+        let conn = try PostgreSQLConnection.makeTest()
+        let decoder = PostgreSQLRowDecoder()
+        struct Test: Codable {
+            var macaddr8: PostgreSQLMacaddr8
+        }
+        try conn.query("SELECT '12:34:56:78:9A:BC:12:34'::MACADDR8 AS macaddr8") { row in
+            let response = try decoder.decode(Test.self, from: row)
+            XCTAssertEqual(response.macaddr8.description, "12:34:56:78:9a:bc:12:34")
+            }.wait()
+        
+        XCTAssertEqual(try PostgreSQLMacaddr8(string: "12:34:56:78:9a:bc:12:34").description, "12:34:56:78:9a:bc:12:34")
+        XCTAssertEqual(try PostgreSQLMacaddr8(string: "12-34-56-78-9a-bc-12-34").description, "12:34:56:78:9a:bc:12:34")
+        XCTAssertEqual(try PostgreSQLMacaddr8(bytes: [1,2,3,4,5,6,7,8]).description, "01:02:03:04:05:06:07:08")
+        
+        XCTAssertThrowsError(try PostgreSQLMacaddr8(string: "12:34:56:78:12:34")) // not enough addresses
+        XCTAssertThrowsError(try PostgreSQLMacaddr8(string: "12|34|56|78|9a|bc|12|34")) // invalid delimeter
+    }
+    
+    func testInet() throws {
+        let conn = try PostgreSQLConnection.makeTest()
+        let decoder = PostgreSQLRowDecoder()
+        struct Test: Codable {
+            var inet: PostgreSQLInet
+        }
+        
+        try conn.query("SELECT '192.168.1.35/16'::INET AS inet") { row in
+            let response = try decoder.decode(Test.self, from: row)
+            XCTAssertEqual(response.inet.version, .ipv4)
+            XCTAssertEqual(response.inet.netmask, 16)
+            XCTAssertEqual(response.inet.bytes, [192,168,1,35])
+            XCTAssertEqual(response.inet.description, "192.168.1.35/16")
+            }.wait()
+        
+        try conn.query("SELECT '123a:3456:45:135:78:5646:ac56:ff/64'::INET AS inet") { row in
+            let response = try decoder.decode(Test.self, from: row)
+            XCTAssertEqual(response.inet.version, .ipv6)
+            XCTAssertEqual(response.inet.netmask, 64)
+            XCTAssertEqual(response.inet.bytes, [18,58,52,86,0,69,1,53,0,120,86,70,172,86,0,255])
+            XCTAssertEqual(response.inet.description, "123a:3456:45:135:78:5646:ac56:ff/64")
+            }.wait()
+        
+        // IPV4
+        XCTAssertEqual(try PostgreSQLInet(string: "192.168.1.35/16").description, "192.168.1.35/16")
+        XCTAssertEqual(try PostgreSQLInet(string: "192-168-1-35/16").description, "192.168.1.35/16")
+        XCTAssertEqual(try PostgreSQLInet(string: "192.168.1.35/32").description, "192.168.1.35")
+        XCTAssertEqual(try PostgreSQLInet(string: "192.168.1.35").description, "192.168.1.35")
+        
+        XCTAssertThrowsError(try PostgreSQLInet(string: "192.168.1/32")) // not enough values
+        XCTAssertThrowsError(try PostgreSQLInet(string: "192.168.1.35/64")) // netmask too large
+        XCTAssertThrowsError(try PostgreSQLInet(string: "192.168.1.35/12")) // netmask not multiple of 8
+        XCTAssertThrowsError(try PostgreSQLInet(string: "192.168.1.35.1")) // too many addresses
+        
+        // IPV6
+        XCTAssertEqual(try PostgreSQLInet(string: "123a:3456:45:135:78:5646:ac56:ff/64").description, "123a:3456:45:135:78:5646:ac56:ff/64")
+        XCTAssertEqual(try PostgreSQLInet(string: "123a:3456:45:135:78:5646:ac56:ff/128").description, "123a:3456:45:135:78:5646:ac56:ff")
+        XCTAssertEqual(try PostgreSQLInet(string: "123a:3456:45:135:78:5646:ac56:ff").description, "123a:3456:45:135:78:5646:ac56:ff")
+        
+        XCTAssertThrowsError(try PostgreSQLInet(string: "123a:3456:45:135:78:5646:ac56")) // not enough values
+        XCTAssertThrowsError(try PostgreSQLInet(string: "123a-3456-45-135-78-5646-ac56-ff/64")) // invalid delimeter
+        XCTAssertThrowsError(try PostgreSQLInet(string: "123a:3456:45:135:78:5646:ac56:ff/192")) // netmask too large
+        XCTAssertThrowsError(try PostgreSQLInet(string: "123a:3456:45:135:78:5646:ac56:ff/24")) // netmask not multiple of 16
+        XCTAssertThrowsError(try PostgreSQLInet(string: "123a:3456:45:135:78:5646:ac56:ff:123")) // too many addresses
+    }
+    
+    func testCidr() throws {
+        let conn = try PostgreSQLConnection.makeTest()
+        let decoder = PostgreSQLRowDecoder()
+        struct Test: Codable {
+            var cidr: PostgreSQLCidr
+        }
+        
+        try conn.query("SELECT '192.168/16'::CIDR AS cidr") { row in
+            let response = try decoder.decode(Test.self, from: row)
+            XCTAssertEqual(response.cidr.version, .ipv4)
+            XCTAssertEqual(response.cidr.netmask, 16)
+            XCTAssertEqual(response.cidr.bytes, [192,168,0,0])
+            XCTAssertEqual(response.cidr.description, "192.168/16")
+            }.wait()
+        
+        try conn.query("SELECT '123a:3456:45:135::/64'::CIDR AS cidr") { row in
+            let response = try decoder.decode(Test.self, from: row)
+            XCTAssertEqual(response.cidr.version, .ipv6)
+            XCTAssertEqual(response.cidr.netmask, 64)
+            XCTAssertEqual(response.cidr.bytes, [18,58,52,86,0,69,1,53,0,0,0,0,0,0,0,0])
+            XCTAssertEqual(response.cidr.description, "123a:3456:45:135::/64")
+            }.wait()
+        
+        // IPV4
+        XCTAssertEqual(try PostgreSQLCidr(string: "192.168/16").description, "192.168/16")
+        XCTAssertEqual(try PostgreSQLCidr(string: "192-168/16").description, "192.168/16")
+        XCTAssertEqual(try PostgreSQLCidr(string: "192/16").description, "192.0/16")
+        XCTAssertEqual(try PostgreSQLCidr(string: "192.168.1.35/32").description, "192.168.1.35")
+        XCTAssertEqual(try PostgreSQLCidr(string: "192.168.1.35").description, "192.168.1.35")
+        
+        XCTAssertThrowsError(try PostgreSQLCidr(string: "192.168.1.35/64")) // netmask too large
+        XCTAssertThrowsError(try PostgreSQLCidr(string: "192.168/12")) // netmask not multiple of 8
+        XCTAssertThrowsError(try PostgreSQLCidr(string: "192.168.1.35.1")) // too many addresses
+        XCTAssertThrowsError(try PostgreSQLCidr(string: "192.168.1.35/16")) // more values than netmask
+        
+        // IPV6
+        XCTAssertEqual(try PostgreSQLCidr(string: "123a:3456:45:135::/64").description, "123a:3456:45:135::/64")
+        XCTAssertEqual(try PostgreSQLCidr(string: "123a:3456:45::/64").description, "123a:3456:45:0::/64")
+        XCTAssertEqual(try PostgreSQLCidr(string: "123a:3456:45:135:78:5646:ac56:ff/128").description, "123a:3456:45:135:78:5646:ac56:ff")
+        XCTAssertEqual(try PostgreSQLCidr(string: "123a:3456:45:135:78:5646:ac56:ff").description, "123a:3456:45:135:78:5646:ac56:ff")
+        
+        XCTAssertThrowsError(try PostgreSQLCidr(string: "123a-3456-45-135/64")) // invalid delimeter
+        XCTAssertThrowsError(try PostgreSQLCidr(string: "123a:3456:45:135:78:5646:ac56:ff/192")) // netmask too large
+        XCTAssertThrowsError(try PostgreSQLCidr(string: "123a:3456/24")) // netmask not multiple of 16
+        XCTAssertThrowsError(try PostgreSQLCidr(string: "123a:3456:45:135:78:5646:ac56:ff:123")) // too many addresses
+        XCTAssertThrowsError(try PostgreSQLCidr(string: "123a:3456:45:135:78:5646:ac56:ff/64")) // more values than netmask
     }
 }
 

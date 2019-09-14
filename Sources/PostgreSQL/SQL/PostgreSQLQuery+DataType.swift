@@ -522,7 +522,7 @@ public struct PostgreSQLDataType: SQLDataType, Equatable {
             case .line: return "LINE"
             case .lseg: return "LSEG"
             case .macaddr: return "MACADDR"
-            case .macaddr8: return "MACADDER8"
+            case .macaddr8: return "MACADDR8"
             case .money: return "MONEY"
             case .numeric(let sp):
                 if let sp = sp {

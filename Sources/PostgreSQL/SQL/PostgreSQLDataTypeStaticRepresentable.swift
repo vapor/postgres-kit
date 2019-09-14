@@ -116,3 +116,43 @@ extension PostgreSQLPolygon: PostgreSQLDataTypeStaticRepresentable, ReflectionDe
         return (.init(points: [PostgreSQLPoint(x: 0, y: 0)]), .init(points: [PostgreSQLPoint(x: 1, y: 1)]))
     }
 }
+
+extension PostgreSQLMacaddr: PostgreSQLDataTypeStaticRepresentable, ReflectionDecodable {
+    /// See `PostgreSQLDataTypeStaticRepresentable`.
+    public static var postgreSQLDataType: PostgreSQLDataType { return .macaddr }
+    
+    /// See `ReflectionDecodable`.
+    public static func reflectDecoded() throws -> (PostgreSQLMacaddr, PostgreSQLMacaddr) {
+        return (try .init(string: "00:00:00:00:00:00"), try .init(string: "FF:FF:FF:FF:FF:FF"))
+    }
+}
+
+extension PostgreSQLMacaddr8: PostgreSQLDataTypeStaticRepresentable, ReflectionDecodable {
+    /// See `PostgreSQLDataTypeStaticRepresentable`.
+    public static var postgreSQLDataType: PostgreSQLDataType { return .macaddr8 }
+    
+    /// See `ReflectionDecodable`.
+    public static func reflectDecoded() throws -> (PostgreSQLMacaddr8, PostgreSQLMacaddr8) {
+        return (try .init(string: "00:00:00:00:00:00:00:00"), try .init(string: "FF:FF:FF:FF:FF:FF:FF:FF"))
+    }
+}
+
+extension PostgreSQLInet: PostgreSQLDataTypeStaticRepresentable, ReflectionDecodable {
+    /// See `PostgreSQLDataTypeStaticRepresentable`.
+    public static var postgreSQLDataType: PostgreSQLDataType { return .inet }
+    
+    /// See `ReflectionDecodable`.
+    public static func reflectDecoded() throws -> (PostgreSQLInet, PostgreSQLInet) {
+        return (try .init(string: "1.1.1.1"), try .init(string: "255.255.255.255"))
+    }
+}
+
+extension PostgreSQLCidr: PostgreSQLDataTypeStaticRepresentable, ReflectionDecodable {
+    /// See `PostgreSQLDataTypeStaticRepresentable`.
+    public static var postgreSQLDataType: PostgreSQLDataType { return .cidr }
+    
+    /// See `ReflectionDecodable`.
+    public static func reflectDecoded() throws -> (PostgreSQLCidr, PostgreSQLCidr) {
+        return (try .init(string: "1.1.1.1"), try .init(string: "255.255.255.255"))
+    }
+}
