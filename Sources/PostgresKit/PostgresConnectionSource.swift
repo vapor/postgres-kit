@@ -23,7 +23,10 @@ public struct PostgresConnectionSource: ConnectionPoolSource {
                 username: self.configuration.username,
                 database: self.configuration.database,
                 password: self.configuration.password
-            ).map { conn }
+            ).flatMapError { error in
+                return conn.close()
+                    .flatMapThrowing { throw error }
+            }.map { conn }
         }
     }
 }
