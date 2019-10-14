@@ -25,7 +25,7 @@ public struct PostgreSQLError: Debuggable {
     public var sourceLocation: SourceLocation
     
     /// See `Debuggable`.
-    public var stackTrace: [String]
+    public var stackTrace: [String]?
     
     /// See `Debuggable`.
     public var possibleCauses: [String]
