@@ -40,6 +40,18 @@ class PostgresKitTests: XCTestCase {
             }
         }
     }
+
+    func testCreateEnumWithBuilder() throws {
+        let conn = try PostgresConnection.test(on: self.eventLoop).wait()
+        defer { try! conn.close().wait() }
+
+        try conn.create(enum: "meal", cases: "breakfast", "lunch", "dinner").run().wait()
+        try conn.raw("DROP TYPE meal;").run().wait()
+
+        try conn.create(enum: SQLIdentifier("meal"), cases: "breakfast", "lunch", "dinner").run().wait()
+        try conn.raw("DROP TYPE meal;").run().wait()
+    }
+
 //    struct VersionMetadata: Codable {
 //        var version: String
 //    }
