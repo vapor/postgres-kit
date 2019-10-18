@@ -35,7 +35,19 @@ extension SQLDatabase {
     ///     - cases: The cases of the ENUM type.
     /// - returns: `PostgresCreateTypeBuilder`.
     public func create(enum name: String, cases: String...) -> PostgresCreateTypeBuilder {
-        return .init(.init(name: SQLIdentifier(name), definition: .enum(cases)), on: self)
+        return self.create(enum: name, cases: cases)
+    }
+
+    /// Creates a new `PostgresCreateTypeBuilder`.
+    ///
+    ///     conn.create(enum: "meal", cases: "breakfast", "lunch", "dinner")...
+    ///
+    /// - parameters:
+    ///     - name: Name of ENUM type to create.
+    ///     - cases: The cases of the ENUM type.
+    /// - returns: `PostgresCreateTypeBuilder`.
+    public func create(enum name: String, cases: [String]) -> PostgresCreateTypeBuilder {
+        return self.create(enum: SQLIdentifier(name), cases: cases)
     }
     
     /// Creates a new `PostgresCreateTypeBuilder`.
@@ -47,6 +59,18 @@ extension SQLDatabase {
     ///     - cases: The cases of the ENUM type.
     /// - returns: `PostgresCreateTypeBuilder`.
     public func create(enum name: SQLExpression, cases: String...) -> PostgresCreateTypeBuilder {
+        return self.create(enum: name, cases: cases)
+    }
+
+    /// Creates a new `PostgresCreateTypeBuilder`.
+    ///
+    ///     conn.create(enum: SQLIdentifier("meal"), cases: "breakfast", "lunch", "dinner")...
+    ///
+    /// - parameters:
+    ///     - name: Name of ENUM type to create.
+    ///     - cases: The cases of the ENUM type.
+    /// - returns: `PostgresCreateTypeBuilder`.
+    public func create(enum name: SQLExpression, cases: [String]) -> PostgresCreateTypeBuilder {
         return .init(.init(name: name, definition: .enum(cases)), on: self)
     }
 }

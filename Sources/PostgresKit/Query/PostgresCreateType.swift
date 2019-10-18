@@ -20,6 +20,11 @@ public struct PostgresCreateType: SQLExpression {
 
     /// Creates a new `PostgresCreateType` query for an `ENUM` type.
     public static func `enum`(name: SQLExpression, cases: String...) -> PostgresCreateType {
+        return .enum(name: name, cases: cases)
+    }
+
+    /// Creates a new `PostgresCreateType` query for an `ENUM` type.
+    public static func `enum`(name: SQLExpression, cases: [String]) -> PostgresCreateType {
         return PostgresCreateType(name: name, definition: .enum(cases))
     }
     
