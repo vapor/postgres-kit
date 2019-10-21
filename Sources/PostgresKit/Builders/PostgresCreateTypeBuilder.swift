@@ -71,6 +71,6 @@ extension SQLDatabase {
     ///     - cases: The cases of the ENUM type.
     /// - returns: `PostgresCreateTypeBuilder`.
     public func create(enum name: SQLExpression, cases: [String]) -> PostgresCreateTypeBuilder {
-        return .init(.init(name: name, definition: .enum(cases)), on: self)
+        return .init(.enum(name: name, cases: cases), on: self)
     }
 }
