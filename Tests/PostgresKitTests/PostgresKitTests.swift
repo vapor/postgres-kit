@@ -52,6 +52,27 @@ class PostgresKitTests: XCTestCase {
         try conn.raw("DROP TYPE meal;").run().wait()
     }
 
+    func testDropEnumWithBuilder() throws {
+        let conn = try PostgresConnection.test(on: self.eventLoop).wait()
+        defer { try! conn.close().wait() }
+
+        // these two should work even if the type does not exist
+        try conn.drop(type: "meal").ifExists().run().wait()
+        try conn.drop(type: "meal").ifExists().cascade().run().wait()
+
+        try conn.create(enum: "meal", cases: "breakfast", "lunch", "dinner").run().wait()
+        try conn.drop(type: "meal").ifExists().cascade().run().wait()
+
+        try conn.create(enum: "meal", cases: "breakfast", "lunch", "dinner").run().wait()
+        try conn.drop(type: "meal").run().wait()
+
+        try conn.create(enum: "meal", cases: "breakfast", "lunch", "dinner").run().wait()
+        try conn.drop(type: SQLIdentifier("meal")).run().wait()
+
+        try conn.create(enum: "meal", cases: "breakfast", "lunch", "dinner").run().wait()
+        try conn.drop(type: "meal").cascade().run().wait()
+    }
+
 //    struct VersionMetadata: Codable {
 //        var version: String
 //    }

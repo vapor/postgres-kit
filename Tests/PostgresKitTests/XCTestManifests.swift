@@ -7,6 +7,7 @@ extension PostgresKitTests {
     // to regenerate.
     static let __allTests__PostgresKitTests = [
         ("testCreateEnumWithBuilder", testCreateEnumWithBuilder),
+        ("testDropEnumWithBuilder", testDropEnumWithBuilder),
         ("testPerformance", testPerformance),
         ("testSQLKitBenchmark", testSQLKitBenchmark),
     ]

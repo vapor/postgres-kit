@@ -8,9 +8,9 @@ public struct PostgresCreateType: SQLExpression {
     public var definition: Definition
 
     public enum Definition {
-//        case composite
+//        case composite /* https://github.com/vapor/postgres-kit/issues/151 */
+//        case base      /* https://github.com/vapor/postgres-kit/issues/152 */
         case `enum`([String])
-//        case base
     }
 
     public init(name: SQLExpression, definition: Definition) {
