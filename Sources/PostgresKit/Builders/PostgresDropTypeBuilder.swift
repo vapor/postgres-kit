@@ -48,7 +48,7 @@ extension SQLDatabase {
     ///     - type: Name of type to drop.
     /// - returns: `PostgresDropTypeBuilder`.
     public func drop(type name: String) -> PostgresDropTypeBuilder {
-        self.drop(type: SQLIdentifier(name))
+        return self.drop(type: SQLIdentifier(name))
     }
 
     /// Creates a new `PostgresDropTypeBuilder`.
