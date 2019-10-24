@@ -3,18 +3,18 @@ import SQLKitBenchmark
 import XCTest
 
 class PostgresKitTests: XCTestCase {
-    private var group: EventLoopGroup!
+    private var eventLoopGroup: EventLoopGroup!
     private var eventLoop: EventLoop {
-        return self.group.next()
+        return self.eventLoopGroup.next()
     }
     
     override func setUp() {
-        self.group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+        self.eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
     }
     
     override func tearDown() {
-        XCTAssertNoThrow(try self.group.syncShutdownGracefully())
-        self.group = nil
+        XCTAssertNoThrow(try self.eventLoopGroup.syncShutdownGracefully())
+        self.eventLoopGroup = nil
     }
     
     
@@ -27,11 +27,10 @@ class PostgresKitTests: XCTestCase {
     
     func testPerformance() throws {
         let db = PostgresConnectionSource(
-            configuration: .init(hostname: hostname, username: "vapor_username", password: "vapor_password", database: "vapor_database"),
-            on: self.eventLoop
+            configuration: .init(hostname: hostname, username: "vapor_username", password: "vapor_password", database: "vapor_database")
         )
-        let pool = ConnectionPool(config: .init(maxConnections: 12), source: db)
-        defer { try! pool.close().wait() }
+        let pool = ConnectionPool(configuration: .init(maxConnections: 12), source: db, on: self.eventLoopGroup)
+        defer { pool.shutdown() }
         self.measure {
             for _ in 1...100 {
                 _ = try! pool.withConnection { conn in

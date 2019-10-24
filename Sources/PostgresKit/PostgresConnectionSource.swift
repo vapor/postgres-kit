@@ -1,23 +1,21 @@
 public struct PostgresConnectionSource: ConnectionPoolSource {
-    public var eventLoop: EventLoop
     public let configuration: PostgresConfiguration
 
-    public init(configuration: PostgresConfiguration, on eventLoop: EventLoop) {
+    public init(configuration: PostgresConfiguration) {
         self.configuration = configuration
-        self.eventLoop = eventLoop
     }
 
-    public func makeConnection() -> EventLoopFuture<PostgresConnection> {
+    public func makeConnection(on eventLoop: EventLoop) -> EventLoopFuture<PostgresConnection> {
         let address: SocketAddress
         do {
             address = try self.configuration.address()
         } catch {
-            return self.eventLoop.makeFailedFuture(error)
+            return eventLoop.makeFailedFuture(error)
         }
         return PostgresConnection.connect(
             to: address,
             tlsConfiguration: self.configuration.tlsConfiguration,
-            on: self.eventLoop
+            on: eventLoop
         ).flatMap { conn in
             return conn.authenticate(
                 username: self.configuration.username,
