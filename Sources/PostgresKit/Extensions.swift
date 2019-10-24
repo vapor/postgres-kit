@@ -24,7 +24,7 @@ extension ConnectionPool: SQLDatabase where Source.Connection: SQLDatabase {
 
 extension ConnectionPool: PostgresClient where Source.Connection: PostgresClient {
     public var eventLoop: EventLoop {
-        return self.source.eventLoop
+        return self.eventLoopGroup.next()
     }
 
     public func send(_ request: PostgresRequest) -> EventLoopFuture<Void> {
