@@ -78,6 +78,7 @@ class PostgresKitTests: XCTestCase {
         
         let conn = try PostgresConnection.test(on: self.eventLoop).wait()
         defer { try! conn.close().wait() }
+        
         let db = conn.sql()
         
         try db.raw("DROP TABLE IF EXISTS foos").run().wait()
