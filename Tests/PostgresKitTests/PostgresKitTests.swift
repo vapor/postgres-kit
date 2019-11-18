@@ -64,6 +64,55 @@ class PostgresKitTests: XCTestCase {
         try db.drop(type: "meal").cascade().run().wait()
     }
     
+    func testLeak() throws {
+        struct Foo: Codable {
+            var id: String
+            var description: String?
+            var latitude: Double
+            var longitude: Double
+            var created_by: String
+            var created_at: Date
+            var modified_by: String
+            var modified_at: Date
+        }
+        
+        let conn = try PostgresConnection.test(on: self.eventLoop).wait()
+        defer { try! conn.close().wait() }
+        
+        try conn.raw("DROP TABLE IF EXISTS foos").run().wait()
+        try conn.raw("""
+        CREATE TABLE foos (
+            id TEXT PRIMARY KEY,
+            description TEXT,
+            latitude DOUBLE PRECISION,
+            longitude DOUBLE PRECISION,
+            created_by TEXT,
+            created_at TIMESTAMPTZ,
+            modified_by TEXT,
+            modified_at TIMESTAMPTZ
+        )
+        """).run().wait()
+        defer {
+            try? conn.raw("DROP TABLE IF EXISTS foos").run().wait()
+        }
+        
+        for i in 0..<5_000 {
+            let zipcode = Foo(
+                id: UUID().uuidString,
+                description: "test \(i)",
+                latitude: Double.random(in: 0...100),
+                longitude: Double.random(in: 0...100),
+                created_by: "test",
+                created_at: Date(),
+                modified_by: "test",
+                modified_at: Date()
+            )
+            try conn.insert(into: "foos")
+                .model(zipcode)
+                .run().wait()
+        }
+    }
+      
     private var eventLoopGroup: EventLoopGroup!
     private var eventLoop: EventLoop {
         return self.eventLoopGroup.next()
@@ -77,5 +126,4 @@ class PostgresKitTests: XCTestCase {
         XCTAssertNoThrow(try self.eventLoopGroup.syncShutdownGracefully())
         self.eventLoopGroup = nil
     }
-    
 }
