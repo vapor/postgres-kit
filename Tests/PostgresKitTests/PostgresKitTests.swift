@@ -78,9 +78,10 @@ class PostgresKitTests: XCTestCase {
         
         let conn = try PostgresConnection.test(on: self.eventLoop).wait()
         defer { try! conn.close().wait() }
+        let db = conn.sql()
         
-        try conn.raw("DROP TABLE IF EXISTS foos").run().wait()
-        try conn.raw("""
+        try db.raw("DROP TABLE IF EXISTS foos").run().wait()
+        try db.raw("""
         CREATE TABLE foos (
             id TEXT PRIMARY KEY,
             description TEXT,
@@ -93,7 +94,7 @@ class PostgresKitTests: XCTestCase {
         )
         """).run().wait()
         defer {
-            try? conn.raw("DROP TABLE IF EXISTS foos").run().wait()
+            try? db.raw("DROP TABLE IF EXISTS foos").run().wait()
         }
         
         for i in 0..<5_000 {
@@ -107,7 +108,7 @@ class PostgresKitTests: XCTestCase {
                 modified_by: "test",
                 modified_at: Date()
             )
-            try conn.insert(into: "foos")
+            try db.insert(into: "foos")
                 .model(zipcode)
                 .run().wait()
         }
