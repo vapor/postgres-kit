@@ -5,7 +5,10 @@ public struct PostgresConnectionSource: ConnectionPoolSource {
         self.configuration = configuration
     }
 
-    public func makeConnection(on eventLoop: EventLoop) -> EventLoopFuture<PostgresConnection> {
+    public func makeConnection(
+        logger: Logger,
+        on eventLoop: EventLoop
+    ) -> EventLoopFuture<PostgresConnection> {
         let address: SocketAddress
         do {
             address = try self.configuration.address()
@@ -15,12 +18,14 @@ public struct PostgresConnectionSource: ConnectionPoolSource {
         return PostgresConnection.connect(
             to: address,
             tlsConfiguration: self.configuration.tlsConfiguration,
+            logger: .init(label: "codes.vapor.postgres"),
             on: eventLoop
         ).flatMap { conn in
             return conn.authenticate(
                 username: self.configuration.username,
                 database: self.configuration.database,
-                password: self.configuration.password
+                password: self.configuration.password,
+                logger: logger
             ).flatMapErrorThrowing { error in
                 _ = conn.close()
                 throw error
