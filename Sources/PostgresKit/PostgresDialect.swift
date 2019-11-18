@@ -1,8 +1,8 @@
 public struct PostgresDialect: SQLDialect {
-    private var bindOffset: Int
-
-    public init() {
-        self.bindOffset = 0
+    public init() { }
+    
+    public var name: String {
+        "postgresql"
     }
 
     public var identifierQuote: SQLExpression {
@@ -13,9 +13,8 @@ public struct PostgresDialect: SQLDialect {
         return SQLRaw("'")
     }
 
-    public mutating func nextBindPlaceholder() -> SQLExpression {
-        self.bindOffset += 1
-        return SQLRaw("$" + self.bindOffset.description)
+    public func bindPlaceholder(at position: Int) -> SQLExpression {
+        return SQLRaw("$" + (position + 1).description)
     }
 
     public func literalBoolean(_ value: Bool) -> SQLExpression {

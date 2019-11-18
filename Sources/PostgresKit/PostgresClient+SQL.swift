@@ -19,11 +19,14 @@ extension _PostgresSQLDatabase: SQLDatabase {
         self.database.eventLoop
     }
     
+    var dialect: SQLDialect {
+        PostgresDialect()
+    }
+    
     func execute(sql query: SQLExpression, _ onRow: @escaping (SQLRow) -> ()) -> EventLoopFuture<Void> {
-        var serializer = SQLSerializer(dialect: PostgresDialect())
-        query.serialize(to: &serializer)
+        let (sql, binds) = self.serialize(query)
         do {
-            return try self.database.query(serializer.sql, serializer.binds.map { encodable in
+            return try self.database.query(sql, binds.map { encodable in
                 return try PostgresDataEncoder().encode(encodable)
             }) { row in
                 onRow(row)
