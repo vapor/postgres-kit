@@ -30,7 +30,7 @@ extension _PostgresSQLDatabase: SQLDatabase {
         let (sql, binds) = self.serialize(query)
         do {
             return try self.database.query(sql, binds.map { encodable in
-                return try PostgresDataEncoder().encode(encodable)
+                return try self.encoder.encode(encodable)
             }) { row in
                 onRow(row)
             }
