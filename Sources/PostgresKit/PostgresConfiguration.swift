@@ -1,4 +1,4 @@
-@_exported import struct Foundation.URL
+@_exported import Foundation
 
 public struct PostgresConfiguration {
     public let address: () throws -> SocketAddress
@@ -6,7 +6,10 @@ public struct PostgresConfiguration {
     public let password: String
     public let database: String?
     public let tlsConfiguration: TLSConfiguration?
-    
+
+    public let encoder: PostgresDataEncoder
+    public let decoder: PostgresDataDecoder
+
     internal var _hostname: String?
     
     public init?(url: URL) {
@@ -49,7 +52,9 @@ public struct PostgresConfiguration {
         username: String,
         password: String,
         database: String? = nil,
-        tlsConfiguration: TLSConfiguration? = nil
+        tlsConfiguration: TLSConfiguration? = nil,
+        jsonEncoder: JSONEncoder = JSONEncoder(),
+        jsonDecoder: JSONDecoder = JSONDecoder()
     ) {
         self.address = {
             return try SocketAddress.makeAddressResolvingHost(hostname, port: port)
@@ -59,5 +64,7 @@ public struct PostgresConfiguration {
         self.password = password
         self.tlsConfiguration = tlsConfiguration
         self._hostname = hostname
+        self.encoder = PostgresDataEncoder(jsonEncoder: jsonEncoder)
+        self.decoder = PostgresDataDecoder(jsonDecoder: jsonDecoder)
     }
 }
