@@ -1,7 +1,12 @@
+import protocol PostgresNIO.PostgresEncoder
 import Foundation
 
-public struct PostgresDataEncoder {
-    public init() { }
+public final class PostgresDataEncoder: PostgresEncoder {
+    public let jsonEncoder: JSONEncoder
+
+    public init(jsonEncoder: JSONEncoder/* = JSONEncoder()*/) {
+        self.jsonEncoder = jsonEncoder
+    }
 
     public func encode(_ value: Encodable) throws -> PostgresData {
         if let custom = value as? PostgresDataConvertible {
@@ -12,8 +17,7 @@ public struct PostgresDataEncoder {
                 try value.encode(to: encoder)
                 return encoder.data
             } catch is DoJSON {
-                let json = JSONEncoder()
-                let data = try json.encode(Wrapper(value))
+                let data = try self.jsonEncoder.encode(Wrapper(value))
                 var buffer = ByteBufferAllocator().buffer(capacity: data.count)
                 buffer.writeBytes(data)
                 return PostgresData(type: .jsonb, value: buffer)

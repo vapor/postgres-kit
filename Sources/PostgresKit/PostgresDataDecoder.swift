@@ -1,3 +1,4 @@
+import protocol PostgresNIO.PostgresDecoder
 import Foundation
 
 struct DecoderUnwrapper: Decodable {
@@ -7,8 +8,12 @@ struct DecoderUnwrapper: Decodable {
     }
 }
 
-public struct PostgresDataDecoder {
-    public init() {}
+public final class PostgresDataDecoder: PostgresDecoder {
+    public let jsonDecoder: JSONDecoder
+
+    public init(jsonDecoder: JSONDecoder/* = JSONDecoder()*/) {
+        self.jsonDecoder = jsonDecoder
+    }
 
     public func decode<T>(_ type: T.Type, from data: PostgresData) throws -> T
         where T: Decodable
@@ -16,7 +21,7 @@ public struct PostgresDataDecoder {
         if let convertible = T.self as? PostgresDataConvertible.Type {
             return convertible.init(postgresData: data)! as! T
         } else {
-            return try T.init(from: _Decoder(data: data))
+            return try T.init(from: _Decoder(data: data, jsonDecoder: self.jsonDecoder))
         }
     }
 
@@ -30,8 +35,11 @@ public struct PostgresDataDecoder {
         }
 
         let data: PostgresData
-        init(data: PostgresData) {
+        let jsonDecoder: JSONDecoder
+
+        init(data: PostgresData, jsonDecoder: JSONDecoder) {
             self.data = data
+            self.jsonDecoder = jsonDecoder
         }
 
         func unkeyedContainer() throws -> UnkeyedDecodingContainer {
@@ -41,7 +49,7 @@ public struct PostgresDataDecoder {
         func container<Key>(keyedBy type: Key.Type) throws -> KeyedDecodingContainer<Key> where Key : CodingKey {
             var buffer = self.data.value!
             let data = buffer.readBytes(length: buffer.readableBytes)!
-            let unwrapper = try JSONDecoder().decode(DecoderUnwrapper.self, from: Data(data))
+            let unwrapper = try self.jsonDecoder.decode(DecoderUnwrapper.self, from: Data(data))
             return try unwrapper.decoder.container(keyedBy: Key.self)
         }
 
