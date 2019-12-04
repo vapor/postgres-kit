@@ -1,13 +1,16 @@
+import PostgresNIO
 import SQLKit
 
 extension PostgresDatabase {
     public func sql() -> SQLDatabase {
-        _PostgresSQLDatabase(database: self)
+        _PostgresSQLDatabase(database: self, encoder: self.encoder, decoder: self.decoder)
     }
 }
 
 private struct _PostgresSQLDatabase {
     let database: PostgresDatabase
+    let encoder: PostgresEncoder
+    let decoder: PostgresDecoder
 }
 
 extension _PostgresSQLDatabase: SQLDatabase {
