@@ -10,9 +10,9 @@ private struct _ConnectionPoolPostgresDatabase {
 }
 
 extension _ConnectionPoolPostgresDatabase: PostgresDatabase {
-    var eventLoop: EventLoop {
-        self.pool.eventLoop
-    }
+    var eventLoop: EventLoop { self.pool.eventLoop }
+    var encoder: PostgresEncoder { self.pool.sourceInfo.configuration.encoder }
+    var decoder: PostgresDecoder { self.pool.sourceInfo.configuration.decoder }
     
     func send(_ request: PostgresRequest, logger: Logger) -> EventLoopFuture<Void> {
         self.pool.withConnection(logger: logger) {
