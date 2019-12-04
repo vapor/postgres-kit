@@ -3,6 +3,6 @@ extension PostgresRow: SQLRow {
         guard let data = self.column(column) else {
             fatalError()
         }
-        return try PostgresDataDecoder().decode(D.self, from: data)
+        return try self.decoder.decode(D.self, from: data)
     }
 }
