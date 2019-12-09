@@ -12,11 +12,7 @@ public struct PostgresDataEncoder {
                 try value.encode(to: encoder)
                 return encoder.data
             } catch is DoJSON {
-                let json = JSONEncoder()
-                let data = try json.encode(Wrapper(value))
-                var buffer = ByteBufferAllocator().buffer(capacity: data.count)
-                buffer.writeBytes(data)
-                return PostgresData(type: .jsonb, value: buffer)
+                return try PostgresData(jsonb: Wrapper(value))
             }
         }
     }
