@@ -14,7 +14,7 @@ extension PostgresConnection {
             let encoder = PostgresDataEncoder(jsonEncoder: JSONEncoder())
             let decoder = PostgresDataDecoder(jsonDecoder: JSONDecoder())
 
-            return connect(to: address, on: eventLoop, usingEncoder: encoder, andDecoder: decoder).flatMap { conn in
+            return connect(to: address, on: eventLoop).flatMap { conn in
                 return conn.authenticate(username: "vapor_username", database: "vapor_database", password: "vapor_password")
                     .map { conn }
             }
