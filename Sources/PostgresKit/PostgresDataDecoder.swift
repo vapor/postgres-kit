@@ -11,7 +11,7 @@ struct DecoderUnwrapper: Decodable {
 public final class PostgresDataDecoder: PostgresDecoder {
     public let jsonDecoder: JSONDecoder
 
-    public init(jsonDecoder: JSONDecoder/* = JSONDecoder()*/) {
+    public init(jsonDecoder: JSONDecoder) {
         self.jsonDecoder = jsonDecoder
     }
 

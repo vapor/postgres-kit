@@ -4,7 +4,7 @@ import Foundation
 public final class PostgresDataEncoder: PostgresEncoder {
     public let jsonEncoder: JSONEncoder
 
-    public init(jsonEncoder: JSONEncoder/* = JSONEncoder()*/) {
+    public init(jsonEncoder: JSONEncoder) {
         self.jsonEncoder = jsonEncoder
     }
 
@@ -17,10 +17,7 @@ public final class PostgresDataEncoder: PostgresEncoder {
                 try value.encode(to: encoder)
                 return encoder.data
             } catch is DoJSON {
-                let data = try self.jsonEncoder.encode(Wrapper(value))
-                var buffer = ByteBufferAllocator().buffer(capacity: data.count)
-                buffer.writeBytes(data)
-                return PostgresData(type: .jsonb, value: buffer)
+                return try PostgresData(jsonb: Wrapper(value))
             }
         }
     }
