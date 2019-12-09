@@ -1,5 +1,5 @@
 extension PostgresRow {
-    public func sqlRow(using decoder: PostgresDecoder) -> SQLRow {
+    public func sqlRow(using decoder: PostgresDataDecoder) -> SQLRow {
         return _PostgreSQLRow(row: self, decoder: decoder)
     }
 
@@ -10,7 +10,7 @@ extension PostgresRow {
 
 private struct _PostgreSQLRow: SQLRow {
     let row: PostgresRow
-    let decoder: PostgresDecoder
+    let decoder: PostgresDataDecoder
 
     func decode<D>(column: String, as type: D.Type) throws -> D where D : Decodable {
         guard let data = self.row.column(column) else {

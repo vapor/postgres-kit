@@ -1,4 +1,3 @@
-import protocol PostgresNIO.PostgresDecoder
 import Foundation
 
 struct DecoderUnwrapper: Decodable {
@@ -8,7 +7,7 @@ struct DecoderUnwrapper: Decodable {
     }
 }
 
-public final class PostgresDataDecoder: PostgresDecoder {
+public final class PostgresDataDecoder {
     public let jsonDecoder: JSONDecoder
 
     public init(jsonDecoder: JSONDecoder) {
