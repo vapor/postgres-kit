@@ -32,7 +32,7 @@ extension _PostgresSQLDatabase: SQLDatabase {
             return try self.database.query(sql, binds.map { encodable in
                 return try self.encoder.encode(encodable)
             }) { row in
-                onRow(row)
+                onRow(row.sqlRow(using: self.decoder))
             }
         } catch {
             return self.eventLoop.makeFailedFuture(error)
