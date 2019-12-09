@@ -5,9 +5,6 @@
       location = "group:../fluent-postgres-driver">
    </FileRef>
    <FileRef
-      location = "group:../postgres-nio">
-   </FileRef>
-   <FileRef
       location = "container:">
    </FileRef>
 </Workspace>
