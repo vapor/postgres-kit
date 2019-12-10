@@ -16,7 +16,8 @@ public final class PostgresDataEncoder {
                 try value.encode(to: encoder)
                 return encoder.data
             } catch is DoJSON {
-                return try PostgresData(jsonb: Wrapper(value))
+                let data = try self.jsonEncoder.encode(Wrapper(value))
+                return PostgresData(jsonb: data)
             }
         }
     }
