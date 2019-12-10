@@ -11,9 +11,6 @@ extension PostgresConnection {
             address = try .init(ipAddress: "127.0.0.1", port: 5432)
             #endif
 
-            let encoder = PostgresDataEncoder(jsonEncoder: JSONEncoder())
-            let decoder = PostgresDataDecoder(jsonDecoder: JSONDecoder())
-
             return connect(to: address, on: eventLoop).flatMap { conn in
                 return conn.authenticate(username: "vapor_username", database: "vapor_database", password: "vapor_password")
                     .map { conn }
