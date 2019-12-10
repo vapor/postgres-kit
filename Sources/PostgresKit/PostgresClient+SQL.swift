@@ -1,8 +1,12 @@
 import PostgresNIO
+import Foundation
 import SQLKit
 
 extension PostgresDatabase {
-    public func sql(encoder: PostgresDataEncoder, decoder: PostgresDataDecoder) -> SQLDatabase {
+    public func sql(
+        encoder: PostgresDataEncoder = PostgresDataEncoder(jsonEncoder: JSONEncoder()),
+        decoder: PostgresDataDecoder = PostgresDataDecoder(jsonDecoder: JSONDecoder())
+    ) -> SQLDatabase {
         _PostgresSQLDatabase(database: self, encoder: encoder, decoder: decoder)
     }
 }

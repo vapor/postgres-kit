@@ -129,12 +129,3 @@ class PostgresKitTests: XCTestCase {
         self.eventLoopGroup = nil
     }
 }
-
-extension PostgresConnection {
-    func sql() -> SQLDatabase {
-        self.sql(
-            encoder: PostgresDataEncoder(jsonEncoder: JSONEncoder()),
-            decoder: PostgresDataDecoder(jsonDecoder: JSONDecoder())
-        )
-    }
-}
