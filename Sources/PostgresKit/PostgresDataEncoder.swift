@@ -1,7 +1,11 @@
 import Foundation
 
-public struct PostgresDataEncoder {
-    public init() { }
+public final class PostgresDataEncoder {
+    public let jsonEncoder: JSONEncoder
+
+    public init(json: JSONEncoder = JSONEncoder()) {
+        self.jsonEncoder = json
+    }
 
     public func encode(_ value: Encodable) throws -> PostgresData {
         if let custom = value as? PostgresDataConvertible {
@@ -12,7 +16,8 @@ public struct PostgresDataEncoder {
                 try value.encode(to: encoder)
                 return encoder.data
             } catch is DoJSON {
-                return try PostgresData(jsonb: Wrapper(value))
+                let data = try self.jsonEncoder.encode(Wrapper(value))
+                return PostgresData(jsonb: data)
             }
         }
     }

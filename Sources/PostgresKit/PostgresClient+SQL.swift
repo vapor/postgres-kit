@@ -1,13 +1,20 @@
+import PostgresNIO
+import Foundation
 import SQLKit
 
 extension PostgresDatabase {
-    public func sql() -> SQLDatabase {
-        _PostgresSQLDatabase(database: self)
+    public func sql(
+        encoder: PostgresDataEncoder = PostgresDataEncoder(),
+        decoder: PostgresDataDecoder = PostgresDataDecoder()
+    ) -> SQLDatabase {
+        _PostgresSQLDatabase(database: self, encoder: encoder, decoder: decoder)
     }
 }
 
 private struct _PostgresSQLDatabase {
     let database: PostgresDatabase
+    let encoder: PostgresDataEncoder
+    let decoder: PostgresDataDecoder
 }
 
 extension _PostgresSQLDatabase: SQLDatabase {
@@ -27,9 +34,9 @@ extension _PostgresSQLDatabase: SQLDatabase {
         let (sql, binds) = self.serialize(query)
         do {
             return try self.database.query(sql, binds.map { encodable in
-                return try PostgresDataEncoder().encode(encodable)
+                return try self.encoder.encode(encodable)
             }) { row in
-                onRow(row)
+                onRow(row.sql(decoder: self.decoder))
             }
         } catch {
             return self.eventLoop.makeFailedFuture(error)
