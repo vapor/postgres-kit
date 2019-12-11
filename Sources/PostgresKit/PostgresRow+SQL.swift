@@ -1,5 +1,5 @@
 extension PostgresRow {
-    public func sql(using decoder: PostgresDataDecoder) -> SQLRow {
+    public func sql(decoder: PostgresDataDecoder = .init()) -> SQLRow {
         return _PostgreSQLRow(row: self, decoder: decoder)
     }
 }
