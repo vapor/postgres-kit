@@ -42,14 +42,25 @@ public final class PostgresDataDecoder {
         }
 
         func unkeyedContainer() throws -> UnkeyedDecodingContainer {
-            fatalError()
+            try self.jsonDecoder().unkeyedContainer()
         }
 
-        func container<Key>(keyedBy type: Key.Type) throws -> KeyedDecodingContainer<Key> where Key : CodingKey {
-            var buffer = self.data.value!
-            let data = buffer.readBytes(length: buffer.readableBytes)!
-            let unwrapper = try self.jsonDecoder.decode(DecoderUnwrapper.self, from: Data(data))
-            return try unwrapper.decoder.container(keyedBy: Key.self)
+        func container<Key>(
+            keyedBy type: Key.Type
+        ) throws -> KeyedDecodingContainer<Key> where Key : CodingKey {
+            try self.jsonDecoder().container(keyedBy: Key.self)
+        }
+
+        func jsonDecoder() throws -> Decoder {
+            guard let buffer = self.data.value else {
+                throw DecodingError.valueNotFound(Any.self, .init(
+                    codingPath: self.codingPath,
+                    debugDescription: "Cannot decode JSON from nil value"
+                ))
+            }
+            let unwrapper = try self.jsonDecoder
+                .decode(DecoderUnwrapper.self, from: Data(buffer.readableBytesView))
+            return unwrapper.decoder
         }
 
         func singleValueContainer() throws -> SingleValueDecodingContainer {
