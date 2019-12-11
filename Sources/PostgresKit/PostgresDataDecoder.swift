@@ -10,8 +10,8 @@ struct DecoderUnwrapper: Decodable {
 public final class PostgresDataDecoder {
     public let jsonDecoder: JSONDecoder
 
-    public init(jsonDecoder: JSONDecoder) {
-        self.jsonDecoder = jsonDecoder
+    public init(json: JSONDecoder = JSONDecoder()) {
+        self.jsonDecoder = json
     }
 
     public func decode<T>(_ type: T.Type, from data: PostgresData) throws -> T
@@ -20,7 +20,7 @@ public final class PostgresDataDecoder {
         if let convertible = T.self as? PostgresDataConvertible.Type {
             return convertible.init(postgresData: data)! as! T
         } else {
-            return try T.init(from: _Decoder(data: data, jsonDecoder: self.jsonDecoder))
+            return try T.init(from: _Decoder(data: data, json: self.jsonDecoder))
         }
     }
 
@@ -34,11 +34,11 @@ public final class PostgresDataDecoder {
         }
 
         let data: PostgresData
-        let jsonDecoder: JSONDecoder
+        let json: JSONDecoder
 
-        init(data: PostgresData, jsonDecoder: JSONDecoder) {
+        init(data: PostgresData, json: JSONDecoder) {
             self.data = data
-            self.jsonDecoder = jsonDecoder
+            self.json = json
         }
 
         func unkeyedContainer() throws -> UnkeyedDecodingContainer {
@@ -58,7 +58,7 @@ public final class PostgresDataDecoder {
                     debugDescription: "Cannot decode JSON from nil value"
                 ))
             }
-            let unwrapper = try self.jsonDecoder
+            let unwrapper = try self.json
                 .decode(DecoderUnwrapper.self, from: Data(buffer.readableBytesView))
             return unwrapper.decoder
         }

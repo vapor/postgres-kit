@@ -53,8 +53,8 @@ public struct PostgresConfiguration {
         password: String,
         database: String? = nil,
         tlsConfiguration: TLSConfiguration? = nil,
-        encoder: PostgresDataEncoder = PostgresDataEncoder(jsonEncoder: JSONEncoder()),
-        decoder: PostgresDataDecoder = PostgresDataDecoder(jsonDecoder: JSONDecoder())
+        encoder: PostgresDataEncoder = PostgresDataEncoder(),
+        decoder: PostgresDataDecoder = PostgresDataDecoder()
     ) {
         self.address = {
             return try SocketAddress.makeAddressResolvingHost(hostname, port: port)

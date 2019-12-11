@@ -3,8 +3,8 @@ import Foundation
 public final class PostgresDataEncoder {
     public let jsonEncoder: JSONEncoder
 
-    public init(jsonEncoder: JSONEncoder) {
-        self.jsonEncoder = jsonEncoder
+    public init(json: JSONEncoder = JSONEncoder()) {
+        self.jsonEncoder = json
     }
 
     public func encode(_ value: Encodable) throws -> PostgresData {

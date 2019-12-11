@@ -4,7 +4,7 @@ extension PostgresRow {
     }
 
     public func sqlRow(using decoder: JSONDecoder = JSONDecoder()) -> SQLRow {
-        return _PostgreSQLRow(row: self, decoder: PostgresDataDecoder(jsonDecoder: decoder))
+        return _PostgreSQLRow(row: self, decoder: PostgresDataDecoder(json: decoder))
     }
 }
 
