@@ -31,15 +31,15 @@ public struct PostgresDataEncoder {
         }
 
         func container<Key>(keyedBy type: Key.Type) -> KeyedEncodingContainer<Key> where Key : CodingKey {
-            return .init(_KeyedValueEncoder(self))
+            .init(_KeyedValueEncoder(self))
         }
 
         func unkeyedContainer() -> UnkeyedEncodingContainer {
-            fatalError()
+            _UnkeyedEncodingContainer(self)
         }
 
         func singleValueContainer() -> SingleValueEncodingContainer {
-            return _SingleValueEncoder(self)
+            _SingleValueEncoder(self)
         }
     }
 
@@ -55,9 +55,45 @@ public struct PostgresDataEncoder {
         }
     }
 
+    private struct _UnkeyedEncodingContainer: UnkeyedEncodingContainer {
+        var codingPath: [CodingKey] {
+            self.encoder.codingPath
+        }
+        var count: Int {
+            0
+        }
+
+        let encoder: _Encoder
+        init(_ encoder: _Encoder) {
+            self.encoder = encoder
+        }
+
+        mutating func encodeNil() throws {
+            throw DoJSON()
+        }
+
+        mutating func encode<T>(_ value: T) throws where T : Encodable {
+            throw DoJSON()
+        }
+
+        mutating func nestedContainer<NestedKey>(
+            keyedBy keyType: NestedKey.Type
+        ) -> KeyedEncodingContainer<NestedKey> where NestedKey : CodingKey {
+            self.encoder.container(keyedBy: NestedKey.self)
+        }
+
+        mutating func nestedUnkeyedContainer() -> UnkeyedEncodingContainer {
+            self.encoder.unkeyedContainer()
+        }
+
+        mutating func superEncoder() -> Encoder {
+            self.encoder
+        }
+    }
+
     private struct _KeyedValueEncoder<Key>: KeyedEncodingContainerProtocol where Key: CodingKey {
         var codingPath: [CodingKey] {
-            return self.encoder.codingPath
+            self.encoder.codingPath
         }
 
         let encoder: _Encoder
@@ -66,27 +102,30 @@ public struct PostgresDataEncoder {
         }
 
         mutating func encodeNil(forKey key: Key) throws {
-            fatalError()
+            throw DoJSON()
         }
 
         mutating func encode<T>(_ value: T, forKey key: Key) throws where T : Encodable {
             throw DoJSON()
         }
 
-        mutating func nestedContainer<NestedKey>(keyedBy keyType: NestedKey.Type, forKey key: Key) -> KeyedEncodingContainer<NestedKey> where NestedKey : CodingKey {
-            fatalError()
+        mutating func nestedContainer<NestedKey>(
+            keyedBy keyType: NestedKey.Type,
+            forKey key: Key
+        ) -> KeyedEncodingContainer<NestedKey> where NestedKey : CodingKey {
+            self.encoder.container(keyedBy: NestedKey.self)
         }
 
         mutating func nestedUnkeyedContainer(forKey key: Key) -> UnkeyedEncodingContainer {
-            fatalError()
+            self.encoder.unkeyedContainer()
         }
 
         mutating func superEncoder() -> Encoder {
-            fatalError()
+            self.encoder
         }
 
         mutating func superEncoder(forKey key: Key) -> Encoder {
-            fatalError()
+            self.encoder
         }
     }
 
