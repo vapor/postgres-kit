@@ -20,11 +20,17 @@ public final class PostgresDataEncoder {
             switch data {
             case .array(let array):
                 return try PostgresData(
-                    array: array.map { try PostgresData(jsonb: self.json.encode($0)) },
+                    array: array.map {
+                        try PostgresData(
+                            jsonb: self.json.encode(Wrapper($0))
+                        )
+                    },
                     elementType: .jsonb
                 )
             case .dictionary(let dictionary):
-                return try PostgresData(jsonb: self.json.encode(dictionary))
+                return try PostgresData(
+                    jsonb: self.json.encode(Wrapper(dictionary))
+                )
             case .null:
                 return .null
             case .encodable(let encodable):
