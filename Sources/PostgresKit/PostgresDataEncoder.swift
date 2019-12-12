@@ -20,7 +20,7 @@ public final class PostgresDataEncoder {
             switch data {
             case .array(let array):
                 return try PostgresData(
-                    array: array.map { item in
+                    array: array.map { item -> PostgresData in
                         let data = try self.json.encode(item)
                         return PostgresData(jsonb: data)
                     },
