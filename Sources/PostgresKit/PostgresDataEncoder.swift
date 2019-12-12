@@ -13,22 +13,20 @@ public final class PostgresDataEncoder {
         } else {
             let encoder = _Encoder(codingPath: [])
             try Wrapper(value).encode(to: encoder)
-            guard let data: _Value = encoder.data?.resolve() else {
+            guard let data = encoder.data?.resolve() else {
                 // no containers made
                 return .null
             }
             switch data {
             case .array(let array):
                 return try PostgresData(
-                    array: array.map { (item: _Value) -> PostgresData in
-                        let data = try self.json.encode(item)
-                        return PostgresData(jsonb: data)
+                    array: array.map {
+                        try PostgresData(jsonb: self.json.encode($0))
                     },
                     elementType: .jsonb
                 )
             case .dictionary(let dictionary):
-                let data = try self.json.encode(dictionary)
-                return PostgresData(jsonb: data)
+                return try PostgresData(jsonb: self.json.encode(dictionary))
             case .null:
                 return .null
             case .encodable(let encodable):
