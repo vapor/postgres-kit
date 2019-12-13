@@ -1,6 +1,7 @@
 import PostgresKit
 import SQLKitBenchmark
 import XCTest
+import Logging
 
 class PostgresKitTests: XCTestCase {
     func testSQLKitBenchmark() throws {
@@ -113,6 +114,30 @@ class PostgresKitTests: XCTestCase {
                 .model(zipcode)
                 .run().wait()
         }
+    }
+
+    func testArrayEncoding() throws {
+        let conn = try PostgresConnection.test(on: self.eventLoop).wait()
+        defer { try! conn.close().wait() }
+        conn.logger.logLevel = .trace
+        
+        struct Foo: Codable {
+            var bar: Int
+        }
+        let foos: [Foo] = [.init(bar: 1), .init(bar: 2)]
+        try conn.sql().raw("SELECT \(bind: foos)::JSONB[] as foos")
+            .run().wait()
+    }
+
+    func testDictionaryEncoding() throws {
+        let conn = try PostgresConnection.test(on: self.eventLoop).wait()
+        defer { try! conn.close().wait() }
+        conn.logger.logLevel = .trace
+
+        struct Foo: Codable {
+            var bar: Int
+        }
+         
     }
       
     private var eventLoopGroup: EventLoopGroup!
