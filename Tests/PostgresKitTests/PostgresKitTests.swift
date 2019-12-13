@@ -137,7 +137,25 @@ class PostgresKitTests: XCTestCase {
         struct Foo: Codable {
             var bar: Int
         }
-         
+    }
+
+    func testDecodeModelWithNil() throws {
+        let conn = try PostgresConnection.test(on: self.eventLoop).wait()
+        defer { try! conn.close().wait() }
+
+        let rows = try conn.query("SELECT 'foo'::text as foo, null as bar, 'baz'::text as baz").wait()
+        let row = rows[0]
+        
+        struct Test: Codable {
+            var foo: String
+            var bar: String?
+            var baz: String?
+        }
+
+        let test = try row.sql().decode(model: Test.self)
+        XCTAssertEqual(test.foo, "foo")
+        XCTAssertEqual(test.bar, nil)
+        XCTAssertEqual(test.baz, "baz")
     }
       
     private var eventLoopGroup: EventLoopGroup!
