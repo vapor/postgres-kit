@@ -22,7 +22,7 @@ private struct _PostgreSQLRow: SQLRow {
     }
 
     func decodeNil(column: String) throws -> Bool {
-        self.row.column(column) == nil
+        self.row.column(column)?.value == nil
     }
 
     func decode<D>(column: String, as type: D.Type) throws -> D where D : Decodable {
