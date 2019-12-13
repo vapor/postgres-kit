@@ -11,250 +11,146 @@ public final class PostgresDataEncoder {
         if let custom = value as? PostgresDataConvertible {
             return custom.postgresData!
         } else {
-            let encoder = _Encoder(codingPath: [])
-            try Wrapper(value).encode(to: encoder)
-            guard let data = encoder.data?.resolve() else {
-                // no containers made
-                return .null
-            }
-            switch data {
-            case .array(let array):
-                return try PostgresData(
-                    array: array.map {
-                        try PostgresData(jsonb: self.json.encode($0))
-                    },
-                    elementType: .jsonb
-                )
-            case .dictionary(let dictionary):
-                return try PostgresData(jsonb: self.json.encode(dictionary))
-            case .null:
-                return .null
-            case .encodable(let encodable):
-                return try self.encode(encodable)
+            let context = _Context()
+            try value.encode(to: _Encoder(context: context))
+            if let value = context.value {
+                return value
+            } else if let array = context.array {
+                return PostgresData(array: array, elementType: .jsonb)
+            } else {
+                return try PostgresData(jsonb: self.json.encode(_Wrapper(value)))
             }
         }
     }
-}
 
-private final class _Encoder: Encoder {
-    var userInfo: [CodingUserInfoKey : Any] {
-        return [:]
-    }
-    var codingPath: [CodingKey]
-    var data: _Data?
-    init(codingPath: [CodingKey]) {
-        self.codingPath = codingPath
+    final class _Context {
+        var value: PostgresData?
+        var array: [PostgresData]?
+
+        init() { }
     }
 
-    func container<Key>(keyedBy type: Key.Type) -> KeyedEncodingContainer<Key>
-        where Key : CodingKey
-    {
-        let container = _KeyedEncoder<Key>(codingPath: self.codingPath)
-        self.data = .container(container)
-        return .init(container)
-    }
+    struct _Encoder: Encoder {
+        var userInfo: [CodingUserInfoKey : Any] {
+            [:]
+        }
+        var codingPath: [CodingKey] {
+            []
+        }
+        let context: _Context
 
-    func unkeyedContainer() -> UnkeyedEncodingContainer {
-        let container = _UnkeyedEncoder(codingPath: self.codingPath)
-        self.data = .container(container)
-        return container
-    }
+        func container<Key>(keyedBy type: Key.Type) -> KeyedEncodingContainer<Key>
+            where Key : CodingKey
+        {
+            .init(_KeyedEncoder<Key>())
+        }
 
-    func singleValueContainer() -> SingleValueEncodingContainer {
-        let container = _ValueEncoder(codingPath: self.codingPath)
-        self.data = .container(container)
-        return container
-    }
-}
+        func unkeyedContainer() -> UnkeyedEncodingContainer {
+            self.context.array = []
+            return _UnkeyedEncoder(context: self.context)
+        }
 
-private final class _UnkeyedEncoder: UnkeyedEncodingContainer, _Container {
-    var codingPath: [CodingKey]
-    var count: Int {
-        self.items.count
-    }
-    var data: _Data {
-        .array(self.items)
-    }
-    var items: [_Data]
-
-    init(codingPath: [CodingKey]) {
-        self.codingPath = codingPath
-        self.items = []
-    }
-
-    func encodeNil() throws {
-        self.items.append(.null)
-    }
-
-    func encode<T>(_ value: T) throws where T : Encodable {
-        self.items.append(.encodable(value))
-    }
-
-    func nestedContainer<NestedKey>(
-        keyedBy keyType: NestedKey.Type
-    ) -> KeyedEncodingContainer<NestedKey>
-        where NestedKey : CodingKey
-    {
-        let container = _KeyedEncoder<NestedKey>(codingPath: self.codingPath)
-        self.items.append(.container(container))
-        return .init(container)
-    }
-
-    func nestedUnkeyedContainer() -> UnkeyedEncodingContainer {
-        let container = _UnkeyedEncoder(codingPath: self.codingPath)
-        self.items.append(.container(container))
-        return container
-    }
-
-    func superEncoder() -> Encoder {
-        _Encoder(codingPath: self.codingPath)
-    }
-}
-
-private final class _KeyedEncoder<Key>: KeyedEncodingContainerProtocol, _Container
-    where Key: CodingKey
-{
-    var codingPath: [CodingKey]
-    var data: _Data {
-        .dictionary(self.items)
-    }
-    var items: [String: _Data]
-
-    init(codingPath: [CodingKey]) {
-        self.codingPath = codingPath
-        self.items = [:]
-    }
-
-    func encodeNil(forKey key: Key) throws {
-        self.items[key.stringValue] = .null
-    }
-
-    func encode<T>(_ value: T, forKey key: Key) throws where T : Encodable {
-        self.items[key.stringValue] = .encodable(value)
-    }
-
-    func nestedContainer<NestedKey>(
-        keyedBy keyType: NestedKey.Type,
-        forKey key: Key
-    ) -> KeyedEncodingContainer<NestedKey>
-        where NestedKey : CodingKey
-    {
-        let container = _KeyedEncoder<NestedKey>(codingPath: self.codingPath)
-        self.items[key.stringValue] = .container(container)
-        return .init(container)
-    }
-
-    func nestedUnkeyedContainer(forKey key: Key) -> UnkeyedEncodingContainer {
-        let container = _UnkeyedEncoder(codingPath: self.codingPath)
-        self.items[key.stringValue] = .container(container)
-        return container
-    }
-
-    func superEncoder() -> Encoder {
-        _Encoder(codingPath: self.codingPath)
-    }
-
-    func superEncoder(forKey key: Key) -> Encoder {
-        _Encoder(codingPath: self.codingPath + [key])
-    }
-}
-
-
-private final class _ValueEncoder: SingleValueEncodingContainer, _Container {
-    var codingPath: [CodingKey]
-    var data: _Data
-
-    init(codingPath: [CodingKey]) {
-        self.codingPath = codingPath
-        self.data = .null
-    }
-
-    func encodeNil() throws {
-        self.data = .null
-    }
-
-    func encode<T>(_ value: T) throws where T : Encodable {
-        self.data = .encodable(value)
-    }
-}
-
-struct Wrapper: Encodable {
-    let encodable: Encodable
-    init(_ encodable: Encodable) {
-        self.encodable = encodable
-    }
-    func encode(to encoder: Encoder) throws {
-        try self.encodable.encode(to: encoder)
-    }
-}
-
-protocol _Container {
-    var data: _Data { get }
-}
-
-enum _Value: Encodable {
-    case array([_Value])
-    case dictionary([String: _Value])
-    case null
-    case encodable(Encodable)
-
-    func encode(to encoder: Encoder) throws {
-        switch self {
-        case .array(let array):
-            var container = encoder.unkeyedContainer()
-            try array.forEach { try container.encode($0) }
-        case .dictionary(let dictionary):
-            var container = encoder.container(keyedBy: _Key.self)
-            try dictionary.forEach {
-                try container.encode($0.value, forKey: .init($0.key))
-            }
-        case .null:
-            var container = encoder.singleValueContainer()
-            try container.encodeNil()
-        case .encodable(let encodable):
-            try encodable.encode(to: encoder)
+        func singleValueContainer() -> SingleValueEncodingContainer {
+            _ValueEncoder(context: self.context)
         }
     }
-}
 
-struct _Key: CodingKey {
-    var stringValue: String
-    var intValue: Int? {
-        Int(self.stringValue)
+    struct _UnkeyedEncoder: UnkeyedEncodingContainer {
+        var codingPath: [CodingKey] {
+            []
+        }
+        var count: Int {
+            0
+        }
+
+        var context: _Context
+
+        func encodeNil() throws {
+            self.context.array!.append(.null)
+        }
+
+        func encode<T>(_ value: T) throws where T : Encodable {
+            try self.context.array!.append(PostgresDataEncoder().encode(value))
+        }
+
+        func nestedContainer<NestedKey>(
+            keyedBy keyType: NestedKey.Type
+        ) -> KeyedEncodingContainer<NestedKey>
+            where NestedKey : CodingKey
+        {
+            fatalError()
+        }
+
+        func nestedUnkeyedContainer() -> UnkeyedEncodingContainer {
+            fatalError()
+        }
+
+        func superEncoder() -> Encoder {
+            fatalError()
+        }
     }
 
-    init(_ string: String) {
-        self.stringValue = string
+    struct _KeyedEncoder<Key>: KeyedEncodingContainerProtocol
+        where Key: CodingKey
+    {
+        var codingPath: [CodingKey] {
+            []
+        }
+
+        func encodeNil(forKey key: Key) throws {
+            // do nothing
+        }
+
+        func encode<T>(_ value: T, forKey key: Key) throws where T : Encodable {
+            // do nothing
+        }
+
+        func nestedContainer<NestedKey>(
+            keyedBy keyType: NestedKey.Type,
+            forKey key: Key
+        ) -> KeyedEncodingContainer<NestedKey>
+            where NestedKey : CodingKey
+        {
+            fatalError()
+        }
+
+        func nestedUnkeyedContainer(forKey key: Key) -> UnkeyedEncodingContainer {
+
+            fatalError()
+        }
+
+        func superEncoder() -> Encoder {
+            fatalError()
+        }
+
+        func superEncoder(forKey key: Key) -> Encoder {
+            fatalError()
+        }
     }
 
-    init?(stringValue: String) {
-        self.stringValue = stringValue
+
+    struct _ValueEncoder: SingleValueEncodingContainer {
+        var codingPath: [CodingKey] {
+            []
+        }
+        let context: _Context
+
+        func encodeNil() throws {
+            self.context.value = .null
+        }
+
+        func encode<T>(_ value: T) throws where T : Encodable {
+            self.context.value = try PostgresDataEncoder().encode(value)
+        }
     }
 
-    init?(intValue: Int) {
-        self.stringValue = intValue.description
-    }
-}
-
-enum _Data {
-    case array([_Data])
-    case dictionary([String: _Data])
-    case null
-    case container(_Container)
-    case encodable(Encodable)
-
-    func resolve() -> _Value {
-        switch self {
-        case .array(let array):
-            return .array(array.map { $0.resolve() })
-        case .dictionary(let dictionary):
-            return .dictionary(dictionary.mapValues { $0.resolve() })
-        case .null:
-            return .null
-        case .container(let container):
-            return container.data.resolve()
-        case .encodable(let encodable):
-            return .encodable(encodable)
+    struct _Wrapper: Encodable {
+        let encodable: Encodable
+        init(_ encodable: Encodable) {
+            self.encodable = encodable
+        }
+        func encode(to encoder: Encoder) throws {
+            try self.encodable.encode(to: encoder)
         }
     }
 }

@@ -24,7 +24,14 @@ public final class PostgresDataDecoder {
         }
     }
 
-    private final class _Decoder: Decoder {
+    enum _Error: Error {
+        case keyedElement
+        case unkeyedArray
+        case arrayElementJSON
+        case nesting
+    }
+
+    final class _Decoder: Decoder {
         var codingPath: [CodingKey] {
             return []
         }
@@ -42,50 +49,98 @@ public final class PostgresDataDecoder {
         }
 
         func unkeyedContainer() throws -> UnkeyedDecodingContainer {
-            try self.jsonDecoder().unkeyedContainer()
+            print(self.data.type)
+            guard let data = self.data.array else {
+                throw _Error.unkeyedArray
+            }
+            return _UnkeyedDecoder(data: data, json: self.json)
         }
 
         func container<Key>(
             keyedBy type: Key.Type
         ) throws -> KeyedDecodingContainer<Key> where Key : CodingKey {
-            try self.jsonDecoder().container(keyedBy: Key.self)
-        }
-
-        func jsonDecoder() throws -> Decoder {
-            guard let buffer = self.data.value else {
-                throw DecodingError.valueNotFound(Any.self, .init(
-                    codingPath: self.codingPath,
-                    debugDescription: "Cannot decode JSON from nil value"
-                ))
+            guard self.data.type == .jsonb else {
+                throw _Error.arrayElementJSON
             }
-            let unwrapper = try self.json
-                .decode(DecoderUnwrapper.self, from: Data(buffer.readableBytesView))
-            return unwrapper.decoder
+            guard let json = self.data.jsonb else {
+                throw _Error.arrayElementJSON
+            }
+            return try self.json
+                .decode(DecoderUnwrapper.self, from: json)
+                .decoder.container(keyedBy: Key.self)
         }
 
         func singleValueContainer() throws -> SingleValueDecodingContainer {
-            return _SingleValueDecoder(self)
+            _ValueDecoder(data: self.data, json: self.json)
         }
     }
 
-    private struct _SingleValueDecoder: SingleValueDecodingContainer {
-        var codingPath: [CodingKey] {
-            return self.decoder.codingPath
+    struct _UnkeyedDecoder: UnkeyedDecodingContainer {
+        var count: Int? {
+            self.data.count
         }
-        let decoder: _Decoder
-        init(_ decoder: _Decoder) {
-            self.decoder = decoder
+
+        var isAtEnd: Bool {
+            self.currentIndex == self.data.count
+        }
+        var currentIndex: Int = 0
+
+        let data: [PostgresData]
+        let json: JSONDecoder
+        var codingPath: [CodingKey] {
+            []
+        }
+
+        mutating func decodeNil() throws -> Bool {
+            defer { self.currentIndex += 1 }
+            return self.data[self.currentIndex].value == nil
+        }
+
+        mutating func decode<T>(_ type: T.Type) throws -> T where T : Decodable {
+            defer { self.currentIndex += 1 }
+            let data = self.data[self.currentIndex]
+            guard data.type == .jsonb else {
+                throw _Error.arrayElementJSON
+            }
+            guard let json = data.jsonb else {
+                throw _Error.arrayElementJSON
+            }
+            return try self.json.decode(T.self, from: json)
+        }
+
+        mutating func nestedContainer<NestedKey>(
+            keyedBy type: NestedKey.Type
+        ) throws -> KeyedDecodingContainer<NestedKey>
+            where NestedKey : CodingKey
+        {
+            throw _Error.nesting
+        }
+
+        mutating func nestedUnkeyedContainer() throws -> UnkeyedDecodingContainer {
+            throw _Error.nesting
+        }
+
+        mutating func superDecoder() throws -> Decoder {
+            throw _Error.nesting
+        }
+    }
+
+    struct _ValueDecoder: SingleValueDecodingContainer {
+        let data: PostgresData
+        let json: JSONDecoder
+        var codingPath: [CodingKey] {
+            []
         }
 
         func decodeNil() -> Bool {
-            return self.decoder.data.value == nil
+            return self.data.value == nil
         }
 
         func decode<T>(_ type: T.Type) throws -> T where T : Decodable {
             if let convertible = T.self as? PostgresDataConvertible.Type {
-                return convertible.init(postgresData: self.decoder.data)! as! T
+                return convertible.init(postgresData: self.data)! as! T
             } else {
-                return try T.init(from: self.decoder)
+                return try T.init(from: _Decoder(data: self.data, json: self.json))
             }
         }
     }
