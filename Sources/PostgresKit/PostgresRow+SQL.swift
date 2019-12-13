@@ -12,12 +12,13 @@ private struct _PostgreSQLRow: SQLRow {
         case missingColumn(String)
     }
 
-    var columns: [String] {
-        self.row.columns
+    var allColumns: [String] {
+        self.row.rowDescription.fields.map { $0.name }
     }
 
     func contains(column: String) -> Bool {
-        self.row.contains(column: column)
+        self.row.rowDescription.fields
+            .contains { $0.name == column }
     }
 
     func decodeNil(column: String) throws -> Bool {
