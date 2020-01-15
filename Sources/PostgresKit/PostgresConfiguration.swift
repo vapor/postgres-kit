@@ -13,7 +13,7 @@ public struct PostgresConfiguration {
     internal var _hostname: String?
     
     public init?(url: URL) {
-        guard url.scheme == "postgres" else {
+        guard url.scheme?.hasPrefix("postgres") == true else {
             return nil
         }
         guard let username = url.user else {
@@ -30,8 +30,8 @@ public struct PostgresConfiguration {
         }
         
         let tlsConfiguration: TLSConfiguration?
-        if url.query == "ssl=true" {
-            tlsConfiguration = TLSConfiguration.forClient(certificateVerification: .none)
+        if url.query?.contains("ssl=true") == true || url.query?.contains("sslmode=require") == true {
+            tlsConfiguration = TLSConfiguration.forClient()
         } else {
             tlsConfiguration = nil
         }
