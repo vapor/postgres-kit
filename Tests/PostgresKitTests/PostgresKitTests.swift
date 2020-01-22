@@ -30,40 +30,6 @@ class PostgresKitTests: XCTestCase {
             }
         }
     }
-
-    func testCreateEnumWithBuilder() throws {
-        let conn = try PostgresConnection.test(on: self.eventLoop).wait()
-        defer { try! conn.close().wait() }
-        let db = conn.sql()
-
-        try db.create(enum: "meal", cases: "breakfast", "lunch", "dinner").run().wait()
-        try db.raw("DROP TYPE meal;").run().wait()
-
-        try db.create(enum: SQLIdentifier("meal"), cases: "breakfast", "lunch", "dinner").run().wait()
-        try db.raw("DROP TYPE meal;").run().wait()
-    }
-
-    func testDropEnumWithBuilder() throws {
-        let conn = try PostgresConnection.test(on: self.eventLoop).wait()
-        defer { try! conn.close().wait() }
-        let db = conn.sql()
-
-        // these two should work even if the type does not exist
-        try db.drop(type: "meal").ifExists().run().wait()
-        try db.drop(type: "meal").ifExists().cascade().run().wait()
-
-        try db.create(enum: "meal", cases: "breakfast", "lunch", "dinner").run().wait()
-        try db.drop(type: "meal").ifExists().cascade().run().wait()
-
-        try db.create(enum: "meal", cases: "breakfast", "lunch", "dinner").run().wait()
-        try db.drop(type: "meal").run().wait()
-
-        try db.create(enum: "meal", cases: "breakfast", "lunch", "dinner").run().wait()
-        try db.drop(type: SQLIdentifier("meal")).run().wait()
-
-        try db.create(enum: "meal", cases: "breakfast", "lunch", "dinner").run().wait()
-        try db.drop(type: "meal").cascade().run().wait()
-    }
     
     func testLeak() throws {
         struct Foo: Codable {
@@ -158,17 +124,44 @@ class PostgresKitTests: XCTestCase {
         XCTAssertEqual(test.baz, "baz")
     }
       
-    private var eventLoopGroup: EventLoopGroup!
-    private var eventLoop: EventLoop {
-        return self.eventLoopGroup.next()
+    func testEnum() throws {
+        try self.benchmark.testEnum()
     }
-    
+
+    var db: SQLDatabase {
+        self.connection.sql()
+    }
+    var benchmark: SQLBenchmarker {
+        .init(on: self.db)
+    }
+    var eventLoop: EventLoop {
+        self.eventLoopGroup.next()
+    }
+
+    var eventLoopGroup: EventLoopGroup!
+    var connection: PostgresConnection!
+
     override func setUp() {
-        self.eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+        XCTAssertTrue(isLoggingConfigured)
+        self.eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 2)
+        self.connection = try! PostgresConnection.test(
+            on: self.eventLoopGroup.next()
+        ).wait()
     }
-    
+
     override func tearDown() {
-        XCTAssertNoThrow(try self.eventLoopGroup.syncShutdownGracefully())
+        try! self.connection.close().wait()
+        self.connection = nil
+        try! self.eventLoopGroup.syncShutdownGracefully()
         self.eventLoopGroup = nil
     }
 }
+
+let isLoggingConfigured: Bool = {
+    LoggingSystem.bootstrap { label in
+        var handler = StreamLogHandler.standardOutput(label: label)
+        handler.logLevel = .debug
+        return handler
+    }
+    return true
+}()
