@@ -24,11 +24,18 @@ public final class PostgresDataDecoder {
         }
     }
 
-    enum _Error: Error {
-        case keyedElement
-        case unkeyedArray
-        case arrayElementJSON
-        case nesting
+    enum Error: Swift.Error, CustomStringConvertible {
+        case unexpectedDataType(PostgresDataType, expected: String)
+        case nestingNotSupported
+
+        var description: String {
+            switch self {
+            case .unexpectedDataType(let type, let expected):
+                return "Unexpected data type: \(type). Expected \(expected)."
+            case .nestingNotSupported:
+                return "Decoding nested containers is not supported."
+            }
+        }
     }
 
     final class _Decoder: Decoder {
@@ -51,7 +58,7 @@ public final class PostgresDataDecoder {
         func unkeyedContainer() throws -> UnkeyedDecodingContainer {
             print(self.data.type)
             guard let data = self.data.array else {
-                throw _Error.unkeyedArray
+                throw Error.unexpectedDataType(self.data.type, expected: "array")
             }
             return _UnkeyedDecoder(data: data, json: self.json)
         }
@@ -59,14 +66,16 @@ public final class PostgresDataDecoder {
         func container<Key>(
             keyedBy type: Key.Type
         ) throws -> KeyedDecodingContainer<Key> where Key : CodingKey {
-            guard self.data.type == .jsonb else {
-                throw _Error.arrayElementJSON
-            }
-            guard let json = self.data.jsonb else {
-                throw _Error.arrayElementJSON
+            let data: Data
+            if let jsonb = self.data.jsonb {
+                data = jsonb
+            } else if let json = self.data.json {
+                data = json
+            } else {
+                throw Error.unexpectedDataType(self.data.type, expected: "json")
             }
             return try self.json
-                .decode(DecoderUnwrapper.self, from: json)
+                .decode(DecoderUnwrapper.self, from: data)
                 .decoder.container(keyedBy: Key.self)
         }
 
@@ -99,13 +108,15 @@ public final class PostgresDataDecoder {
         mutating func decode<T>(_ type: T.Type) throws -> T where T : Decodable {
             defer { self.currentIndex += 1 }
             let data = self.data[self.currentIndex]
-            guard data.type == .jsonb else {
-                throw _Error.arrayElementJSON
+            let jsonData: Data
+            if let jsonb = data.jsonb {
+                jsonData = jsonb
+            } else if let json = data.json {
+                jsonData = json
+            } else {
+                throw Error.unexpectedDataType(data.type, expected: "json")
             }
-            guard let json = data.jsonb else {
-                throw _Error.arrayElementJSON
-            }
-            return try self.json.decode(T.self, from: json)
+            return try self.json.decode(T.self, from: jsonData)
         }
 
         mutating func nestedContainer<NestedKey>(
@@ -113,15 +124,15 @@ public final class PostgresDataDecoder {
         ) throws -> KeyedDecodingContainer<NestedKey>
             where NestedKey : CodingKey
         {
-            throw _Error.nesting
+            throw Error.nestingNotSupported
         }
 
         mutating func nestedUnkeyedContainer() throws -> UnkeyedDecodingContainer {
-            throw _Error.nesting
+            throw Error.nestingNotSupported
         }
 
         mutating func superDecoder() throws -> Decoder {
-            throw _Error.nesting
+            throw Error.nestingNotSupported
         }
     }
 
