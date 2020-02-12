@@ -45,6 +45,26 @@ public struct PostgresConfiguration {
             tlsConfiguration: tlsConfiguration
         )
     }
+
+    public init(
+        unixDomainSocketPath: String,
+        username: String,
+        password: String,
+        database: String,
+        encoder: PostgresDataEncoder = PostgresDataEncoder(),
+        decoder: PostgresDataDecoder = PostgresDataDecoder()
+    ) {
+        self.address = {
+            return try SocketAddress.init(unixDomainSocketPath: unixDomainSocketPath)
+        }
+        self.username = username
+        self.password = password
+        self.database = database
+        self.tlsConfiguration = nil
+        self._hostname = nil
+        self.encoder = encoder
+        self.decoder = decoder
+    }
     
     public init(
         hostname: String,
