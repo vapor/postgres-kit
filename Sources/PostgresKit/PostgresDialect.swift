@@ -35,7 +35,9 @@ public struct PostgresDialect: SQLDialect {
     }
 
     public var triggerSyntax: SQLTriggerSyntax {
-        return .init(create: [.supportsForEach, .postgreSQLChecks, .supportsCondition, .conditionRequiresParentheses, .supportsConstraints],
-                     drop: [.supportsCascade, .supportsTableName])
+        return .init(
+            create: [.supportsForEach, .postgreSQLChecks, .supportsCondition, .conditionRequiresParentheses, .supportsConstraints],
+            drop: [.supportsCascade, .supportsTableName]
+        )
     }
 }
