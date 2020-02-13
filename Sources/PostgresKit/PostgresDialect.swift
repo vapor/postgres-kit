@@ -9,10 +9,6 @@ public struct PostgresDialect: SQLDialect {
         return SQLRaw("\"")
     }
 
-    public var literalStringQuote: SQLExpression {
-        return SQLRaw("'")
-    }
-
     public func bindPlaceholder(at position: Int) -> SQLExpression {
         return SQLRaw("$" + position.description)
     }
@@ -36,5 +32,12 @@ public struct PostgresDialect: SQLDialect {
 
     public var enumSyntax: SQLEnumSyntax {
         .typeName
+    }
+
+    public var triggerSyntax: SQLTriggerSyntax {
+        return .init(
+            create: [.supportsForEach, .postgreSQLChecks, .supportsCondition, .conditionRequiresParentheses, .supportsConstraints],
+            drop: [.supportsCascade, .supportsTableName]
+        )
     }
 }
