@@ -107,13 +107,7 @@ public final class PostgresDataDecoder {
         mutating func decode<T>(_ type: T.Type) throws -> T where T : Decodable {
             defer { self.currentIndex += 1 }
             let data = self.data[self.currentIndex]
-            if let jsonb = data.jsonb {
-                return try self.json.decode(T.self, from: jsonb)
-            } else if let json = data.json {
-                return try self.json.decode(T.self, from: json)
-            } else {
-                return try PostgresDataDecoder().decode(T.self, from: data)
-            }
+            return try PostgresDataDecoder(json: self.json).decode(T.self, from: data)
         }
 
         mutating func nestedContainer<NestedKey>(

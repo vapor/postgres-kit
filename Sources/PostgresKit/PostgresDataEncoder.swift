@@ -8,8 +8,8 @@ public final class PostgresDataEncoder {
     }
 
     public func encode(_ value: Encodable) throws -> PostgresData {
-        if let custom = value as? PostgresDataConvertible {
-            return custom.postgresData!
+        if let custom = value as? PostgresDataConvertible, let data = custom.postgresData {
+            return data
         } else {
             let context = _Context()
             try value.encode(to: _Encoder(context: context))
