@@ -56,7 +56,6 @@ public final class PostgresDataDecoder {
         }
 
         func unkeyedContainer() throws -> UnkeyedDecodingContainer {
-            print(self.data.type)
             guard let data = self.data.array else {
                 throw Error.unexpectedDataType(self.data.type, expected: "array")
             }
@@ -108,15 +107,7 @@ public final class PostgresDataDecoder {
         mutating func decode<T>(_ type: T.Type) throws -> T where T : Decodable {
             defer { self.currentIndex += 1 }
             let data = self.data[self.currentIndex]
-            let jsonData: Data
-            if let jsonb = data.jsonb {
-                jsonData = jsonb
-            } else if let json = data.json {
-                jsonData = json
-            } else {
-                throw Error.unexpectedDataType(data.type, expected: "json")
-            }
-            return try self.json.decode(T.self, from: jsonData)
+            return try PostgresDataDecoder(json: self.json).decode(T.self, from: data)
         }
 
         mutating func nestedContainer<NestedKey>(

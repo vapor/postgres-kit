@@ -8,15 +8,17 @@ public final class PostgresDataEncoder {
     }
 
     public func encode(_ value: Encodable) throws -> PostgresData {
-        if let custom = value as? PostgresDataConvertible {
-            return custom.postgresData!
+        if let custom = value as? PostgresDataConvertible, let data = custom.postgresData {
+            return data
         } else {
             let context = _Context()
             try value.encode(to: _Encoder(context: context))
             if let value = context.value {
                 return value
             } else if let array = context.array {
-                return PostgresData(array: array, elementType: .jsonb)
+                let elementType = array.first?.type ?? .jsonb
+                assert(array.filter { $0.type != elementType }.isEmpty, "Array does not contain all: \(elementType)")
+                return PostgresData(array: array, elementType: elementType)
             } else {
                 return try PostgresData(jsonb: self.json.encode(_Wrapper(value)))
             }
