@@ -40,4 +40,11 @@ public struct PostgresDialect: SQLDialect {
             drop: [.supportsCascade, .supportsTableName]
         )
     }
+
+    public var alterTableSyntax: SQLAlterTableSyntax {
+        .init(
+            alterColumnDefinitionClause: SQLRaw("ALTER COLUMN"),
+            alterColumnDefinitionTypeKeyword: SQLRaw("SET DATA TYPE")
+        )
+    }
 }
