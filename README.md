@@ -1,8 +1,8 @@
 <p align="center">
     <img 
         src="https://user-images.githubusercontent.com/1342803/59063319-d190f500-8875-11e9-8fe6-16197dd56d0f.png" 
-        height="64"
-        alt="PostgresKit"
+        height="64" 
+        alt="PostgresKit" 
     >
     <br>
     <br>
