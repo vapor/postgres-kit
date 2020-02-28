@@ -2,9 +2,9 @@ name: test
 on:
 - pull_request
 jobs:
-  xenial:
+  postgres-kit_xenial:
     container: 
-      image: vapor/swift:5.1-xenial
+      image: vapor/swift:5.2-xenial
     services:
       psql:
         image: postgres
@@ -18,9 +18,9 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - run: swift test --enable-test-discovery --sanitize=thread
-  bionic:
+  postgres-kit_bionic:
     container: 
-      image: vapor/swift:5.1-bionic
+      image: vapor/swift:5.2-bionic
     services:
       psql:
         image: postgres
@@ -34,7 +34,7 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - run: swift test --enable-test-discovery --sanitize=thread
-  fluent:
+  fluent-postgres-driver:
     container: 
       image: vapor/swift:5.2
     services:
