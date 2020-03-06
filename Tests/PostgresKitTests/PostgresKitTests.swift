@@ -123,6 +123,21 @@ class PostgresKitTests: XCTestCase {
         XCTAssertEqual(test.bar, nil)
         XCTAssertEqual(test.baz, "baz")
     }
+
+    func testEventLoopGroupSQL() throws {
+        let source = PostgresConnectionSource(configuration: .init(
+            hostname: hostname,
+            username: "vapor_username",
+            password: "vapor_password",
+            database: "vapor_database"
+        ))
+        let pool = EventLoopGroupConnectionPool(source: source, on: self.eventLoopGroup)
+        defer { pool.shutdown() }
+        let db = pool.database(logger: .init(label: "test")).sql()
+
+        let rows = try db.raw("SELECT version();").all().wait()
+        print(rows)
+    }
       
     func testEnum() throws {
         try self.benchmark.testEnum()
