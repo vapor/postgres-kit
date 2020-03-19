@@ -35,6 +35,8 @@ public final class PostgresDataDecoder {
                 return "Unexpected data type: \(type). Expected \(expected)."
             case .nestingNotSupported:
                 return "Decoding nested containers is not supported."
+            case .valueNotFound:
+                return "Value not found"
             }
         }
     }
