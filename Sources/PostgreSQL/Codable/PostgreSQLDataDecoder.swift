@@ -31,16 +31,17 @@ struct PostgreSQLDataDecoder {
         
         func container<Key>(keyedBy type: Key.Type) throws -> KeyedDecodingContainer<Key> where Key : CodingKey {
             let json: Data
-            switch data.type {
-            case .jsonb, .json:
-                switch data.storage {
-                case .binary(let data):
-                    assert(data[data.startIndex] == 0x01, "invalid JSONB data format")
-                    json = data.advanced(by: 1)
-                case .text(let string): json = Data(string.utf8)
-                default: throw PostgreSQLError.decode(JSON.self, from: data)
-                }
-            default: throw PostgreSQLError.decode(JSON.self, from: data)
+            switch (data.type, data.storage) {
+            case (.jsonb, .binary(let data)):
+                assert(data[data.startIndex] == 0x01, "invalid JSONB data format")
+                json = data.advanced(by: 1)
+            case (.json, .binary(let data)):
+                json = data
+            case (.jsonb, .text(let string)),
+                 (.json, .text(let string)):
+                json = Data(string.utf8)    
+            default:
+                throw PostgreSQLError.decode(JSON.self, from: data)
             }
             let unwrapper = try JSONDecoder().decode(DecoderUnwrapper.self, from: json)
             return try unwrapper.decoder.container(keyedBy: Key.self)
