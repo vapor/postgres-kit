@@ -47,4 +47,8 @@ public struct PostgresDialect: SQLDialect {
             alterColumnDefinitionTypeKeyword: SQLRaw("SET DATA TYPE")
         )
     }
+    
+    public func normalizeSQLConstraint(identifier: SQLExpression) -> SQLExpression {
+        return SQLHashedExpression(identifier)
+    }
 }
