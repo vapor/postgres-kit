@@ -22,3 +22,39 @@
         <img src="http://img.shields.io/badge/swift-5.2-brightgreen.svg" alt="Swift 5.2">
     </a>
 </p>
+
+---
+
+```swift
+import Vapor
+import PostgresKit
+
+var env = try Environment.detect()
+try LoggingSystem.bootstrap(from: &env)
+let app = Application(env)
+defer { app.shutdown() }
+
+let postgres = PostgresConnectionSource(configuration: .init(
+    hostname: "localhost",
+    username: "vapor_username",
+    password: "vapor_password",
+    database: "vapor_database"
+))
+
+let pools = EventLoopGroupConnectionPool(source: postgres, on: app.eventLoopGroup)
+defer { pools.shutdown() }
+
+app.get("version") { req -> EventLoopFuture<String> in
+    pools.pool(for: req.eventLoop)
+        .database(logger: req.logger)
+        .sql()
+        .raw("SELECT version()")
+        .all()
+        .map
+    {
+        $0.description
+    }
+}
+
+try app.run()
+```
