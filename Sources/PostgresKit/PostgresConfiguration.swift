@@ -25,9 +25,7 @@ public struct PostgresConfiguration {
         guard let hostname = url.host else {
             return nil
         }
-        guard let port = url.port else {
-            return nil
-        }
+        let port = url.port ?? 5432
         
         let tlsConfiguration: TLSConfiguration?
         if url.query?.contains("ssl=true") == true || url.query?.contains("sslmode=require") == true {
