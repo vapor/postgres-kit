@@ -26,7 +26,7 @@ The table below shows a list of PostgresKit major releases alongside their compa
 
 |Version|NIO|Swift|SPM|
 |-|-|-|-|
-|2.0|2.0+|5.2+|`from: "2.0.0"`|
+|2.0|2.0|5.2+|`from: "2.0.0"`|
 |1.0|1.0|4.0+|`from: "1.0.0"`|
 
 Use the SPM string to easily include the dependendency in your `Package.swift` file.
@@ -51,6 +51,8 @@ PostgresKit is a PostgreSQL client library built on [SQLKit](https://github.com/
 Database connection options and credentials are specified using a `PostgresConfiguration` struct. 
 
 ```swift
+import PostgresKit
+
 let configuration = PostgresConfiguration(
     hostname: "localhost",
     username: "vapor_username",
