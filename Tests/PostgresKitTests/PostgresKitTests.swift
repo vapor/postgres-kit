@@ -145,6 +145,19 @@ class PostgresKitTests: XCTestCase {
         let rows = try db.raw("SELECT version();").all().wait()
         print(rows)
     }
+
+    func testArrayEncoding_json() throws {
+        _ = try self.connection.query("DROP TABLE IF EXISTS foo").wait()
+        _ = try self.connection.query("CREATE TABLE foo (bar integer[] not null)").wait()
+        defer {
+            _ = try! self.connection.query("DROP TABLE foo").wait()
+        }
+        _ = try self.connection.query("INSERT INTO foo (bar) VALUES ($1)", [
+            PostgresDataEncoder().encode([Bar]())
+        ]).wait()
+        let rows = try self.connection.query("SELECT * FROM foo").wait()
+        print(rows)
+    }
       
     func testEnum() throws {
         try self.benchmark.testEnum()
@@ -178,6 +191,11 @@ class PostgresKitTests: XCTestCase {
         self.eventLoopGroup = nil
     }
 }
+
+enum Bar: Int, Codable {
+    case one, two
+}
+extension Bar: PostgresDataConvertible { }
 
 let isLoggingConfigured: Bool = {
     LoggingSystem.bootstrap { label in
