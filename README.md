@@ -88,8 +88,10 @@ Once you have a `PostgresConfiguration`, you can use it to create a connection s
 let eventLoopGroup: EventLoopGroup = ...
 defer { try! eventLoopGroup.syncShutdown() }
 
-let postgres = PostgresConnectionSource(configuration: configuration)
-let pools = EventLoopGroupConnectionPool(source: postgres, on: eventLoopGroup)
+let pools = EventLoopGroupConnectionPool(
+    source: PostgresConnectionSource(configuration: configuration), 
+    on: eventLoopGroup
+)
 defer { pools.shutdown() }
 ```
 
@@ -111,8 +113,8 @@ let pool = pools.pool(for: eventLoop)
 This returns an `EventLoopConnectionPool` which can be used to create an instance of `PostgresDatabase`.
 
 ```swift
-let db = pool.database(logger: ...)
-let rows = try db.simpleQuery("SELECT version();").wait()
+let postgres = pool.database(logger: ...)
+let rows = try postgres.simpleQuery("SELECT version();").wait()
 ```
 
 Visit [PostgresNIO's docs](https://github.com/vapor/postgres-nio) for more information on using `PostgresDatabase`.
@@ -122,7 +124,7 @@ Visit [PostgresNIO's docs](https://github.com/vapor/postgres-nio) for more infor
 A `PostgresDatabase` can be used to create an instance of `SQLDatabase`.
 
 ```swift
-let sql = db.sql()
+let sql = postgres.sql()
 let planets = try sql.select().column("*").from("planets").all().wait()
 ```
 
