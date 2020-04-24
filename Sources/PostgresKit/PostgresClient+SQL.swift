@@ -11,6 +11,8 @@ extension PostgresDatabase {
     }
 }
 
+// MARK: Private
+
 private struct _PostgresSQLDatabase {
     let database: PostgresDatabase
     let encoder: PostgresDataEncoder

@@ -1,6 +1,6 @@
 import SQLKit
 
-/// PostgreSQL specific `SQLDataType`.
+/// Postgres-specific column types.
 public struct PostgresColumnType: SQLExpression, Equatable {
     public static var blob: PostgresColumnType {
         return .varbit

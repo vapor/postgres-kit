@@ -1,12 +1,5 @@
 import Foundation
 
-struct DecoderUnwrapper: Decodable {
-    let decoder: Decoder
-    init(from decoder: Decoder) {
-        self.decoder = decoder
-    }
-}
-
 public final class PostgresDataDecoder {
     public let jsonDecoder: JSONDecoder
 
@@ -145,5 +138,12 @@ public final class PostgresDataDecoder {
                 return try T.init(from: _Decoder(data: self.data, json: self.json))
             }
         }
+    }
+}
+
+struct DecoderUnwrapper: Decodable {
+    let decoder: Decoder
+    init(from decoder: Decoder) {
+        self.decoder = decoder
     }
 }

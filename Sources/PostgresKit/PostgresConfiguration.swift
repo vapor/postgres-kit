@@ -11,6 +11,14 @@ public struct PostgresConfiguration {
     public let decoder: PostgresDataDecoder
 
     internal var _hostname: String?
+
+
+    public init?(url: String) {
+        guard let url = URL(string: url) else {
+            return nil
+        }
+        self.init(url: url)
+    }
     
     public init?(url: URL) {
         guard url.scheme?.hasPrefix("postgres") == true else {
