@@ -97,14 +97,12 @@ defer { pools.shutdown() }
 
 First create a `PostgresConnectionSource` using the configuration struct. This type is responsible for creating new connections to your database server as needed.
 
-Next, use the connection source to create an `EventLoopGroupConnectionPool`. You will also need to pass an `EventLoopGroup`. For more information on creating an `EventLoopGroup`, visit SwiftNIO's [documentation](https://apple.github.io/swift-nio/docs/current/NIO/index.html). 
-
-Finally, make sure to shutdown the connection pool before it deinitializes. 
+Next, use the connection source to create an `EventLoopGroupConnectionPool`. You will also need to pass an `EventLoopGroup`. For more information on creating an `EventLoopGroup`, visit SwiftNIO's [documentation](https://apple.github.io/swift-nio/docs/current/NIO/index.html). Make sure to shutdown the connection pool before it deinitializes. 
 
 `EventLoopGroupConnectionPool` is a collection of pools for each event loop. To get a pool for a specific event loop, use `pool(for:)`.
 
 ```swift
-let eventLoop: EventLoop
+let eventLoop: EventLoop = ...
 let pool = pools.pool(for: eventLoop)
 ```
 
