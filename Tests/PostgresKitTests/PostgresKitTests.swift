@@ -125,12 +125,14 @@ class PostgresKitTests: XCTestCase {
     }
 
     func testEventLoopGroupSQL() throws {
-        let source = PostgresConnectionSource(configuration: .init(
+        var configuration = PostgresConfiguration(
             hostname: hostname,
             username: "vapor_username",
             password: "vapor_password",
             database: "vapor_database"
-        ))
+        )
+        configuration.searchPath = ["public"]
+        let source = PostgresConnectionSource(configuration: configuration)
         let pool = EventLoopGroupConnectionPool(source: source, on: self.eventLoopGroup)
         defer { pool.shutdown() }
         let db = pool.database(logger: .init(label: "test")).sql()

@@ -26,7 +26,14 @@ public struct PostgresConnectionSource: ConnectionPoolSource {
                 database: self.configuration.database,
                 password: self.configuration.password,
                 logger: logger
-            ).flatMapErrorThrowing { error in
+            ).flatMap {
+                if let searchPath = self.configuration.searchPath?.joined(separator: ", ") {
+                    return conn.simpleQuery("SET search_path = \(searchPath)")
+                        .map { _ in }
+                } else {
+                    return eventLoop.makeSucceededFuture(())
+                }
+            }.flatMapErrorThrowing { error in
                 _ = conn.close()
                 throw error
             }.map { conn }
