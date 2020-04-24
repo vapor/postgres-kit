@@ -27,8 +27,9 @@ public struct PostgresConnectionSource: ConnectionPoolSource {
                 password: self.configuration.password,
                 logger: logger
             ).flatMap {
-                if let searchPath = self.configuration.searchPath?.joined(separator: ", ") {
-                    return conn.simpleQuery("SET search_path = \(searchPath)")
+                if let searchPath = self.configuration.searchPath {
+                    let string = searchPath.map { "\"" + $0 + "\"" }.joined(separator: ", ")
+                    return conn.simpleQuery("SET search_path = \(string)")
                         .map { _ in }
                 } else {
                     return eventLoop.makeSucceededFuture(())

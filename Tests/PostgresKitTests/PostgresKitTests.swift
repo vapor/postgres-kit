@@ -131,7 +131,7 @@ class PostgresKitTests: XCTestCase {
             password: "vapor_password",
             database: "vapor_database"
         )
-        configuration.searchPath = ["public"]
+        configuration.searchPath = ["foo", "bar", "baz"]
         let source = PostgresConnectionSource(configuration: configuration)
         let pool = EventLoopGroupConnectionPool(source: source, on: self.eventLoopGroup)
         defer { pool.shutdown() }
