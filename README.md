@@ -99,7 +99,7 @@ First create a `PostgresConnectionSource` using the configuration struct. This t
 
 Next, use the connection source to create an `EventLoopGroupConnectionPool`. You will also need to pass an `EventLoopGroup`. For more information on creating an `EventLoopGroup`, visit SwiftNIO's [documentation](https://apple.github.io/swift-nio/docs/current/NIO/index.html). Make sure to shutdown the connection pool before it deinitializes. 
 
-`EventLoopGroupConnectionPool` is a collection of pools for each event loop. To get a pool for a specific event loop, use `pool(for:)`.
+`EventLoopGroupConnectionPool` is a collection of pools for each event loop. To get a pool for a specific event loop, use `pool(for:)`. This returns an `EventLoopConnectionPool`.
 
 ```swift
 let eventLoop: EventLoop = ...
@@ -108,10 +108,10 @@ let pool = pools.pool(for: eventLoop)
 
 ### PostgresDatabase
 
-This returns an `EventLoopConnectionPool` which can be used to create an instance of `PostgresDatabase`.
+Both `EventLoopGroupConnectionPool` and `EventLoopConnectionPool` can be used to create instances of `PostgresDatabase`.
 
 ```swift
-let postgres = pool.database(logger: ...)
+let postgres = pool.database(logger: ...) // PostgresDatabase
 let rows = try postgres.simpleQuery("SELECT version();").wait()
 ```
 
@@ -122,7 +122,7 @@ Visit [PostgresNIO's docs](https://github.com/vapor/postgres-nio) for more infor
 A `PostgresDatabase` can be used to create an instance of `SQLDatabase`.
 
 ```swift
-let sql = postgres.sql()
+let sql = postgres.sql() // SQLDatabase
 let planets = try sql.select().column("*").from("planets").all().wait()
 ```
 
