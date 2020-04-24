@@ -18,6 +18,7 @@ public struct PostgresConnectionSource: ConnectionPoolSource {
         return PostgresConnection.connect(
             to: address,
             tlsConfiguration: self.configuration.tlsConfiguration,
+            serverHostname: self.configuration._hostname,
             logger: .init(label: "codes.vapor.postgres"),
             on: eventLoop
         ).flatMap { conn in
