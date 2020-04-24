@@ -138,4 +138,4 @@ let sql = postgres.sql() // SQLDatabase
 let planets = try sql.select().column("*").from("planets").all().wait()
 ```
 
-Visit `[SQLKit's docs](https://github.com/vapor/sql-kit) for more information on using `SQLDatabase`. 
+Visit [SQLKit's docs](https://github.com/vapor/sql-kit) for more information on using `SQLDatabase`. 
