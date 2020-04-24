@@ -105,6 +105,7 @@ Next, use the connection source to create an `EventLoopGroupConnectionPool`. You
 pools.withConnection { conn 
     print(conn) // PostgresConnection on randomly chosen event loop
 }
+```
 
 To get a pool for a specific event loop, use `pool(for:)`. This returns an `EventLoopConnectionPool`. 
 
