@@ -21,4 +21,11 @@ services:
   psql-ssl:
     <<: *common
     image: scenecheck/postgres-ssl:latest
+  cockroach:
+    <<: *common
+    image: cockroachdb/cockroach:latest
+    command: start --insecure
+    ports:
+      - "5432:26257"
+      - "8080:8080"
 

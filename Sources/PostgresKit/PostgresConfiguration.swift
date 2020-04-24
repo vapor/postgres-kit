@@ -3,7 +3,7 @@
 public struct PostgresConfiguration {
     public var address: () throws -> SocketAddress
     public var username: String
-    public var password: String
+    public var password: String?
     public var database: String?
     public var tlsConfiguration: TLSConfiguration?
 
@@ -27,9 +27,7 @@ public struct PostgresConfiguration {
         guard let username = url.user else {
             return nil
         }
-        guard let password = url.password else {
-            return nil
-        }
+        let password = url.password
         guard let hostname = url.host else {
             return nil
         }
@@ -57,8 +55,8 @@ public struct PostgresConfiguration {
     public init(
         unixDomainSocketPath: String,
         username: String,
-        password: String,
-        database: String
+        password: String? = nil,
+        database: String? = nil
     ) {
         self.address = {
             return try SocketAddress.init(unixDomainSocketPath: unixDomainSocketPath)
@@ -74,7 +72,7 @@ public struct PostgresConfiguration {
         hostname: String,
         port: Int = 5432,
         username: String,
-        password: String,
+        password: String? = nil,
         database: String? = nil,
         tlsConfiguration: TLSConfiguration? = nil
     ) {
