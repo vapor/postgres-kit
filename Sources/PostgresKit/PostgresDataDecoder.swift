@@ -145,6 +145,7 @@ public final class PostgresDataDecoder {
                         debugDescription: "Could not convert to \(T.self): \(data)"
                     ))
                 }
+                return value as! T
             } else {
                 return try T.init(from: _Decoder(data: self.data, json: self.json))
             }
