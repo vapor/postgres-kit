@@ -1,4 +1,4 @@
-@_exported import Foundation
+@_exported import struct Foundation.URL
 
 public struct PostgresConfiguration {
     public var address: () throws -> SocketAddress
