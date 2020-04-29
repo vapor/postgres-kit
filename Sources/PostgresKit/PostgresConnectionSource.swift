@@ -18,6 +18,7 @@ public struct PostgresConnectionSource: ConnectionPoolSource {
         return PostgresConnection.connect(
             to: address,
             tlsConfiguration: self.configuration.tlsConfiguration,
+            serverHostname: self.configuration._hostname,
             logger: .init(label: "codes.vapor.postgres"),
             on: eventLoop
         ).flatMap { conn in
@@ -26,7 +27,15 @@ public struct PostgresConnectionSource: ConnectionPoolSource {
                 database: self.configuration.database,
                 password: self.configuration.password,
                 logger: logger
-            ).flatMapErrorThrowing { error in
+            ).flatMap {
+                if let searchPath = self.configuration.searchPath {
+                    let string = searchPath.map { "\"" + $0 + "\"" }.joined(separator: ", ")
+                    return conn.simpleQuery("SET search_path = \(string)")
+                        .map { _ in }
+                } else {
+                    return eventLoop.makeSucceededFuture(())
+                }
+            }.flatMapErrorThrowing { error in
                 _ = conn.close()
                 throw error
             }.map { conn }

@@ -1,16 +1,24 @@
-@_exported import Foundation
+@_exported import struct Foundation.URL
 
 public struct PostgresConfiguration {
-    public let address: () throws -> SocketAddress
-    public let username: String
-    public let password: String
-    public let database: String?
-    public let tlsConfiguration: TLSConfiguration?
+    public var address: () throws -> SocketAddress
+    public var username: String
+    public var password: String?
+    public var database: String?
+    public var tlsConfiguration: TLSConfiguration?
 
-    public let encoder: PostgresDataEncoder
-    public let decoder: PostgresDataDecoder
+    /// Optional `search_path` to set on new connections.
+    public var searchPath: [String]?
 
     internal var _hostname: String?
+
+
+    public init?(url: String) {
+        guard let url = URL(string: url) else {
+            return nil
+        }
+        self.init(url: url)
+    }
     
     public init?(url: URL) {
         guard url.scheme?.hasPrefix("postgres") == true else {
@@ -19,9 +27,7 @@ public struct PostgresConfiguration {
         guard let username = url.user else {
             return nil
         }
-        guard let password = url.password else {
-            return nil
-        }
+        let password = url.password
         guard let hostname = url.host else {
             return nil
         }
@@ -47,10 +53,8 @@ public struct PostgresConfiguration {
     public init(
         unixDomainSocketPath: String,
         username: String,
-        password: String,
-        database: String,
-        encoder: PostgresDataEncoder = PostgresDataEncoder(),
-        decoder: PostgresDataDecoder = PostgresDataDecoder()
+        password: String? = nil,
+        database: String? = nil
     ) {
         self.address = {
             return try SocketAddress.init(unixDomainSocketPath: unixDomainSocketPath)
@@ -60,19 +64,15 @@ public struct PostgresConfiguration {
         self.database = database
         self.tlsConfiguration = nil
         self._hostname = nil
-        self.encoder = encoder
-        self.decoder = decoder
     }
     
     public init(
         hostname: String,
         port: Int = 5432,
         username: String,
-        password: String,
+        password: String? = nil,
         database: String? = nil,
-        tlsConfiguration: TLSConfiguration? = nil,
-        encoder: PostgresDataEncoder = PostgresDataEncoder(),
-        decoder: PostgresDataDecoder = PostgresDataDecoder()
+        tlsConfiguration: TLSConfiguration? = nil
     ) {
         self.address = {
             return try SocketAddress.makeAddressResolvingHost(hostname, port: port)
@@ -82,7 +82,5 @@ public struct PostgresConfiguration {
         self.password = password
         self.tlsConfiguration = tlsConfiguration
         self._hostname = hostname
-        self.encoder = encoder
-        self.decoder = decoder
     }
 }

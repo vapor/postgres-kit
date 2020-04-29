@@ -4,6 +4,8 @@ extension EventLoopGroupConnectionPool where Source == PostgresConnectionSource 
     }
 }
 
+// MARK: Private
+
 private struct _EventLoopGroupConnectionPoolPostgresDatabase {
     let pool: EventLoopGroupConnectionPool<PostgresConnectionSource>
     let logger: Logger

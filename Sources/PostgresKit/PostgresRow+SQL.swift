@@ -4,6 +4,8 @@ extension PostgresRow {
     }
 }
 
+// MARK: Private
+
 private struct _PostgreSQLRow: SQLRow {
     let row: PostgresRow
     let decoder: PostgresDataDecoder

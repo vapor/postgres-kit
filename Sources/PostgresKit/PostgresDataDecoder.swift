@@ -1,12 +1,5 @@
 import Foundation
 
-struct DecoderUnwrapper: Decodable {
-    let decoder: Decoder
-    init(from decoder: Decoder) {
-        self.decoder = decoder
-    }
-}
-
 public final class PostgresDataDecoder {
     public let jsonDecoder: JSONDecoder
 
@@ -18,7 +11,13 @@ public final class PostgresDataDecoder {
         where T: Decodable
     {
         if let convertible = T.self as? PostgresDataConvertible.Type {
-            return convertible.init(postgresData: data)! as! T
+            guard let value = convertible.init(postgresData: data) else {
+                throw DecodingError.typeMismatch(T.self, DecodingError.Context.init(
+                    codingPath: [],
+                    debugDescription: "Could not convert to \(T.self): \(data)"
+                ))
+            }
+            return value as! T
         } else {
             return try T.init(from: _Decoder(data: data, json: self.jsonDecoder))
         }
@@ -145,5 +144,12 @@ public final class PostgresDataDecoder {
                 return try T.init(from: _Decoder(data: self.data, json: self.json))
             }
         }
+    }
+}
+
+struct DecoderUnwrapper: Decodable {
+    let decoder: Decoder
+    init(from decoder: Decoder) {
+        self.decoder = decoder
     }
 }
