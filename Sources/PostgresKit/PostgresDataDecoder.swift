@@ -139,7 +139,13 @@ public final class PostgresDataDecoder {
 
         func decode<T>(_ type: T.Type) throws -> T where T : Decodable {
             if let convertible = T.self as? PostgresDataConvertible.Type {
-                return convertible.init(postgresData: self.data)! as! T
+                guard let value = convertible.init(postgresData: data) else {
+                    throw DecodingError.typeMismatch(T.self, DecodingError.Context.init(
+                        codingPath: [],
+                        debugDescription: "Could not convert to \(T.self): \(data)"
+                    ))
+                }
+                return value as! T
             } else {
                 return try T.init(from: _Decoder(data: self.data, json: self.json))
             }
