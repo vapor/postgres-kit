@@ -13,14 +13,14 @@ public struct PostgresConfiguration {
     internal var _hostname: String?
 
 
-    public init?(url: String) {
+    public init?(url: String, tlsConfiguration: TLSConfiguration? = nil) {
         guard let url = URL(string: url) else {
             return nil
         }
-        self.init(url: url)
+        self.init(url: url, tlsConfiguration: tlsConfiguration)
     }
     
-    public init?(url: URL) {
+    public init?(url: URL, tlsConfiguration tlsConfig: TLSConfiguration? = nil) {
         guard url.scheme?.hasPrefix("postgres") == true else {
             return nil
         }
@@ -32,12 +32,10 @@ public struct PostgresConfiguration {
             return nil
         }
         let port = url.port ?? 5432
-        
-        let tlsConfiguration: TLSConfiguration?
-        if url.query?.contains("ssl=true") == true || url.query?.contains("sslmode=require") == true {
+
+        var tlsConfiguration = tlsConfig
+        if tlsConfiguration == nil, url.query?.contains("ssl=true") == true || url.query?.contains("sslmode=require") == true {
             tlsConfiguration = TLSConfiguration.forClient()
-        } else {
-            tlsConfiguration = nil
         }
         
         self.init(
