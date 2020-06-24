@@ -30,6 +30,10 @@ public struct PostgresDialect: SQLDialect {
         true
     }
 
+    public var supportsReturning: Bool {
+        true
+    }
+
     public var enumSyntax: SQLEnumSyntax {
         .typeName
     }
