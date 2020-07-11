@@ -179,9 +179,9 @@ class PostgresKitTests: XCTestCase {
     override func setUp() {
         XCTAssertTrue(isLoggingConfigured)
         self.eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 2)
-        // self.connection = try! PostgresConnection.test(
-        //     on: self.eventLoopGroup.next()
-        // ).wait()
+        self.connection = try! PostgresConnection.test(
+            on: self.eventLoopGroup.next()
+        ).wait()
     }
 
     override func tearDown() {
