@@ -515,7 +515,7 @@ public struct PostgresColumnType: SQLExpression, Equatable {
             case .doublePrecision: return "DOUBLE PRECISION"
             case .inet: return "INET"
             case .integer: return "INTEGER"
-            case .interval: return "INTEVERAL"
+            case .interval: return "INTERVAL"
             case .json: return "JSON"
             case .jsonb: return "JSONB"
             case .line: return "LINE"
