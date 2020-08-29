@@ -1,9 +1,10 @@
 import Foundation
+import protocol PostgresNIO.PostgresJSONEncoder
 
 public final class PostgresDataEncoder {
-    public let json: JSONEncoder
+    public let json: PostgresJSONEncoder
 
-    public init(json: JSONEncoder = JSONEncoder()) {
+    public init(json: PostgresJSONEncoder = PostgresNIO._defaultJSONEncoder) {
         self.json = json
     }
 
