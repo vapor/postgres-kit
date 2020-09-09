@@ -8,7 +8,7 @@ public final class PostgresDataDecoder {
     public init(json: PostgresNIO.PostgresJSONDecoder = PostgresNIO._defaultJSONDecoder) {
         self.json = json
     }
-    
+
     public func decode<T>(_ type: T.Type, from data: PostgresData) throws -> T
         where T: Decodable
     {
