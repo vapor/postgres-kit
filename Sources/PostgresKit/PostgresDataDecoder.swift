@@ -1,10 +1,12 @@
 import Foundation
+import protocol PostgresNIO.PostgresJSONDecoder
+import var PostgresNIO._defaultJSONDecoder
 
 public final class PostgresDataDecoder {
-    public let jsonDecoder: JSONDecoder
+    public let json: PostgresNIO.PostgresJSONDecoder
 
-    public init(json: JSONDecoder = JSONDecoder()) {
-        self.jsonDecoder = json
+    public init(json: PostgresNIO.PostgresJSONDecoder = PostgresNIO._defaultJSONDecoder) {
+        self.json = json
     }
 
     public func decode<T>(_ type: T.Type, from data: PostgresData) throws -> T
@@ -19,7 +21,7 @@ public final class PostgresDataDecoder {
             }
             return value as! T
         } else {
-            return try T.init(from: _Decoder(data: data, json: self.jsonDecoder))
+            return try T.init(from: _Decoder(data: data, json: self.json))
         }
     }
 
@@ -47,9 +49,9 @@ public final class PostgresDataDecoder {
         }
 
         let data: PostgresData
-        let json: JSONDecoder
+        let json: PostgresJSONDecoder
 
-        init(data: PostgresData, json: JSONDecoder) {
+        init(data: PostgresData, json: PostgresJSONDecoder) {
             self.data = data
             self.json = json
         }
@@ -93,7 +95,7 @@ public final class PostgresDataDecoder {
         var currentIndex: Int = 0
 
         let data: [PostgresData]
-        let json: JSONDecoder
+        let json: PostgresJSONDecoder
         var codingPath: [CodingKey] {
             []
         }
@@ -128,7 +130,7 @@ public final class PostgresDataDecoder {
 
     struct _ValueDecoder: SingleValueDecodingContainer {
         let data: PostgresData
-        let json: JSONDecoder
+        let json: PostgresJSONDecoder
         var codingPath: [CodingKey] {
             []
         }
