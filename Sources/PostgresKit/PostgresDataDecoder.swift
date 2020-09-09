@@ -1,11 +1,12 @@
 import Foundation
 import protocol PostgresNIO.PostgresJSONDecoder
+import var PostgresNIO._defaultJSONDecoder
 
 public final class PostgresDataDecoder {
-    public let jsonDecoder: PostgresNIO.PostgresJSONDecoder
-
+    public let json: PostgresNIO.PostgresJSONDecoder
+    
     public init(json: PostgresNIO.PostgresJSONDecoder = PostgresNIO._defaultJSONDecoder) {
-        self.jsonDecoder = json
+        self.json = json
     }
 
     public func decode<T>(_ type: T.Type, from data: PostgresData) throws -> T
@@ -20,7 +21,7 @@ public final class PostgresDataDecoder {
             }
             return value as! T
         } else {
-            return try T.init(from: _Decoder(data: data, json: self.jsonDecoder))
+            return try T.init(from: _Decoder(data: data, json: self.json))
         }
     }
 
