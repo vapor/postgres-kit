@@ -10,8 +10,11 @@ public struct PostgresConfiguration {
     /// Optional `search_path` to set on new connections.
     public var searchPath: [String]?
 
-    internal var _hostname: String?
+    /// IANA-assigned port number for PostgreSQL
+    /// `UInt16(getservbyname("postgresql", "tcp").pointee.s_port).byteSwapped`
+    public static var ianaPortNumber: Int { 5432 }
 
+    internal var _hostname: String?
 
     public init?(url: String) {
         guard let url = URL(string: url) else {
@@ -31,7 +34,7 @@ public struct PostgresConfiguration {
         guard let hostname = url.host else {
             return nil
         }
-        let port = url.port ?? 5432
+        let port = url.port ?? Self.ianaPortNumber
         
         let tlsConfiguration: TLSConfiguration?
         if url.query?.contains("ssl=true") == true || url.query?.contains("sslmode=require") == true {
@@ -68,7 +71,7 @@ public struct PostgresConfiguration {
     
     public init(
         hostname: String,
-        port: Int = 5432,
+        port: Int = Self.ianaPortNumber,
         username: String,
         password: String? = nil,
         database: String? = nil,
