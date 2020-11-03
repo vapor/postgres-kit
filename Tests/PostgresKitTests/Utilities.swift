@@ -4,7 +4,7 @@ extension PostgresConnection {
     static func test(on eventLoop: EventLoop) -> EventLoopFuture<PostgresConnection> {
         do {
             let address: SocketAddress
-            address = try .makeAddressResolvingHost(hostname, port: 5432)
+            address = try .makeAddressResolvingHost(hostname, port: PostgresConfiguration.ianaPortNumber)
             return connect(to: address, on: eventLoop).flatMap { conn in
                 return conn.authenticate(
                     username: "vapor_username",
@@ -22,7 +22,7 @@ extension PostgresConfiguration {
     static var test: Self {
         .init(
             hostname: hostname,
-            port: 5432,
+            port: Self.ianaPortNumber,
             username: "vapor_username",
             password: "vapor_password",
             database: "vapor_database"
