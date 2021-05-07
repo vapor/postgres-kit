@@ -52,7 +52,7 @@ jobs:
           POSTGRES_PASSWORD: vapor_password
     runs-on: ubuntu-latest
     steps:
-    - run: git clone -b master https://github.com/vapor/fluent-postgres-driver.git
+    - run: git clone -b main https://github.com/vapor/fluent-postgres-driver.git
       working-directory: ./
     - run: swift package edit postgres-kit --revision ${{ github.sha }}
       working-directory: ./fluent-postgres-driver
