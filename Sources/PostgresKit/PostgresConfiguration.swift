@@ -38,7 +38,7 @@ public struct PostgresConfiguration {
         
         let tlsConfiguration: TLSConfiguration?
         if url.query?.contains("ssl=true") == true || url.query?.contains("sslmode=require") == true {
-            tlsConfiguration = TLSConfiguration.forClient()
+            tlsConfiguration = TLSConfiguration.makeClientConfiguration()
         } else {
             tlsConfiguration = nil
         }
