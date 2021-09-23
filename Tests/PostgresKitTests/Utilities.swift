@@ -1,11 +1,18 @@
+import XCTest
 import PostgresKit
+import NIOCore
+import Logging
+#if canImport(Darwin)
+import Darwin.C
+#else
+import Glibc
+#endif
 
 extension PostgresConnection {
     static func test(on eventLoop: EventLoop) -> EventLoopFuture<PostgresConnection> {
         do {
-            let address: SocketAddress
             let config = PostgresConfiguration.test
-            address = try config.address()
+            let address = try config.address()
             return self.connect(to: address, on: eventLoop).flatMap { conn in
                 return conn.authenticate(
                     username: config.username,
@@ -28,7 +35,7 @@ extension PostgresConnection {
 extension PostgresConfiguration {
     static var test: Self {
         .init(
-            hostname: hostname,
+            hostname: env("POSTGRES_HOSTNAME") ?? "localhost",
             port: Self.ianaPortNumber,
             username: env("POSTGRES_USER") ?? "vapor_username",
             password: env("POSTGRES_PASSWORD") ?? "vapor_password",
@@ -37,14 +44,6 @@ extension PostgresConfiguration {
     }
 }
 
-var hostname: String {
-    if let hostname = env("POSTGRES_HOSTNAME") {
-        return hostname
-    } else {
-        #if os(Linux)
-        return "psql"
-        #else
-        return "127.0.0.1"
-        #endif
-    }
+func env(_ name: String) -> String? {
+    getenv(name).flatMap { String(cString: $0) }
 }

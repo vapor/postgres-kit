@@ -151,25 +151,18 @@ class PostgresKitTests: XCTestCase {
         try self.benchmark.testEnum()
     }
 
-    var db: SQLDatabase {
-        self.connection.sql()
-    }
-    var benchmark: SQLBenchmarker {
-        .init(on: self.db)
-    }
-    var eventLoop: EventLoop {
-        self.eventLoopGroup.next()
-    }
-
+    var db: SQLDatabase { self.connection.sql() }
+    var benchmark: SQLBenchmarker { .init(on: self.db) }
+    
+    var eventLoop: EventLoop { self.eventLoopGroup.next() }
     var eventLoopGroup: EventLoopGroup!
     var connection: PostgresConnection!
 
     override func setUpWithError() throws {
+        try super.setUpWithError()
         XCTAssertTrue(isLoggingConfigured)
         self.eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 2)
-        self.connection = try PostgresConnection.test(
-            on: self.eventLoopGroup.next()
-        ).wait()
+        self.connection = try PostgresConnection.test(on: self.eventLoop).wait()
     }
 
     override func tearDownWithError() throws {
@@ -177,17 +170,15 @@ class PostgresKitTests: XCTestCase {
         self.connection = nil
         try self.eventLoopGroup.syncShutdownGracefully()
         self.eventLoopGroup = nil
+        try super.tearDownWithError()
     }
 }
 
 enum Bar: Int, Codable {
     case one, two
 }
-extension Bar: PostgresDataConvertible { }
 
-func env(_ name: String) -> String? {
-    getenv(name).flatMap { String(cString: $0) }
-}
+extension Bar: PostgresDataConvertible { }
 
 let isLoggingConfigured: Bool = {
     LoggingSystem.bootstrap { label in
