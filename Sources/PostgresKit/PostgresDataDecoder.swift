@@ -30,10 +30,10 @@ public final class PostgresDataDecoder {
                 return try T.init(from: GiftBoxUnwrapDecoder(decoder: self, data: data))
             } catch DecodingError.dataCorrupted {
                 // Couldn't unwrap it either. Fall back to attempting a JSON decode.
-                guard let data = data.jsonb ?? data.json else {
+                guard let jsonData = data.jsonb ?? data.json else {
                     throw Error.unexpectedDataType(data.type, expected: "jsonb/json")
                 }
-                return try self.json.decode(T.self, from: data)
+                return try self.json.decode(T.self, from: jsonData)
             }
         }
     }
