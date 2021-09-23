@@ -12,24 +12,24 @@ jobs:
       matrix:
         dbimage:
           - postgres:13
-          - postgres:12
+          #- postgres:12
           #- postgres:11
         dbauth:
           #- trust
           #- md5
           - scram-sha-256
         swiftver:
-          - 'swift:5.2'
-          - 'swift:5.3'
+          #- 'swift:5.2'
+          #- 'swift:5.3'
           - 'swift:5.4'
           - 'swift:5.5'
           #- 'swiftlang/swift:nightly-main'
         swiftos:
-          - bionic
+          #- bionic
           - focal
           #- centos7
-          - centos8
-          - amazonlinux2
+          #- centos8
+          #- amazonlinux2
         dependent:
           - fluent-postgres-driver
     container: ${{ format('{0}-{1}', matrix.swiftver, matrix.swiftos) }}
@@ -59,6 +59,9 @@ jobs:
         uses: actions/checkout@v2
         with:
           path: package
+      - name: Run local tests with Thread Sanitizer
+        run: swift test --enable-test-discovery --sanitize=thread
+        working-directory: package
       - name: Check out dependent
         uses: actions/checkout@v2
         with:
@@ -67,9 +70,6 @@ jobs:
       - name: Use local package
         run: swift package edit postgres-kit --path ../package
         working-directory: dependent
-      - name: Run local tests with Thread Sanitizer
-        run: swift test --enable-test-discovery --sanitize=thread
-        working-directory: package
       - name: Run dependent tests with Thread Sanitizer
         run: swift test --enable-test-discovery --sanitize=thread
         working-directory: dependent
