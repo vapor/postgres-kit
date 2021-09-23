@@ -40,11 +40,21 @@ jobs:
       POSTGRES_PASSWORD: vapor_password
       POSTGRES_HOST_AUTH_METHOD: ${{ matrix.dbauth }}
       POSTGRES_INITDB_ARGS: --auth-host=${{ matrix.dbauth }}
-      POSTGRES_HOSTNAME: psql
+      POSTGRES_HOSTNAME: psql-a
+      POSTGRES_HOSTNAME_A: psql-a
+      POSTGRES_HOSTNAME_B: psql-b
     services:
-      psql:
+      psql-a:
+        image: ${{ matrix.dbimage }}
+      psql-b:
         image: ${{ matrix.dbimage }}
     steps:
+      - name: Workaround SPM incompatibility with old Git on CentOS 7
+        if: ${{ contains(matrix.swiftos, 'centos7') }}
+        run: |
+          yum install -y make libcurl-devel
+          git clone https://github.com/git/git -bv2.28.0 --depth 1 && cd git
+          make prefix=/usr -j all install NO_OPENSSL=1 NO_EXPAT=1 NO_TCLTK=1 NO_GETTEXT=1 NO_PERL=1
       - name: Check out package
         uses: actions/checkout@v2
         with:
