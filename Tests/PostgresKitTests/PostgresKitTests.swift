@@ -13,14 +13,7 @@ class PostgresKitTests: XCTestCase {
     }
     
     func testPerformance() throws {
-        let db = PostgresConnectionSource(
-            configuration: .init(
-                hostname: hostname,
-                username: "vapor_username",
-                password: "vapor_password",
-                database: "vapor_database"
-            )
-        )
+        let db = PostgresConnectionSource(configuration: .test)
         let pool = EventLoopGroupConnectionPool(
             source: db,
             maxConnectionsPerEventLoop: 2,
@@ -130,12 +123,7 @@ class PostgresKitTests: XCTestCase {
     }
 
     func testEventLoopGroupSQL() throws {
-        var configuration = PostgresConfiguration(
-            hostname: hostname,
-            username: "vapor_username",
-            password: "vapor_password",
-            database: "vapor_database"
-        )
+        var configuration = PostgresConfiguration.test
         configuration.searchPath = ["foo", "bar", "baz"]
         let source = PostgresConnectionSource(configuration: configuration)
         let pool = EventLoopGroupConnectionPool(source: source, on: self.eventLoopGroup)
@@ -176,18 +164,18 @@ class PostgresKitTests: XCTestCase {
     var eventLoopGroup: EventLoopGroup!
     var connection: PostgresConnection!
 
-    override func setUp() {
+    override func setUpWithError() throws {
         XCTAssertTrue(isLoggingConfigured)
         self.eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 2)
-        self.connection = try! PostgresConnection.test(
+        self.connection = try PostgresConnection.test(
             on: self.eventLoopGroup.next()
         ).wait()
     }
 
-    override func tearDown() {
-        try! self.connection.close().wait()
+    override func tearDownWithError() throws {
+        try self.connection?.close().wait()
         self.connection = nil
-        try! self.eventLoopGroup.syncShutdownGracefully()
+        try self.eventLoopGroup.syncShutdownGracefully()
         self.eventLoopGroup = nil
     }
 }

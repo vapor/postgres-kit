@@ -4,13 +4,20 @@ extension PostgresConnection {
     static func test(on eventLoop: EventLoop) -> EventLoopFuture<PostgresConnection> {
         do {
             let address: SocketAddress
-            address = try .makeAddressResolvingHost(hostname, port: PostgresConfiguration.ianaPortNumber)
-            return connect(to: address, on: eventLoop).flatMap { conn in
+            let config = PostgresConfiguration.test
+            address = try config.address()
+            return self.connect(to: address, on: eventLoop).flatMap { conn in
                 return conn.authenticate(
-                    username: "vapor_username",
-                    database: "vapor_database",
-                    password: "vapor_password"
-                ).map { conn }
+                    username: config.username,
+                    database: config.database,
+                    password: config.password
+                )
+                .map { conn }
+                .flatMapError { error in
+                    conn.close().flatMapThrowing {
+                        throw error
+                    }
+                }
             }
         } catch {
             return eventLoop.makeFailedFuture(error)
@@ -23,9 +30,9 @@ extension PostgresConfiguration {
         .init(
             hostname: hostname,
             port: Self.ianaPortNumber,
-            username: "vapor_username",
-            password: "vapor_password",
-            database: "vapor_database"
+            username: env("POSTGRES_USER") ?? "vapor_username",
+            password: env("POSTGRES_PASSWORD") ?? "vapor_password",
+            database: env("POSTGRES_DB") ?? "vapor_database"
         )
     }
 }
