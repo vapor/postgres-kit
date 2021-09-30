@@ -10,24 +10,27 @@ import Glibc
 
 extension PostgresConnection {
     static func test(on eventLoop: EventLoop) -> EventLoopFuture<PostgresConnection> {
-        do {
-            let config = PostgresConfiguration.test
-            let address = try config.address()
-            return self.connect(to: address, on: eventLoop).flatMap { conn in
-                return conn.authenticate(
-                    username: config.username,
-                    database: config.database,
-                    password: config.password
-                )
-                .map { conn }
-                .flatMapError { error in
-                    conn.close().flatMapThrowing {
-                        throw error
-                    }
+        let config = PostgresConfiguration.test
+
+        return eventLoop.flatSubmit { () -> EventLoopFuture<PostgresConnection> in
+            do {
+                let address = try config.address()
+                return self.connect(to: address, on: eventLoop)
+            } catch {
+                return eventLoop.makeFailedFuture(error)
+            }
+        }.flatMap { conn in
+            return conn.authenticate(
+                username: config.username,
+                database: config.database,
+                password: config.password
+            )
+            .map { conn }
+            .flatMapError { error in
+                conn.close().flatMapThrowing {
+                    throw error
                 }
             }
-        } catch {
-            return eventLoop.makeFailedFuture(error)
         }
     }
 }
