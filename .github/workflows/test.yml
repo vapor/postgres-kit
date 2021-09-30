@@ -2,9 +2,7 @@ name: test
 on:
   pull_request:
   push: { branches: [ main ] }
-defaults:
-  run:
-    shell: bash
+
 jobs:
   linux-plus-dependents:
     strategy:
@@ -35,6 +33,7 @@ jobs:
     container: ${{ format('{0}-{1}', matrix.swiftver, matrix.swiftos) }}
     runs-on: ubuntu-latest
     env:
+      LOG_LEVEL: debug
       POSTGRES_USER: vapor_username
       POSTGRES_DB: vapor_database
       POSTGRES_PASSWORD: vapor_password

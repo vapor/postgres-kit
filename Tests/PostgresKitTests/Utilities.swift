@@ -42,7 +42,8 @@ extension PostgresConfiguration {
             port: Self.ianaPortNumber,
             username: env("POSTGRES_USER") ?? "vapor_username",
             password: env("POSTGRES_PASSWORD") ?? "vapor_password",
-            database: env("POSTGRES_DB") ?? "vapor_database"
+            database: env("POSTGRES_DB") ?? "vapor_database",
+            tlsConfiguration: nil
         )
     }
 }

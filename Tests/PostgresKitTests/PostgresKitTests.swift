@@ -135,39 +135,36 @@ class PostgresKitTests: XCTestCase {
     }
 
     func testArrayEncoding_json() throws {
-        _ = try self.connection.query("DROP TABLE IF EXISTS foo").wait()
-        _ = try self.connection.query("CREATE TABLE foo (bar integer[] not null)").wait()
+        let connection = try PostgresConnection.test(on: self.eventLoop).wait()
+        defer { try! connection.close().wait() }
+        _ = try connection.query("DROP TABLE IF EXISTS foo").wait()
+        _ = try connection.query("CREATE TABLE foo (bar integer[] not null)").wait()
         defer {
-            _ = try! self.connection.query("DROP TABLE foo").wait()
+            _ = try! connection.query("DROP TABLE foo").wait()
         }
-        _ = try self.connection.query("INSERT INTO foo (bar) VALUES ($1)", [
+        _ = try connection.query("INSERT INTO foo (bar) VALUES ($1)", [
             PostgresDataEncoder().encode([Bar]())
         ]).wait()
-        let rows = try self.connection.query("SELECT * FROM foo").wait()
+        let rows = try connection.query("SELECT * FROM foo").wait()
         print(rows)
     }
       
     func testEnum() throws {
-        try self.benchmark.testEnum()
+        let connection = try PostgresConnection.test(on: self.eventLoop).wait()
+        defer { try! connection.close().wait() }
+        try SQLBenchmarker(on: connection.sql()).testEnum()
     }
 
-    var db: SQLDatabase { self.connection.sql() }
-    var benchmark: SQLBenchmarker { .init(on: self.db) }
-    
     var eventLoop: EventLoop { self.eventLoopGroup.next() }
     var eventLoopGroup: EventLoopGroup!
-    var connection: PostgresConnection!
 
     override func setUpWithError() throws {
         try super.setUpWithError()
         XCTAssertTrue(isLoggingConfigured)
         self.eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 2)
-        self.connection = try PostgresConnection.test(on: self.eventLoop).wait()
     }
 
     override func tearDownWithError() throws {
-        try self.connection?.close().wait()
-        self.connection = nil
         try self.eventLoopGroup.syncShutdownGracefully()
         self.eventLoopGroup = nil
         try super.tearDownWithError()
