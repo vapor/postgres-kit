@@ -10,55 +10,43 @@ jobs:
       matrix:
         dbimage:
           - postgres:13
-          #- postgres:12
-          #- postgres:11
-        dbauth:
-          #- trust
-          #- md5
-          - scram-sha-256
+          - postgres:12
+          - postgres:11
         swiftver:
-          #- 'swift:5.2'
-          #- 'swift:5.3'
+          - 'swift:5.2'
+          - 'swift:5.3'
           - 'swift:5.4'
           - 'swift:5.5'
-          #- 'swiftlang/swift:nightly-main'
+          - 'swiftlang/swift:nightly-main'
         swiftos:
-          #- bionic
+          - bionic
           - focal
-          #- centos7
-          #- centos8
-          #- amazonlinux2
+          - centos7
+          - centos8
+          - amazonlinux2
         dependent:
           - fluent-postgres-driver
     container: ${{ format('{0}-{1}', matrix.swiftver, matrix.swiftos) }}
     runs-on: ubuntu-latest
     env:
       LOG_LEVEL: debug
-      POSTGRES_USER: vapor_username
-      POSTGRES_DB: vapor_database
-      POSTGRES_PASSWORD: vapor_password
-      POSTGRES_HOST_AUTH_METHOD: ${{ matrix.dbauth }}
-      POSTGRES_INITDB_ARGS: --auth-host=${{ matrix.dbauth }}
-      POSTGRES_HOSTNAME: psql-a
-      POSTGRES_HOSTNAME_A: psql-a
-      POSTGRES_HOSTNAME_B: psql-b
+      POSTGRES_USER: 'vapor_username'
+      POSTGRES_DB: 'vapor_database'
+      POSTGRES_PASSWORD: 'vapor_password'
+      POSTGRES_HOSTNAME: 'psql-a'
+      POSTGRES_HOSTNAME_A: 'psql-a'
+      POSTGRES_HOSTNAME_B: 'psql-b'
     services:
       psql-a:
         image: ${{ matrix.dbimage }}
         env:
-          POSTGRES_USER: vapor_username
-          POSTGRES_DB: vapor_database
-          POSTGRES_PASSWORD: vapor_password
-          POSTGRES_HOST_AUTH_METHOD: ${{ matrix.dbauth }}
-          POSTGRES_INITDB_ARGS: --auth-host=${{ matrix.dbauth }}
+          POSTGRES_HOST_AUTH_METHOD: 'scram-sha-256'
+          POSTGRES_INITDB_ARGS: '--auth-host=scram-sha-256'
       psql-b:
         image: ${{ matrix.dbimage }}
         env:
-          POSTGRES_USER: vapor_username
-          POSTGRES_DB: vapor_database
-          POSTGRES_PASSWORD: vapor_password
-          POSTGRES_HOST_AUTH_METHOD: ${{ matrix.dbauth }}
-          POSTGRES_INITDB_ARGS: --auth-host=${{ matrix.dbauth }}
+          POSTGRES_HOST_AUTH_METHOD: 'md5'
+          POSTGRES_INITDB_ARGS: '--auth-host=md5'
     steps:
       - name: Workaround SPM incompatibility with old Git on CentOS 7
         if: ${{ contains(matrix.swiftos, 'centos7') }}
