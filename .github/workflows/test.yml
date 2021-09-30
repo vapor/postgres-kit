@@ -45,8 +45,20 @@ jobs:
     services:
       psql-a:
         image: ${{ matrix.dbimage }}
+        env:
+          POSTGRES_USER: vapor_username
+          POSTGRES_DB: vapor_database
+          POSTGRES_PASSWORD: vapor_password
+          POSTGRES_HOST_AUTH_METHOD: ${{ matrix.dbauth }}
+          POSTGRES_INITDB_ARGS: --auth-host=${{ matrix.dbauth }}
       psql-b:
         image: ${{ matrix.dbimage }}
+        env:
+          POSTGRES_USER: vapor_username
+          POSTGRES_DB: vapor_database
+          POSTGRES_PASSWORD: vapor_password
+          POSTGRES_HOST_AUTH_METHOD: ${{ matrix.dbauth }}
+          POSTGRES_INITDB_ARGS: --auth-host=${{ matrix.dbauth }}
     steps:
       - name: Workaround SPM incompatibility with old Git on CentOS 7
         if: ${{ contains(matrix.swiftos, 'centos7') }}
