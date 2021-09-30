@@ -17,6 +17,10 @@ jobs:
           - postgres:13
           - postgres:12
           - postgres:11
+        dbauth:
+          - trust
+          - md5
+          - scram-sha-256
         swiftver:
           - 'swift:5.2'
           - 'swift:5.5'
@@ -36,13 +40,19 @@ jobs:
       psql-a:
         image: ${{ matrix.dbimage }}
         env:
-          POSTGRES_HOST_AUTH_METHOD: 'scram-sha-256'
-          POSTGRES_INITDB_ARGS: '--auth-host=scram-sha-256'
+          POSTGRES_USER: 'vapor_username'
+          POSTGRES_DB: 'vapor_database'
+          POSTGRES_PASSWORD: 'vapor_password'
+          POSTGRES_HOST_AUTH_METHOD: ${{ matrix.dbauth }}
+          POSTGRES_INITDB_ARGS: ${{ matrix.dbauth }}
       psql-b:
         image: ${{ matrix.dbimage }}
         env:
-          POSTGRES_HOST_AUTH_METHOD: 'md5'
-          POSTGRES_INITDB_ARGS: '--auth-host=md5'
+          POSTGRES_USER: 'vapor_username'
+          POSTGRES_DB: 'vapor_database'
+          POSTGRES_PASSWORD: 'vapor_password'
+          POSTGRES_HOST_AUTH_METHOD: ${{ matrix.dbauth }}
+          POSTGRES_INITDB_ARGS: ${{ matrix.dbauth }}
     steps:
       - name: Workaround SPM incompatibility with old Git on CentOS 7
         if: ${{ contains(matrix.swiftos, 'centos7') }}
@@ -102,22 +112,8 @@ jobs:
           brew install ${{ matrix.formula }}
           initdb --locale=C --auth-host ${{ matrix.dbauth }} -U vapor_username --pwfile=<(echo vapor_password)
           pg_ctl start --wait
-        timeout-minutes: 5
+        timeout-minutes: 2
       - name: Checkout code
         uses: actions/checkout@v2
-        with:
-          path: package
-      - name: Check out dependent
-        uses: actions/checkout@v2
-        with:
-          repository: vapor/${{ matrix.dependent }}
-          path: dependent
-      - name: Use local package
-        run: swift package edit postgres-kit --path ../package
-        working-directory: dependent
       - name: Run local tests with Thread Sanitizer
         run: swift test --enable-test-discovery --sanitize=thread
-        working-directory: package
-      - name: Run dependent tests with Thread Sanitizer
-        run: swift test --enable-test-discovery --sanitize=thread
-        working-directory: dependent
