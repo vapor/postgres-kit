@@ -51,4 +51,8 @@ public struct PostgresDialect: SQLDialect {
             alterColumnDefinitionTypeKeyword: SQLRaw("SET DATA TYPE")
         )
     }
+    
+    public var upsertSyntax: SQLUpsertSyntax {
+        .standard
+    }
 }
