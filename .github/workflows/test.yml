@@ -9,6 +9,7 @@ jobs:
       fail-fast: false
       matrix:
         dbimage:
+          - postgres:14
           - postgres:13
           - postgres:12
           - postgres:11
@@ -22,7 +23,6 @@ jobs:
           - 'swiftlang/swift:nightly-main'
         swiftos:
           - focal
-          - amazonlinux2
         dependent:
           - fluent-postgres-driver
     container: ${{ format('{0}-{1}', matrix.swiftver, matrix.swiftos) }}
@@ -50,12 +50,6 @@ jobs:
           POSTGRES_HOST_AUTH_METHOD: ${{ matrix.dbauth }}
           POSTGRES_INITDB_ARGS: --auth-host=${{ matrix.dbauth }}
     steps:
-      - name: Workaround SPM incompatibility with old Git on CentOS 7
-        if: ${{ contains(matrix.swiftos, 'centos7') }}
-        run: |
-          yum install -y make libcurl-devel
-          git clone https://github.com/git/git -bv2.28.0 --depth 1 && cd git
-          make prefix=/usr -j all install NO_OPENSSL=1 NO_EXPAT=1 NO_TCLTK=1 NO_GETTEXT=1 NO_PERL=1
       - name: Check out package
         uses: actions/checkout@v2
         with:
@@ -81,7 +75,7 @@ jobs:
       matrix:
         xcode:
           - latest-stable
-          - latest
+          #- latest
         dbauth:
           - trust
           - md5
@@ -90,9 +84,10 @@ jobs:
           - postgresql@11
           - postgresql@12
           - postgresql@13
+          - postgresql@14
         dependent:
           - fluent-postgres-driver
-    runs-on: macos-latest
+    runs-on: macos-11
     env:
       LOG_LEVEL: debug
       POSTGRES_HOSTNAME: 127.0.0.1
