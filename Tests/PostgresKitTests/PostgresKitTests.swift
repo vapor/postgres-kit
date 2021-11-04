@@ -20,6 +20,14 @@ class PostgresKitTests: XCTestCase {
             on: self.eventLoopGroup
         )
         defer { pool.shutdown() }
+        // Postgres seems to take much longer on initial connections when using SCRAM-SHA-256 auth,
+        // which causes XCTest to bail due to the first measurement having a very high deviation.
+        // Spin the pool a bit before running the measurement to warm it up.
+        for _ in 1...25 {
+            _ = try! pool.withConnection { conn in
+                return conn.query("SELECT 1;")
+            }.wait()
+        }
         self.measure {
             for _ in 1...100 {
                 _ = try! pool.withConnection { conn in
