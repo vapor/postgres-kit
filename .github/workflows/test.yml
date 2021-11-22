@@ -1,7 +1,5 @@
 name: test
-on:
-  pull_request:
-  push: { branches: [ main ] }
+on: [ 'pull_request' ]
 
 jobs:
   linux-plus-dependents:
@@ -23,8 +21,6 @@ jobs:
           - 'swiftlang/swift:nightly-main'
         swiftos:
           - focal
-        dependent:
-          - fluent-postgres-driver
     container: ${{ format('{0}-{1}', matrix.swiftver, matrix.swiftos) }}
     runs-on: ubuntu-latest
     env:
@@ -32,6 +28,15 @@ jobs:
       POSTGRES_HOSTNAME: 'psql-a'
       POSTGRES_HOSTNAME_A: 'psql-a'
       POSTGRES_HOSTNAME_B: 'psql-b'
+      POSTGRES_DB: 'vapor_database'
+      POSTGRES_DB_A: 'vapor_database'
+      POSTGRES_DB_B: 'vapor_database'
+      POSTGRES_USER: 'vapor_username'
+      POSTGRES_USER_A: 'vapor_username'
+      POSTGRES_USER_B: 'vapor_username'
+      POSTGRES_PASSWORD: 'vapor_password'
+      POSTGRES_PASSWORD_A: 'vapor_password'
+      POSTGRES_PASSWORD_B: 'vapor_password'
     services:
       psql-a:
         image: ${{ matrix.dbimage }}
@@ -52,45 +57,36 @@ jobs:
     steps:
       - name: Check out package
         uses: actions/checkout@v2
-        with:
-          path: package
-      - name: Check out dependent
+        with: { path: 'postgres-kit' }
+      - name: Check out fluent-postgres-driver dependent
         uses: actions/checkout@v2
-        with:
-          repository: vapor/${{ matrix.dependent }}
-          path: dependent
-      - name: Use local package
-        run: swift package edit postgres-kit --path ../package
-        working-directory: dependent
+        with: { repository: 'vapor/fluent-postgres-driver', path: 'fluent-postgres-driver' }
       - name: Run local tests with Thread Sanitizer
-        run: swift test --enable-test-discovery --sanitize=thread
-        working-directory: package
-      - name: Run dependent tests with Thread Sanitizer
-        run: swift test --enable-test-discovery --sanitize=thread
-        working-directory: dependent
+        run: swift test --package-path postgres-kit --enable-test-discovery --sanitize=thread
+      - name: Use local package
+        run: swift package --package-path fluent-postgres-driver edit postgres-kit --path postgres-kit
+      - name: Run fluent-postgres-kit tests with Thread Sanitizer
+        run: swift test --package-path fluent-postgres-driver --enable-test-discovery --sanitize=thread
 
-  macos-plus-dependents:
+  macos:
     strategy:
       fail-fast: false
       matrix:
+        dbimage:
+          # Only test the lastest version on macOS, let Linux do the rest
+          - postgresql@14
+        dbauth:
+          # Only test one auth method on macOS, Linux tests will cover the others
+          - scram-sha-256
         xcode:
           - latest-stable
-          #- latest
-        dbauth:
-          - trust
-          - md5
-          - scram-sha-256
-        formula:
-          - postgresql@11
-          - postgresql@12
-          - postgresql@13
-          - postgresql@14
-        dependent:
-          - fluent-postgres-driver
+          - latest
     runs-on: macos-11
     env:
       LOG_LEVEL: debug
       POSTGRES_HOSTNAME: 127.0.0.1
+      POSTGRES_USER: vapor_username
+      POSTGRES_PASSWORD: vapor_password
       POSTGRES_DB: postgres
       POSTGRES_HOST_AUTH_METHOD: ${{ matrix.dbauth }}
     steps:
@@ -100,12 +96,14 @@ jobs:
           xcode-version: ${{ matrix.xcode }}
       - name: Install Postgres, setup DB and auth, and wait for server start
         run: |
-          export PATH="/usr/local/opt/${{ matrix.formula }}/bin:$PATH" PGDATA=/tmp/vapor-postgres-test
-          brew install ${{ matrix.formula }}
-          initdb --locale=C --auth-host ${{ matrix.dbauth }} -U vapor_username --pwfile=<(echo vapor_password)
+          export PATH="$(brew --prefix)/opt/${{ matrix.formula }}/bin:$PATH" PGDATA=/tmp/vapor-postgres-test
+          (brew unlink postgresql || true) && brew install ${{ matrix.dbimage }} && brew link --force ${{ matrix.dbimage }}
+          initdb --locale=C --auth-host ${{ matrix.dbauth }} -U $POSTGRES_USER --pwfile=<(echo $POSTGRES_PASSWORD)
           pg_ctl start --wait
         timeout-minutes: 2
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Run local tests with Thread Sanitizer
-        run: swift test --enable-test-discovery --sanitize=thread
+        run: |
+          swift test --sanitize=thread -Xlinker -rpath \
+                -Xlinker $(xcode-select -p)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.5/macosx

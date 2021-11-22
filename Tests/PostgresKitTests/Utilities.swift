@@ -39,7 +39,7 @@ extension PostgresConfiguration {
     static var test: Self {
         .init(
             hostname: env("POSTGRES_HOSTNAME") ?? "localhost",
-            port: Self.ianaPortNumber,
+            port: env("POSTGRES_PORT").flatMap(Int.init) ?? Self.ianaPortNumber,
             username: env("POSTGRES_USER") ?? "vapor_username",
             password: env("POSTGRES_PASSWORD") ?? "vapor_password",
             database: env("POSTGRES_DB") ?? "vapor_database",
