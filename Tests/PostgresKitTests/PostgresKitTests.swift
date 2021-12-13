@@ -7,7 +7,6 @@ class PostgresKitTests: XCTestCase {
     func testSQLKitBenchmark() throws {
         let conn = try PostgresConnection.test(on: self.eventLoop).wait()
         defer { try! conn.close().wait() }
-        conn.logger.logLevel = .trace
         let benchmark = SQLBenchmarker(on: conn.sql())
         try benchmark.run()
     }
@@ -24,7 +23,7 @@ class PostgresKitTests: XCTestCase {
         // which causes XCTest to bail due to the first measurement having a very high deviation.
         // Spin the pool a bit before running the measurement to warm it up.
         for _ in 1...25 {
-            _ = try! pool.withConnection { conn in
+            _ = try pool.withConnection { conn in
                 return conn.query("SELECT 1;")
             }.wait()
         }
@@ -91,7 +90,6 @@ class PostgresKitTests: XCTestCase {
     func testArrayEncoding() throws {
         let conn = try PostgresConnection.test(on: self.eventLoop).wait()
         defer { try! conn.close().wait() }
-        conn.logger.logLevel = .trace
         
         struct Foo: Codable {
             var bar: Int
@@ -104,7 +102,6 @@ class PostgresKitTests: XCTestCase {
     func testDictionaryEncoding() throws {
         let conn = try PostgresConnection.test(on: self.eventLoop).wait()
         defer { try! conn.close().wait() }
-        conn.logger.logLevel = .trace
 
         struct Foo: Codable {
             var bar: Int
