@@ -55,4 +55,8 @@ public struct PostgresDialect: SQLDialect {
     public var upsertSyntax: SQLUpsertSyntax {
         .standard
     }
+    
+    public var unionFeatures: SQLUnionFeatures {
+        [.union, .unionAll, .intersect, .intersectAll, .except, .exceptAll, .explicitDistinct, .parenthesizedSubqueries]
+    }
 }
