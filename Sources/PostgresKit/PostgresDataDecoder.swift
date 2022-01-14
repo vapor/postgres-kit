@@ -40,14 +40,11 @@ public final class PostgresDataDecoder {
 
     enum Error: Swift.Error, CustomStringConvertible {
         case unexpectedDataType(PostgresDataType, expected: String)
-        case nestingNotSupported
 
         var description: String {
             switch self {
             case .unexpectedDataType(let type, let expected):
                 return "Unexpected data type: \(type). Expected \(expected)."
-            case .nestingNotSupported:
-                return "Decoding nested containers is not supported."
             }
         }
     }
@@ -100,15 +97,15 @@ public final class PostgresDataDecoder {
             }
             
             mutating func nestedContainer<NewKey: CodingKey>(keyedBy _: NewKey.Type) throws -> KeyedDecodingContainer<NewKey> {
-                throw DecodingError.dataCorruptedError(in: self, debugDescription: "Data nesting is not supported")
+                throw DecodingError.dataCorruptedError(in: self, debugDescription: "Nested data types must be JSON-encoded")
             }
             
             mutating func nestedUnkeyedContainer() throws -> UnkeyedDecodingContainer {
-                throw DecodingError.dataCorruptedError(in: self, debugDescription: "Data nesting is not supported")
+                throw DecodingError.dataCorruptedError(in: self, debugDescription: "Nested data types must be JSON-encoded")
             }
             
             mutating func superDecoder() throws -> Decoder {
-                throw DecodingError.dataCorruptedError(in: self, debugDescription: "Data nesting is not supported")
+                throw DecodingError.dataCorruptedError(in: self, debugDescription: "Nested data types must be JSON-encoded")
             }
         }
         
