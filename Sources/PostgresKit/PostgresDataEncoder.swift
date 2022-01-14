@@ -172,6 +172,7 @@ public final class PostgresDataEncoder {
     }
 }
 
+/// Coding key for JSON types.
 internal struct _PostgresJSONKey: CodingKey {
 	public var stringValue: String
 	public var intValue: Int?
@@ -199,7 +200,7 @@ internal struct _PostgresJSONKey: CodingKey {
 	internal static let `super` = _PostgresJSONKey(stringValue: "super")!
 }
 
-///
+/// A protocol to simplify things for types that need to deal with encoders.
 private protocol _SpecialEncoder {
 	/// The coding path of the encoder.
 	var codingPath: [CodingKey] { get }
@@ -209,6 +210,10 @@ private protocol _SpecialEncoder {
 
 
 extension _SpecialEncoder {
+	/** Gets an encoder using the current object's coding path, optionally adding another `CodingKey` to the new encoder's path.
+	 - Parameter additionalKey: A `CodingKey` you'd like to add to the coding path to create an encoder from.
+	 - Returns: A `PostgresDataEncoder._Encoder` object at the object's coding path.
+	 */
 	fileprivate func getEncoder(for additionalKey: CodingKey?) -> PostgresDataEncoder._Encoder {
 		if let additionalKey = additionalKey {
 			var newCodingPath = self.codingPath
