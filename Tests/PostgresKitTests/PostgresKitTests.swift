@@ -87,7 +87,6 @@ class PostgresKitTests: XCTestCase {
         }
     }
 
-	// MARK: - Flat Tests
     func testArrayEncoding() throws {
         let conn = try PostgresConnection.test(on: self.eventLoop).wait()
         defer { try! conn.close().wait() }
@@ -165,7 +164,6 @@ class PostgresKitTests: XCTestCase {
         try SQLBenchmarker(on: connection.sql()).testEnum()
     }
 
-	// MARK: - Nested Tests
 	func testNestedArrayEncoding() throws {
 		let conn = try PostgresConnection.test(on: self.eventLoop).wait()
 		defer { try! conn.close().wait() }
