@@ -93,6 +93,8 @@ public final class PostgreSQLConnection: DatabaseConnection, BasicWorker, Databa
                 return true
             case .error(let e): error = PostgreSQLError.errorResponse(e)
             case .notice(let n): debugOnly { WARNING(n.description) }
+            case .parameterStatus:
+                break
             default: try onResponse(message)
             }
             return false // request until ready for query
