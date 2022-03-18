@@ -15,6 +15,7 @@ public struct PostgresConfiguration {
     public static var ianaPortNumber: Int { 5432 }
 
     internal var _hostname: String?
+    internal var _port: Int?
 
     public init?(url: String) {
         guard let url = URL(string: url) else {
@@ -67,6 +68,7 @@ public struct PostgresConfiguration {
         self.database = database
         self.tlsConfiguration = nil
         self._hostname = nil
+        self._port = nil
     }
     
     public init(
@@ -85,5 +87,6 @@ public struct PostgresConfiguration {
         self.password = password
         self.tlsConfiguration = tlsConfiguration
         self._hostname = hostname
+        self._port = port
     }
 }
