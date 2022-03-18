@@ -1,6 +1,5 @@
 import XCTest
 import PostgresKit
-import NIOCore
 import Logging
 #if canImport(Darwin)
 import Darwin.C
@@ -10,28 +9,7 @@ import Glibc
 
 extension PostgresConnection {
     static func test(on eventLoop: EventLoop) -> EventLoopFuture<PostgresConnection> {
-        let config = PostgresConfiguration.test
-
-        return eventLoop.flatSubmit { () -> EventLoopFuture<PostgresConnection> in
-            do {
-                let address = try config.address()
-                return self.connect(to: address, on: eventLoop)
-            } catch {
-                return eventLoop.makeFailedFuture(error)
-            }
-        }.flatMap { conn in
-            return conn.authenticate(
-                username: config.username,
-                database: config.database,
-                password: config.password
-            )
-            .map { conn }
-            .flatMapError { error in
-                conn.close().flatMapThrowing {
-                    throw error
-                }
-            }
-        }
+        return PostgresConnectionSource(configuration: .test).makeConnection(logger: .init(label: "vapor.codes.postgres-kit.test"), on: eventLoop)
     }
 }
 
