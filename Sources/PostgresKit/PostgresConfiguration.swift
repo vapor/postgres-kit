@@ -7,6 +7,12 @@ public struct PostgresConfiguration {
     public var database: String?
     public var tlsConfiguration: TLSConfiguration?
 
+    /// Require connection to provide `BackendKeyData`.
+    /// For use with Amazon RDS Proxy, this must be set to false.
+    ///
+    /// - Default: true
+    public var requireBackendKeyData: Bool = true
+
     /// Optional `search_path` to set on new connections.
     public var searchPath: [String]?
 

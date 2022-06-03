@@ -22,10 +22,15 @@ public struct PostgresConnectionSource: ConnectionPoolSource {
                 case let .success(sslContext): tlsMode = sslContext.map { .require($0) } ?? .disable
                 case let .failure(error): return eventLoop.makeFailedFuture(error)
             }
+            
+            var connection: PostgresConnection.Configuration.Connection
+            connection = .init(host: hostname, port: self.configuration._port ?? PostgresConfiguration.ianaPortNumber)
+            connection.requireBackendKeyData = configuration.requireBackendKeyData
+            
             let future = PostgresConnection.connect(
                 on: eventLoop,
                 configuration: .init(
-                    connection: .init(host: hostname, port: self.configuration._port ?? PostgresConfiguration.ianaPortNumber),
+                    connection: connection,
                     authentication: .init(username: self.configuration.username, database: self.configuration.database, password: self.configuration.password),
                     tls: tlsMode
                 ),
