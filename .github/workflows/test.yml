@@ -33,7 +33,9 @@ jobs:
           POSTGRES_INITDB_ARGS: --auth-host=${{ matrix.dbauth }}
     steps:
       - name: Save Postgres version and method to env
-        run: echo POSTGRES_INFO='${{ toJSON(matrix) }}' >> $GITHUB_ENV
+        run: |
+          echo POSTGRES_VERSION='${{ matrix.dbimage }}' >> $GITHUB_ENV
+          echo POSTGRES_AUTH_METHOD='${{ matrix.dbauth }}' >> $GITHUB_ENV
       - name: Check out package
         uses: actions/checkout@v3
       - name: Run local tests with coverage
@@ -42,7 +44,7 @@ jobs:
         uses: vapor/swift-codecov-action@v0.2
         with:
           cc_flags: 'unittests'
-          cc_env_vars: 'SWIFT_VERSION,SWIFT_PLATFORM,RUNNER_OS,RUNNER_ARCH,POSTGRES_INFO'
+          cc_env_vars: 'SWIFT_VERSION,SWIFT_PLATFORM,RUNNER_OS,RUNNER_ARCH,POSTGRES_VERSION,POSTGRES_AUTH_METHOD'
           cc_fail_ci_if_error: true
           cc_verbose: true
           cc_dry_run: false
