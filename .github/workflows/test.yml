@@ -150,8 +150,8 @@ jobs:
         dbimage: ['postgresql']
         dbauth: ['scram-sha-256']
         macos: ['macos-11', 'macos-12']
-        xcode: ['latest-stable']
-        include: [{ macos: 'macos-12', xcode: 'latest' }]
+        xcode: ['latest-stable', 'latest']
+        exclude: [{ macos: 'macos-11', xcode: 'latest' }]
     runs-on: ${{ matrix.macos }}
     env:
       POSTGRES_HOSTNAME: 127.0.0.1
