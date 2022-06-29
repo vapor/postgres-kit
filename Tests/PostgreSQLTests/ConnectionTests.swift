@@ -686,6 +686,11 @@ class ConnectionTests: XCTestCase {
         XCTAssertEqual(1, result.count)
         XCTAssertEqual([nil, "foo", nil, "bar"], result[0].arr)
     }
+
+    func testParameterStatus() throws {
+        let conn = try PostgreSQLConnection.makeTest()
+        try conn.query("SET TIME ZONE 'UTC';") { _ in }.wait()
+    }
 }
 
 extension PostgreSQLConnection {

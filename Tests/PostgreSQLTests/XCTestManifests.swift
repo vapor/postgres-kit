@@ -19,6 +19,7 @@ extension ConnectionTests {
         ("testNull", testNull),
         ("testNumericDecode", testNumericDecode),
         ("testOrderBy", testOrderBy),
+        ("testParameterStatus", testParameterStatus),
         ("testPolygon", testPolygon),
         ("testRowCodableEmptyKeyed", testRowCodableEmptyKeyed),
         ("testRowCodableNested", testRowCodableNested),
