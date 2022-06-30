@@ -14,7 +14,7 @@ public final class PostgresDataEncoder {
             return data
         } else {
             let context = _Context()
-			try value.encode(to: _Encoder(codingPath: [], context: context))
+            try value.encode(to: _Encoder(codingPath: [], context: context))
             if let value = context.value {
                 return value
             } else if let array = context.array {
@@ -38,9 +38,9 @@ public final class PostgresDataEncoder {
         var userInfo: [CodingUserInfoKey : Any] {
             [:]
         }
-		var impl: _Encoder {
-			self
-		}
+        var impl: _Encoder {
+            self
+        }
 
         let codingPath: [CodingKey]
         let context: _Context
@@ -53,7 +53,7 @@ public final class PostgresDataEncoder {
 
         func unkeyedContainer() -> UnkeyedEncodingContainer {
             self.context.array = []
-			return _UnkeyedEncodingContainer(impl: self, codingPath: self.codingPath, context: self.context)
+            return _UnkeyedEncodingContainer(impl: self, codingPath: self.codingPath, context: self.context)
         }
 
         func singleValueContainer() -> SingleValueEncodingContainer {
@@ -61,8 +61,8 @@ public final class PostgresDataEncoder {
         }
     }
 
-	struct _UnkeyedEncodingContainer: UnkeyedEncodingContainer, _SpecialEncoder {
-		let impl: PostgresDataEncoder._Encoder
+    struct _UnkeyedEncodingContainer: UnkeyedEncodingContainer, _SpecialEncoder {
+        let impl: PostgresDataEncoder._Encoder
 
         let codingPath: [CodingKey]
 
@@ -85,27 +85,27 @@ public final class PostgresDataEncoder {
         ) -> KeyedEncodingContainer<NestedKey>
             where NestedKey : CodingKey
         {
-			let newPath = self.codingPath + [_PostgresJSONKey(index: self.count)]
-			let nestedContainer = _KeyedEncodingContainer<NestedKey>(impl: impl, codingPath: newPath)
-			return KeyedEncodingContainer(nestedContainer)
+            let newPath = self.codingPath + [_PostgresJSONKey(index: self.count)]
+            let nestedContainer = _KeyedEncodingContainer<NestedKey>(impl: impl, codingPath: newPath)
+            return KeyedEncodingContainer(nestedContainer)
         }
 
         func nestedUnkeyedContainer() -> UnkeyedEncodingContainer {
-			let newPath = self.codingPath + [_PostgresJSONKey(index: self.count)]
-			let nestedContainer = _UnkeyedEncodingContainer(impl: impl, codingPath: newPath, context: context)
-			return nestedContainer
+            let newPath = self.codingPath + [_PostgresJSONKey(index: self.count)]
+            let nestedContainer = _UnkeyedEncodingContainer(impl: impl, codingPath: newPath, context: context)
+            return nestedContainer
         }
 
         func superEncoder() -> Encoder {
-			let encoder = self.getEncoder(for: _PostgresJSONKey(index: self.count))
-			return encoder
+            let encoder = self.getEncoder(for: _PostgresJSONKey(index: self.count))
+            return encoder
         }
     }
 
     struct _KeyedEncodingContainer<Key>: KeyedEncodingContainerProtocol, _SpecialEncoder
         where Key: CodingKey
-	{
-		let impl: PostgresDataEncoder._Encoder
+    {
+        let impl: PostgresDataEncoder._Encoder
 
         let codingPath: [CodingKey]
 
@@ -123,26 +123,26 @@ public final class PostgresDataEncoder {
         ) -> KeyedEncodingContainer<NestedKey>
             where NestedKey : CodingKey
         {
-			let newPath = self.codingPath + [key]
-			let nestedContainer = _KeyedEncodingContainer<NestedKey>(impl: impl, codingPath: newPath)
-			return KeyedEncodingContainer(nestedContainer)
+            let newPath = self.codingPath + [key]
+            let nestedContainer = _KeyedEncodingContainer<NestedKey>(impl: impl, codingPath: newPath)
+            return KeyedEncodingContainer(nestedContainer)
         }
 
         func nestedUnkeyedContainer(forKey key: Key) -> UnkeyedEncodingContainer {
-			let newPath = self.codingPath + [key]
-			let nestedContainer = _UnkeyedEncodingContainer(impl: impl, codingPath: newPath, context: .init())
-			return nestedContainer
+            let newPath = self.codingPath + [key]
+            let nestedContainer = _UnkeyedEncodingContainer(impl: impl, codingPath: newPath, context: .init())
+            return nestedContainer
         }
 
         func superEncoder() -> Encoder {
-			superEncoder(forKey: .init(stringValue: "super")!)
+            superEncoder(forKey: .init(stringValue: "super")!)
         }
 
         func superEncoder(forKey key: Key) -> Encoder {
-			let newEncoder = self.getEncoder(for: key)
-			// self.object.set(newEncoder, for: convertedKey.stringValue)
-			return newEncoder
-		}
+            let newEncoder = self.getEncoder(for: key)
+            // self.object.set(newEncoder, for: convertedKey.stringValue)
+            return newEncoder
+        }
     }
 
 
@@ -174,53 +174,53 @@ public final class PostgresDataEncoder {
 
 /// Coding key for JSON types.
 internal struct _PostgresJSONKey: CodingKey {
-	public var stringValue: String
-	public var intValue: Int?
+    public var stringValue: String
+    public var intValue: Int?
 
-	public init?(stringValue: String) {
-		self.stringValue = stringValue
-		self.intValue = nil
-	}
+    public init?(stringValue: String) {
+        self.stringValue = stringValue
+        self.intValue = nil
+    }
 
-	public init?(intValue: Int) {
-		self.stringValue = "\(intValue)"
-		self.intValue = intValue
-	}
+    public init?(intValue: Int) {
+        self.stringValue = "\(intValue)"
+        self.intValue = intValue
+    }
 
-	public init(stringValue: String, intValue: Int?) {
-		self.stringValue = stringValue
-		self.intValue = intValue
-	}
+    public init(stringValue: String, intValue: Int?) {
+        self.stringValue = stringValue
+        self.intValue = intValue
+    }
 
-	internal init(index: Int) {
-		self.stringValue = "Index \(index)"
-		self.intValue = index
-	}
+    internal init(index: Int) {
+        self.stringValue = "Index \(index)"
+        self.intValue = index
+    }
 
-	internal static let `super` = _PostgresJSONKey(stringValue: "super")!
+    internal static let `super` = _PostgresJSONKey(stringValue: "super")!
 }
 
 /// A protocol to simplify things for types that need to deal with encoders.
 private protocol _SpecialEncoder {
-	/// The coding path of the encoder.
-	var codingPath: [CodingKey] { get }
-	/// The associated `PostgresDataEncoder._Encoder` object.
-	var impl: PostgresDataEncoder._Encoder { get }
+    /// The coding path of the encoder.
+    var codingPath: [CodingKey] { get }
+    /// The associated `PostgresDataEncoder._Encoder` object.
+    var impl: PostgresDataEncoder._Encoder { get }
 }
 
 
 extension _SpecialEncoder {
-	/** Gets an encoder using the current object's coding path, optionally adding another `CodingKey` to the new encoder's path.
-	 - Parameter additionalKey: A `CodingKey` you'd like to add to the coding path to create an encoder from.
-	 - Returns: A `PostgresDataEncoder._Encoder` object at the object's coding path.
-	 */
-	fileprivate func getEncoder(for additionalKey: CodingKey?) -> PostgresDataEncoder._Encoder {
-		if let additionalKey = additionalKey {
-			var newCodingPath = self.codingPath
-			newCodingPath.append(additionalKey)
-			return PostgresDataEncoder._Encoder(codingPath: newCodingPath, context: .init())
-		}
+    /** Gets an encoder using the current object's coding path, optionally adding another `CodingKey` to the new encoder's path.
+     - Parameter additionalKey: A `CodingKey` you'd like to add to the coding path to create an encoder from.
+     - Returns: A `PostgresDataEncoder._Encoder` object at the object's coding path.
+     */
+    fileprivate func getEncoder(for additionalKey: CodingKey?) -> PostgresDataEncoder._Encoder {
+        if let additionalKey = additionalKey {
+            var newCodingPath = self.codingPath
+            newCodingPath.append(additionalKey)
+            return PostgresDataEncoder._Encoder(codingPath: newCodingPath, context: .init())
+        }
 
-		return self.impl
-	}
+        return self.impl
+    }
 }

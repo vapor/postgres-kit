@@ -107,9 +107,9 @@ class PostgresKitTests: XCTestCase {
             var bar: Int
         }
 
-		let foos: [String: Foo] = ["1": .init(bar: 1), "2": .init(bar: 2)]
-		try conn.sql().raw("SELECT \(bind: foos)::JSONB as foos")
-			.run().wait()
+        let foos: [String: Foo] = ["1": .init(bar: 1), "2": .init(bar: 2)]
+        try conn.sql().raw("SELECT \(bind: foos)::JSONB as foos")
+            .run().wait()
     }
 
     func testDecodeModelWithNil() throws {
@@ -164,49 +164,49 @@ class PostgresKitTests: XCTestCase {
         try SQLBenchmarker(on: connection.sql()).testEnum()
     }
 
-	func testNestedArrayEncoding() throws {
-		let conn = try PostgresConnection.test(on: self.eventLoop).wait()
-		defer { try! conn.close().wait() }
+    func testNestedArrayEncoding() throws {
+        let conn = try PostgresConnection.test(on: self.eventLoop).wait()
+        defer { try! conn.close().wait() }
 
-		struct Nester: Codable {
-			var foo: Foo
-			var bar: Double
+        struct Nester: Codable {
+            var foo: Foo
+            var bar: Double
 
-			struct Foo: Codable {
-				var bar: Int
-			}
-		}
+            struct Foo: Codable {
+                var bar: Int
+            }
+        }
 
-		let nesters: [Nester] = [
-			.init(foo: .init(bar: 1), bar: 1.0),
-			.init(foo: .init(bar: 2), bar: 2.0),
-		]
-		try conn.sql().raw("SELECT \(bind: nesters)::JSONB[] as nesters")
-			.run().wait()
-	}
+        let nesters: [Nester] = [
+            .init(foo: .init(bar: 1), bar: 1.0),
+            .init(foo: .init(bar: 2), bar: 2.0),
+        ]
+        try conn.sql().raw("SELECT \(bind: nesters)::JSONB[] as nesters")
+            .run().wait()
+    }
 
-	func testNestedDictionaryEncoding() throws {
-		let conn = try PostgresConnection.test(on: self.eventLoop).wait()
-		defer { try! conn.close().wait() }
+    func testNestedDictionaryEncoding() throws {
+        let conn = try PostgresConnection.test(on: self.eventLoop).wait()
+        defer { try! conn.close().wait() }
 
 
-		struct Nester: Codable {
-			var foo: Foo
-			var bar: Double
+        struct Nester: Codable {
+            var foo: Foo
+            var bar: Double
 
-			struct Foo: Codable {
-				var bar: Int
-			}
-		}
+            struct Foo: Codable {
+                var bar: Int
+            }
+        }
 
-		// Contrived Example: The Movie
-		let nesters: [String: Nester] = [
-			"1": .init(foo: .init(bar: 1), bar: 1.0),
-			"2": .init(foo: .init(bar: 2), bar: 2.0),
-		]
-		try conn.sql().raw("SELECT \(bind: nesters)::JSONB as nesters")
-			.run().wait()
-	}
+        // Contrived Example: The Movie
+        let nesters: [String: Nester] = [
+            "1": .init(foo: .init(bar: 1), bar: 1.0),
+            "2": .init(foo: .init(bar: 2), bar: 2.0),
+        ]
+        try conn.sql().raw("SELECT \(bind: nesters)::JSONB as nesters")
+            .run().wait()
+    }
 
     var eventLoop: EventLoop { self.eventLoopGroup.next() }
     var eventLoopGroup: EventLoopGroup!
