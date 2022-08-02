@@ -59,4 +59,12 @@ public struct PostgresDialect: SQLDialect {
     public var unionFeatures: SQLUnionFeatures {
         [.union, .unionAll, .intersect, .intersectAll, .except, .exceptAll, .explicitDistinct, .parenthesizedSubqueries]
     }
+
+    public var sharedSelectLockExpression: SQLExpression? {
+        SQLRaw("FOR SHARE")
+    }
+
+    public var exclusiveSelectLockExpression: SQLExpression? {
+        SQLRaw("FOR UPDATE")
+    }
 }
