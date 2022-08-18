@@ -1,10 +1,10 @@
-import NIOConcurrencyHelpers
 import NIOSSL
+import Atomics
 
 public struct PostgresConnectionSource: ConnectionPoolSource {
     public let configuration: PostgresConfiguration
     public let sslContext: Result<NIOSSLContext?, Error>
-    private static let idGenerator = NIOAtomic.makeAtomic(value: 0)
+    private static let idGenerator = ManagedAtomic<Int>(0)
 
     public init(configuration: PostgresConfiguration) {
         self.configuration = configuration
@@ -34,7 +34,7 @@ public struct PostgresConnectionSource: ConnectionPoolSource {
                     authentication: .init(username: self.configuration.username, database: self.configuration.database, password: self.configuration.password),
                     tls: tlsMode
                 ),
-                id: Self.idGenerator.add(1),
+                id: Self.idGenerator.wrappingIncrementThenLoad(ordering: .relaxed),
                 logger: logger
             )
             
