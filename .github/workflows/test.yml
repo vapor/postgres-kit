@@ -1,7 +1,11 @@
 name: test
-on: [ 'pull_request' ]
+on:
+  pull_request: { branches: ['*'] }
+  push: { branches: ['main'] }
+  
 env:
   LOG_LEVEL: debug
+  SWIFT_DETERMINISTIC_HASHING: 1
   POSTGRES_HOSTNAME: 'psql-a'
   POSTGRES_HOSTNAME_A: 'psql-a'
   POSTGRES_HOSTNAME_B: 'psql-b'
@@ -19,9 +23,9 @@ jobs:
   # Baseline test run for code coverage stats
   codecov:
     strategy:
-      matrix: { dbimage: ['postgres:14'], dbauth: ['scram-sha-256'] }
+      matrix: { dbimage: ['postgres:15'], dbauth: ['scram-sha-256'] }
     runs-on: ubuntu-latest
-    container: swift:5.6-focal
+    container: swift:5.7-jammy
     services:
       psql-a:
         image: ${{ matrix.dbimage }}
@@ -51,8 +55,9 @@ jobs:
 
   # Check for API breakage versus main
   api-breakage:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    container: swift:5.6-focal
+    container: swift:5.7-jammy
     steps:
       - name: Check out package
         uses: actions/checkout@v3
@@ -66,18 +71,22 @@ jobs:
 
   # Run Linux unit tests against various configurations
   linux-unit:
+    if: github.event_name == 'pull_request'
     strategy:
       fail-fast: false
       matrix:
-        dbimage: ['postgres:14', 'postgres:13', 'postgres:11']
-        swiftver: ['swift:5.4', 'swift:5.5', 'swift:5.6', 'swiftlang/swift:nightly-main']
-        swiftos: ['focal']
+        dbimage: ['postgres:15', 'postgres:14', 'postgres:11']
+        swiftver: [
+            'swift:5.4-focal', 'swift:5.5-focal', 'swift:5.6-focal',
+            'swift:5.7-jammy',
+            'swiftlang/swift:nightly-main-jammy'
+        ]
         include: [
-            {dbimage: 'postgres:14', dbauth: 'scram-sha-256'},
-            {dbimage: 'postgres:13', dbauth: 'md5'},
+            {dbimage: 'postgres:15', dbauth: 'scram-sha-256'},
+            {dbimage: 'postgres:14', dbauth: 'md5'},
             {dbimage: 'postgres:11', dbauth: 'trust'}
         ]
-    container: ${{ format('{0}-{1}', matrix.swiftver, matrix.swiftos) }}
+    container: ${{ matrix.swiftver }}
     runs-on: ubuntu-latest
     services:
       psql-a:
@@ -104,14 +113,18 @@ jobs:
 
   # Test integration with dependent package on Linux
   linux-integration:
+    if: github.event_name == 'pull_request'
     strategy:
       fail-fast: false
       matrix:
-        dbimage: ['postgres:14']
+        dbimage: ['postgres:15']
         dbauth: ['scram-sha-256']
-        swiftver: ['swift:5.4', 'swift:5.5', 'swift:5.6', 'swiftlang/swift:nightly-main']
-        swiftos: ['focal']
-    container: ${{ format('{0}-{1}', matrix.swiftver, matrix.swiftos) }}
+        swiftver: [
+            'swift:5.4-focal', 'swift:5.5-focal', 'swift:5.6-focal',
+            'swift:5.7-jammy',
+            'swiftlang/swift:nightly-main-jammy'
+        ]
+    container: ${{ matrix.swiftver }}
     runs-on: ubuntu-latest
     services:
       psql-a:
@@ -144,14 +157,14 @@ jobs:
 
   # Run macOS unit tests against various configurations
   macos-unit:
+    if: github.event_name == 'pull_request'
     strategy:
       fail-fast: false
       matrix:
-        dbimage: ['postgresql']
+        dbimage: ['postgresql@14'] # N.B.: As of this writing, Homebrew didn't have Postgres 15 yet
         dbauth: ['scram-sha-256']
         macos: ['macos-11', 'macos-12']
-        xcode: ['latest-stable', 'latest']
-        exclude: [{ macos: 'macos-11', xcode: 'latest' }]
+        xcode: ['latest-stable']
     runs-on: ${{ matrix.macos }}
     env:
       POSTGRES_HOSTNAME: 127.0.0.1
