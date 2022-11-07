@@ -139,6 +139,39 @@ class PostgresKitTests: XCTestCase {
         print(rows)
     }
 
+    func testPostgresConfigurationURLValidation() throws {
+        
+        /// PostgresConfiguration must have user, but should be...?
+        XCTAssertNil(PostgresConfiguration(url: "postgres://localhost"))
+        XCTAssertNil(PostgresConfiguration(url: "postgres://localhost:5433"))
+        XCTAssertNil(PostgresConfiguration(url: "postgres://localhost/mydb"))
+        
+        /// ... but PostgresConfiguration with empty user pass the test
+        XCTAssertNotNil(PostgresConfiguration(url: "postgres://@localhost"))
+        
+        XCTAssertNotNil(PostgresConfiguration(url: "postgres://user@127.0.0.1"))
+        XCTAssertNotNil(PostgresConfiguration(url: "postgres://user@localhost:5432"))
+        XCTAssertNotNil(PostgresConfiguration(url: "postgres://user@127.0.0.1:5430"))
+        XCTAssertNotNil(PostgresConfiguration(url: "postgres://user:secret@localhost"))
+        XCTAssertNotNil(PostgresConfiguration(url: "postgres://user:pass%word@127.0.0.1:5432"))
+        XCTAssertNotNil(PostgresConfiguration(url: "postgres://user:pa%ss%wor%d@127.0.0.1:5432/db"))
+        XCTAssertNotNil(PostgresConfiguration(url: "postgres://other@localhost/somedb?connect_timeout=10&application_name=myapp"))
+    }
+    
+    func testPostgresConfigurationURLComponents() throws {
+        
+        let basicConfiguration: PostgresConfiguration = PostgresConfiguration(url: "postgres://user:password@localhost/db")!
+        XCTAssertEqual(basicConfiguration.username, "user")
+        XCTAssertEqual(basicConfiguration.password, "password")
+        XCTAssertEqual(basicConfiguration.database, "db")
+        
+        let encodedPasswordConfiguration: PostgresConfiguration = PostgresConfiguration(url: "postgres://user:2kf%D@127.0.0.1:5432/db1")!
+        XCTAssertEqual(encodedPasswordConfiguration.username, "user")
+        XCTAssertEqual(encodedPasswordConfiguration.password, "2kf%D")
+        XCTAssertNotEqual(encodedPasswordConfiguration.password, "2kf%25D")
+        XCTAssertEqual(encodedPasswordConfiguration.database, "db1")
+    }
+
     func testArrayEncoding_json() throws {
         let connection = try PostgresConnection.test(on: self.eventLoop).wait()
         defer { try! connection.close().wait() }

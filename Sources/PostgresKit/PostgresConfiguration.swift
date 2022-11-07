@@ -24,24 +24,37 @@ public struct PostgresConfiguration {
     internal var _port: Int?
 
     public init?(url: String) {
-        guard let url = URL(string: url) else {
+        
+        guard let percentEncodingURL = url.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
             return nil
         }
-        self.init(url: url)
+        
+        guard let percentEncodedURL = URL(string: percentEncodingURL) else {
+            return nil
+        }
+        
+        self.init(url: percentEncodedURL)
     }
     
     public init?(url: URL) {
+        
         guard url.scheme?.hasPrefix("postgres") == true else {
             return nil
         }
-        guard let username = url.user else {
-            return nil
-        }
-        let password = url.password
+        
         guard let hostname = url.host else {
             return nil
         }
+        
         let port = url.port ?? Self.ianaPortNumber
+        
+        guard let username = url.user?.removingPercentEncoding else {
+            return nil
+        }
+        
+        let password = url.password?.removingPercentEncoding
+        
+        let databasse = url.path.split(separator: "/", omittingEmptySubsequences: false).last.flatMap(String.init)
         
         let tlsConfiguration: TLSConfiguration?
         if url.query?.contains("ssl=true") == true || url.query?.contains("sslmode=require") == true {
@@ -55,11 +68,11 @@ public struct PostgresConfiguration {
             port: port,
             username: username,
             password: password,
-            database: url.path.split(separator: "/").last.flatMap(String.init),
+            database: databasse,
             tlsConfiguration: tlsConfiguration
         )
     }
-
+    
     public init(
         unixDomainSocketPath: String,
         username: String,
