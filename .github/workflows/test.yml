@@ -75,15 +75,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        dbimage: ['postgres:15', 'postgres:14', 'postgres:11']
+        dbimage: ['postgres:15', 'postgres:13', 'postgres:11']
         swiftver: [
-            'swift:5.4-focal', 'swift:5.5-focal', 'swift:5.6-focal',
-            'swift:5.7-jammy',
+            'swift:5.5-bionic', 'swift:5.6-focal', 'swift:5.7-jammy',
             'swiftlang/swift:nightly-main-jammy'
         ]
         include: [
             {dbimage: 'postgres:15', dbauth: 'scram-sha-256'},
-            {dbimage: 'postgres:14', dbauth: 'md5'},
+            {dbimage: 'postgres:13', dbauth: 'md5'},
             {dbimage: 'postgres:11', dbauth: 'trust'}
         ]
     container: ${{ matrix.swiftver }}
@@ -120,8 +119,7 @@ jobs:
         dbimage: ['postgres:15']
         dbauth: ['scram-sha-256']
         swiftver: [
-            'swift:5.4-focal', 'swift:5.5-focal', 'swift:5.6-focal',
-            'swift:5.7-jammy',
+            'swift:5.5-bionic', 'swift:5.6-focal', 'swift:5.7-jammy',
             'swiftlang/swift:nightly-main-jammy'
         ]
     container: ${{ matrix.swiftver }}
