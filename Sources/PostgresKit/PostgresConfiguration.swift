@@ -1,4 +1,6 @@
-@_exported import struct Foundation.URL
+import NIOSSL
+import Foundation
+import NIOCore
 
 public struct PostgresConfiguration {
     public var address: () throws -> SocketAddress

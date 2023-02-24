@@ -2,6 +2,9 @@ import PostgresKit
 import SQLKitBenchmark
 import XCTest
 import Logging
+import PostgresNIO
+import AsyncKit
+import NIOCore
 
 class PostgresKitTests: XCTestCase {
     func testSQLKitBenchmark() throws {

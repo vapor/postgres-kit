@@ -1,3 +1,5 @@
+import SQLKit
+
 public struct PostgresDialect: SQLDialect {
     public init() { }
     
