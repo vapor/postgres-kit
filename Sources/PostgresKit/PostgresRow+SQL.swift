@@ -1,3 +1,6 @@
+import PostgresNIO
+import SQLKit
+
 extension PostgresRow {
     public func sql(decoder: PostgresDataDecoder = .init()) -> SQLRow {
         return _PostgresSQLRow(row: self.makeRandomAccess(), decoder: decoder)

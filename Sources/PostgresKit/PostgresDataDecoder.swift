@@ -1,6 +1,5 @@
 import Foundation
-import protocol PostgresNIO.PostgresJSONDecoder
-import var PostgresNIO._defaultJSONDecoder
+import PostgresNIO
 
 public final class PostgresDataDecoder {
     public let json: PostgresNIO.PostgresJSONDecoder

@@ -6,6 +6,8 @@ import Darwin.C
 #else
 import Glibc
 #endif
+import NIOCore
+import PostgresNIO
 
 extension PostgresConnection {
     static func test(on eventLoop: EventLoop) -> EventLoopFuture<PostgresConnection> {

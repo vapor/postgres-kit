@@ -1,5 +1,9 @@
 import NIOSSL
 import Atomics
+import AsyncKit
+import Logging
+import PostgresNIO
+import NIOCore
 
 public struct PostgresConnectionSource: ConnectionPoolSource {
     public let configuration: PostgresConfiguration
