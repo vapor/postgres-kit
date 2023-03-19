@@ -1,6 +1,7 @@
 import NIOCore
 import PostgresNIO
 import AsyncKit
+import Logging
 
 extension EventLoopGroupConnectionPool where Source == PostgresConnectionSource {
     public func database(logger: Logger) -> PostgresDatabase {
