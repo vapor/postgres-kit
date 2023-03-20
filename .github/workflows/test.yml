@@ -1,4 +1,7 @@
 name: test
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 on:
   pull_request: { branches: ['*'] }
   push: { branches: ['main'] }
@@ -78,6 +81,7 @@ jobs:
         dbimage: ['postgres:15', 'postgres:13', 'postgres:11']
         swiftver: [
             'swift:5.5-bionic', 'swift:5.6-focal', 'swift:5.7-jammy',
+            'swiftlang/swift:nightly-5.8-jammy',
             'swiftlang/swift:nightly-main-jammy'
         ]
         include: [
@@ -159,9 +163,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        dbimage: ['postgresql@14'] # N.B.: As of this writing, Homebrew didn't have Postgres 15 yet
+        dbimage: ['postgresql@14']
         dbauth: ['scram-sha-256']
-        macos: ['macos-11', 'macos-12']
+        macos: ['macos-12']
         xcode: ['latest-stable']
     runs-on: ${{ matrix.macos }}
     env:
