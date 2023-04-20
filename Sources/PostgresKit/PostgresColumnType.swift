@@ -1,349 +1,210 @@
+import AsyncKit
 import SQLKit
 
 /// Postgres-specific column types.
-public struct PostgresColumnType: SQLExpression, Equatable {
-    public static var blob: PostgresColumnType {
-        return .varbit
-    }
-
-    /// See `Equatable`.
-    public static func == (lhs: PostgresColumnType, rhs: PostgresColumnType) -> Bool {
-        return lhs.primitive == rhs.primitive && lhs.isArray == rhs.isArray
-    }
+public struct PostgresColumnType: SQLExpression, Hashable {
+    public static var blob: PostgresColumnType { .varbit }
 
     /// signed eight-byte integer
-    public static var int8: PostgresColumnType {
-        return .bigint
-    }
+    public static var int8: PostgresColumnType { .bigint }
 
     /// signed eight-byte integer
-    public static var bigint: PostgresColumnType {
-        return .init(.bigint)
-    }
+    public static var bigint: PostgresColumnType { .init(.bigint) }
 
     /// autoincrementing eight-byte integer
-    public static var serial8: PostgresColumnType {
-        return .bigserial
-    }
+    public static var serial8: PostgresColumnType { .bigserial }
 
     /// autoincrementing eight-byte integer
-    public static var bigserial: PostgresColumnType {
-        return .init(.bigserial)
-    }
+    public static var bigserial: PostgresColumnType { .init(.bigserial) }
 
     /// fixed-length bit string
-    public static var bit: PostgresColumnType {
-        return .init(.bit(nil))
-    }
+    public static var bit: PostgresColumnType { .init(.bit(nil)) }
 
     /// fixed-length bit string
-    public static func bit(_ n: Int) -> PostgresColumnType {
-        return .init(.bit(n))
-    }
+    public static func bit(_ n: Int) -> PostgresColumnType { .init(.bit(n)) }
 
     /// variable-length bit string
-    public static var varbit: PostgresColumnType {
-        return .init(.varbit(nil))
-    }
+    public static var varbit: PostgresColumnType { .init(.varbit(nil)) }
 
     /// variable-length bit string
-    public static func varbit(_ n: Int) -> PostgresColumnType {
-        return .init(.varbit(n))
-    }
+    public static func varbit(_ n: Int) -> PostgresColumnType { .init(.varbit(n)) }
 
     /// logical Boolean (true/false)
-    public static var bool: PostgresColumnType {
-        return .boolean
-    }
+    public static var bool: PostgresColumnType { .boolean }
 
     /// logical Boolean (true/false)
-    public static var boolean: PostgresColumnType {
-        return .init(.boolean)
-    }
+    public static var boolean: PostgresColumnType { .init(.boolean) }
 
     /// rectangular box on a plane
-    public static var box: PostgresColumnType {
-        return .init(.box)
-    }
+    public static var box: PostgresColumnType { .init(.box) }
 
     /// binary data (“byte array”)
-    public static var bytea: PostgresColumnType {
-        return .init(.bytea)
-    }
+    public static var bytea: PostgresColumnType { .init(.bytea) }
 
     /// fixed-length character string
-    public static var char: PostgresColumnType {
-        return .init(.char(nil))
-    }
+    public static var char: PostgresColumnType { .init(.char(nil)) }
 
     /// fixed-length character string
-    public static func char(_ n: Int) -> PostgresColumnType {
-        return .init(.char(n))
-    }
+    public static func char(_ n: Int) -> PostgresColumnType { .init(.char(n)) }
 
     /// variable-length character string
-    public static var varchar: PostgresColumnType {
-        return .init(.varchar(nil))
-    }
+    public static var varchar: PostgresColumnType { .init(.varchar(nil)) }
 
     /// variable-length character string
-    public static func varchar(_ n: Int) -> PostgresColumnType {
-        return .init(.varchar(n))
-    }
+    public static func varchar(_ n: Int) -> PostgresColumnType { .init(.varchar(n)) }
 
     /// IPv4 or IPv6 network address
-    public static var cidr: PostgresColumnType {
-        return .init(.cidr)
-    }
+    public static var cidr: PostgresColumnType { .init(.cidr) }
 
     /// circle on a plane
-    public static var circle: PostgresColumnType {
-        return .init(.circle)
-    }
+    public static var circle: PostgresColumnType { .init(.circle) }
 
     /// calendar date (year, month, day)
-    public static var date: PostgresColumnType {
-        return .init(.date)
-    }
+    public static var date: PostgresColumnType { .init(.date) }
 
     /// floating-point number (8 bytes)
-    public static var float8: PostgresColumnType {
-        return .doublePrecision
-    }
+    public static var float8: PostgresColumnType { .doublePrecision }
 
     /// floating-point number (8 bytes)
-    public static var doublePrecision: PostgresColumnType {
-        return .init(.doublePrecision)
-    }
+    public static var doublePrecision: PostgresColumnType { .init(.doublePrecision) }
 
     /// IPv4 or IPv6 host address
-    public static var inet: PostgresColumnType {
-        return .init(.inet)
-    }
+    public static var inet: PostgresColumnType { .init(.inet) }
 
     /// signed four-byte integer
-    public static var int: PostgresColumnType {
-        return .integer
-    }
+    public static var int: PostgresColumnType { .integer }
 
     /// signed four-byte integer
-    public static var int4: PostgresColumnType {
-        return .integer
-    }
+    public static var int4: PostgresColumnType { .integer }
 
     /// signed four-byte integer
-    public static var integer: PostgresColumnType {
-        return .init(.integer)
-    }
+    public static var integer: PostgresColumnType { .init(.integer) }
 
     /// time span
-    public static var interval: PostgresColumnType {
-        return .init(.interval)
-    }
+    public static var interval: PostgresColumnType { .init(.interval) }
 
     /// textual JSON data
-    public static var json: PostgresColumnType {
-        return .init(.json)
-    }
+    public static var json: PostgresColumnType { .init(.json) }
 
     /// binary JSON data, decomposed
-    public static var jsonb: PostgresColumnType {
-        return .init(.jsonb)
-    }
+    public static var jsonb: PostgresColumnType { .init(.jsonb) }
 
     /// infinite line on a plane
-    public static var line: PostgresColumnType {
-        return .init(.line)
-    }
+    public static var line: PostgresColumnType { .init(.line) }
 
     /// line segment on a plane
-    public static var lseg: PostgresColumnType {
-        return .init(.lseg)
-    }
+    public static var lseg: PostgresColumnType { .init(.lseg) }
 
     /// MAC (Media Access Control) address
-    public static var macaddr: PostgresColumnType {
-        return .init(.macaddr)
-    }
+    public static var macaddr: PostgresColumnType { .init(.macaddr) }
 
     /// MAC (Media Access Control) address (EUI-64 format)
-    public static var macaddr8: PostgresColumnType {
-        return .init(.macaddr8)
-    }
+    public static var macaddr8: PostgresColumnType { .init(.macaddr8) }
 
     /// currency amount
-    public static var money: PostgresColumnType {
-        return .init(.money)
-    }
+    public static var money: PostgresColumnType { .init(.money) }
 
     /// exact numeric of selectable precision
-    public static var decimal: PostgresColumnType {
-        return .init(.numeric(nil, nil))
-    }
+    public static var decimal: PostgresColumnType { .init(.numeric(nil, nil)) }
 
     /// exact numeric of selectable precision
-    public static func decimal(_ p: Int, _ s: Int) -> PostgresColumnType {
-        return .init(.numeric(p, s))
-    }
+    public static func decimal(_ p: Int, _ s: Int) -> PostgresColumnType { .init(.numeric(p, s)) }
 
     /// exact numeric of selectable precision
-    public static func numeric(_ p: Int, _ s: Int) -> PostgresColumnType {
-        return .init(.numeric(p, s))
-    }
+    public static func numeric(_ p: Int, _ s: Int) -> PostgresColumnType { .init(.numeric(p, s)) }
 
     /// exact numeric of selectable precision
-    public static var numeric: PostgresColumnType {
-        return .init(.numeric(nil, nil))
-    }
+    public static var numeric: PostgresColumnType { .init(.numeric(nil, nil)) }
 
     /// geometric path on a plane
-    public static var path: PostgresColumnType {
-        return .init(.path)
-    }
+    public static var path: PostgresColumnType { .init(.path) }
 
     /// PostgreSQL Log Sequence Number
-    public static var pgLSN: PostgresColumnType {
-        return .init(.pgLSN)
-    }
+    public static var pgLSN: PostgresColumnType { .init(.pgLSN) }
 
     /// geometric point on a plane
-    public static var point: PostgresColumnType {
-        return .init(.point)
-    }
+    public static var point: PostgresColumnType { .init(.point) }
 
     /// closed geometric path on a plane
-    public static var polygon: PostgresColumnType {
-        return .init(.polygon)
-    }
+    public static var polygon: PostgresColumnType { .init(.polygon) }
 
     /// single precision floating-point number (4 bytes)
-    public static var float4: PostgresColumnType {
-        return .real
-    }
+    public static var float4: PostgresColumnType { .real }
 
     /// single precision floating-point number (4 bytes)
-    public static var real: PostgresColumnType {
-        return .init(.real)
-    }
+    public static var real: PostgresColumnType { .init(.real) }
 
     /// signed two-byte integer
-    public static var int2: PostgresColumnType {
-        return .smallint
-    }
+    public static var int2: PostgresColumnType { .smallint }
 
     /// signed two-byte integer
-    public static var smallint: PostgresColumnType {
-        return .init(.smallint)        }
+    public static var smallint: PostgresColumnType { .init(.smallint) }
 
     /// autoincrementing two-byte integer
-    public static var serial2: PostgresColumnType {
-        return .smallserial
-    }
+    public static var serial2: PostgresColumnType { .smallserial }
 
     /// autoincrementing two-byte integer
-    public static var smallserial: PostgresColumnType {
-        return .init(.smallserial)
-    }
+    public static var smallserial: PostgresColumnType { .init(.smallserial) }
 
     /// autoincrementing four-byte integer
-    public static var serial4: PostgresColumnType {
-        return .serial
-    }
+    public static var serial4: PostgresColumnType { .serial }
 
     /// autoincrementing four-byte integer
-    public static var serial: PostgresColumnType {
-        return .init(.serial)
-    }
+    public static var serial: PostgresColumnType { .init(.serial) }
 
     /// variable-length character string
-    public static var text: PostgresColumnType {
-        return .init(.text)
-    }
+    public static var text: PostgresColumnType { .init(.text) }
 
     /// time of day (no time zone)
-    public static var time: PostgresColumnType {
-        return .init(.time(nil))
-    }
+    public static var time: PostgresColumnType { .init(.time(nil)) }
 
     /// time of day (no time zone)
-    public static func time(_ n: Int) -> PostgresColumnType {
-        return .init(.time(n))
-    }
+    public static func time(_ n: Int) -> PostgresColumnType { .init(.time(n)) }
 
     /// time of day, including time zone
-    public static var timetz: PostgresColumnType {
-        return .init(.timetz(nil))
-    }
+    public static var timetz: PostgresColumnType { .init(.timetz(nil)) }
 
     /// time of day, including time zone
-    public static func timetz(_ n: Int) -> PostgresColumnType {
-        return .init(.timetz(n))
-    }
+    public static func timetz(_ n: Int) -> PostgresColumnType { .init(.timetz(n)) }
 
     /// date and time (no time zone)
-    public static var timestamp: PostgresColumnType {
-        return .init(.timestamp(nil))
-    }
+    public static var timestamp: PostgresColumnType { .init(.timestamp(nil)) }
 
     /// date and time (no time zone)
-    public static func timestamp(_ n: Int) -> PostgresColumnType {
-        return .init(.timestamp(n))
-    }
+    public static func timestamp(_ n: Int) -> PostgresColumnType { .init(.timestamp(n)) }
 
     /// date and time, including time zone
-    public static var timestamptz: PostgresColumnType {
-        return .init(.timestamptz(nil))
-    }
+    public static var timestamptz: PostgresColumnType { .init(.timestamptz(nil)) }
 
     /// date and time, including time zone
-    public static func timestamptz(_ n: Int) -> PostgresColumnType {
-        return .init(.timestamptz(n))
-    }
+    public static func timestamptz(_ n: Int) -> PostgresColumnType { .init(.timestamptz(n)) }
 
     /// text search query
-    public static var tsquery: PostgresColumnType {
-        return .init(.tsquery)
-    }
+    public static var tsquery: PostgresColumnType { .init(.tsquery) }
 
     /// text search document
-    public static var tsvector: PostgresColumnType {
-        return .init(.tsvector)
-    }
+    public static var tsvector: PostgresColumnType { .init(.tsvector) }
 
     /// user-level transaction ID snapshot
-    public static var txidSnapshot: PostgresColumnType {
-        return .init(.txidSnapshot)
-    }
+    public static var txidSnapshot: PostgresColumnType { .init(.txidSnapshot) }
 
     /// universally unique identifier
-    public static var uuid: PostgresColumnType {
-        return .init(.uuid)
-    }
+    public static var uuid: PostgresColumnType { .init(.uuid) }
 
     /// XML data
-    public static var xml: PostgresColumnType {
-        return .init(.xml)
-    }
+    public static var xml: PostgresColumnType { .init(.xml) }
 
     /// User-defined type
-    public static func custom(_ name: String) -> PostgresColumnType {
-        return .init(.custom(name))
-    }
+    public static func custom(_ name: String) -> PostgresColumnType { .init(.custom(name)) }
 
     /// Creates an array type from a `PostgreSQLDataType`.
-    public static func array(_ dataType: PostgresColumnType) -> PostgresColumnType {
-        return .init(dataType.primitive, isArray: true)
-    }
+    public static func array(_ type: PostgresColumnType) -> PostgresColumnType { .init(.array(of: type.primitive)) }
 
-    let primitive: Primitive
-    let isArray: Bool
+    private let primitive: Primitive
 
-    private init(_ primitive: Primitive, isArray: Bool = false) {
-        self.primitive = primitive
-        self.isArray = isArray
-    }
+    private init(_ primitive: Primitive) { self.primitive = primitive }
 
-    enum Primitive: Equatable {
+    enum Primitive: CustomStringConvertible, Hashable {
         /// signed eight-byte integer
         case bigint
 
@@ -472,43 +333,22 @@ public struct PostgresColumnType: SQLExpression, Equatable {
 
         /// User-defined type
         case custom(String)
+        
+        /// Array
+        indirect case array(of: Primitive)
 
-        public func serialize(to serializer: inout SQLSerializer) {
-            serializer.write(self.string)
-        }
-
-        /// See `SQLSerializable`.
-        private var string: String {
+        /// See ``Swift/CustomStringConvertible``.
+        var description: String {
             switch self {
             case .bigint: return "BIGINT"
             case .bigserial: return "BIGSERIAL"
-            case .varbit(let n):
-                if let n = n {
-                    return "VARBIT(" + n.description + ")"
-                } else {
-                    return "VARBIT"
-                }
-            case .varchar(let n):
-                if let n = n {
-                    return "VARCHAR(" + n.description + ")"
-                } else {
-                    return "VARCHAR"
-                }
-            case .bit(let n):
-                if let n = n {
-                    return "BIT(" + n.description + ")"
-                } else {
-                    return "BIT"
-                }
+            case .varbit(let n): return n.map { "VARBIT(\($0))" } ?? "VARBIT"
+            case .varchar(let n): return n.map { "VARCHAR(\($0))" } ?? "VARCHAR"
+            case .bit(let n): return n.map { "BIT(\($0))" } ?? "BIT"
             case .boolean: return "BOOLEAN"
             case .box: return "BOX"
             case .bytea: return "BYTEA"
-            case .char(let n):
-                if let n = n {
-                    return "CHAR(" + n.description + ")"
-                } else {
-                    return "CHAR"
-                }
+            case .char(let n): return n.map { "CHAR(\($0))" } ?? "CHAR"
             case .cidr: return "CIDR"
             case .circle: return "CIRCLE"
             case .date: return "DATE"
@@ -523,12 +363,7 @@ public struct PostgresColumnType: SQLExpression, Equatable {
             case .macaddr: return "MACADDR"
             case .macaddr8: return "MACADDER8"
             case .money: return "MONEY"
-            case .numeric(let s, let p):
-                if let s = s, let p = p {
-                    return "NUMERIC(" + s.description + ", " + p.description + ")"
-                } else {
-                    return "NUMERIC"
-                }
+            case .numeric(let s, let p): return strictMap(s, p) { "NUMERIC(\($0), \($1))" } ?? "NUMERIC"
             case .path: return "PATH"
             case .pgLSN: return "PG_LSN"
             case .point: return "POINT"
@@ -538,45 +373,23 @@ public struct PostgresColumnType: SQLExpression, Equatable {
             case .smallserial: return "SMALLSERIAL"
             case .serial: return "SERIAL"
             case .text: return "TEXT"
-            case .time(let p):
-                if let p = p {
-                    return "TIME(" + p.description + ")"
-                } else {
-                    return "TIME"
-                }
-            case .timetz(let p):
-                if let p = p {
-                    return "TIMETZ(" + p.description + ")"
-                } else {
-                    return "TIMETZ"
-                }
-            case .timestamp(let p):
-                if let p = p {
-                    return "TIMESTAMP(" + p.description + ")"
-                } else {
-                    return "TIMESTAMP"
-                }
-            case .timestamptz(let p):
-                if let p = p {
-                    return "TIMESTAMPTZ(" + p.description + ")"
-                } else {
-                    return "TIMESTAMPTZ"
-                }
+            case .time(let p): return p.map { "TIME(\($0))" } ?? "TIME"
+            case .timetz(let p): return p.map { "TIMETZ(\($0))" } ?? "TIMETZ"
+            case .timestamp(let p): return p.map { "TIMESTAMP(\($0))" } ?? "TIMESTAMP"
+            case .timestamptz(let p):  return p.map { "TIMESTAMPTZ(\($0))" } ?? "TIMESTAMPTZ"
             case .tsquery: return "TSQUERY"
             case .tsvector: return "TSVECTOR"
             case .txidSnapshot: return "TXID_SNAPSHOT"
             case .uuid: return "UUID"
             case .xml: return "XML"
             case .custom(let custom): return custom
+            case .array(let element): return "\(element)[]"
             }
         }
     }
 
     /// See `SQLSerializable`.
     public func serialize(to serializer: inout SQLSerializer) {
-        self.primitive.serialize(to: &serializer)
-        if self.isArray {
-            serializer.write("[]")
-        }
+        serializer.write(self.primitive.description)
     }
 }

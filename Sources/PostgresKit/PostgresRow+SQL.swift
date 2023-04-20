@@ -1,34 +1,38 @@
 import PostgresNIO
+import Foundation
 import SQLKit
 
 extension PostgresRow {
-    public func sql(decoder: PostgresDataDecoder = .init()) -> SQLRow {
-        return _PostgresSQLRow(row: self.makeRandomAccess(), decoder: decoder)
+    public func sql(decoder: PostgresDataDecoder) -> SQLRow {
+        _PostgresSQLRow(row: self.makeRandomAccess(), decodingContext: decoder.underlyingContext)
+    }
+    
+    public func sql<D: PostgresJSONDecoder>(jsonDecoder: D) -> SQLRow {
+        _PostgresSQLRow(row: self.makeRandomAccess(), decodingContext: .init(jsonDecoder: jsonDecoder))
+    }
+    
+    public func sql() -> SQLRow {
+        _PostgresSQLRow(row: self.makeRandomAccess(), decodingContext: .default)
     }
 }
 
 // MARK: Private
 
-private struct _PostgresSQLRow: SQLRow {
+private struct _PostgresSQLRow<D: PostgresJSONDecoder>: SQLRow {
     let randomAccessView: PostgresRandomAccessRow
-    let decoder: PostgresDataDecoder
+    let decodingContext: PostgresDecodingContext<D>
 
     enum _Error: Error {
         case missingColumn(String)
     }
     
-    init(row: PostgresRandomAccessRow, decoder: PostgresDataDecoder) {
+    init(row: PostgresRandomAccessRow, decodingContext: PostgresDecodingContext<D>) {
         self.randomAccessView = row
-        self.decoder = decoder
+        self.decodingContext = decodingContext
     }
 
-    var allColumns: [String] {
-        self.randomAccessView.map { $0.columnName }
-    }
-
-    func contains(column: String) -> Bool {
-        self.randomAccessView.contains(column)
-    }
+    var allColumns: [String] { self.randomAccessView.map { $0.columnName } }
+    func contains(column: String) -> Bool { self.randomAccessView.contains(column) }
 
     func decodeNil(column: String) throws -> Bool {
         !self.randomAccessView.contains(column) || self.randomAccessView[column].bytes == nil
@@ -38,6 +42,11 @@ private struct _PostgresSQLRow: SQLRow {
         guard self.randomAccessView.contains(column) else {
             throw _Error.missingColumn(column)
         }
-        return try self.decoder.decode(D.self, from: self.randomAccessView[data: column])
+        
+        if let postgresDecodableType = D.self as? any PostgresDecodable.Type {
+            return try self.randomAccessView[column].decode(postgresDecodableType, context: self.decodingContext) as! D
+        } else {
+            return try PostgresDataDecoder(json: self.decodingContext.jsonDecoder).decode(D.self, from: self.randomAccessView[data: column])
+        }
     }
 }

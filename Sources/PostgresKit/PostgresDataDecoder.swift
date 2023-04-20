@@ -1,11 +1,19 @@
 import Foundation
 import PostgresNIO
 
-public final class PostgresDataDecoder {
-    public let json: PostgresNIO.PostgresJSONDecoder
+struct TypeErasedPostgresJSONDecoder: PostgresJSONDecoder {
+    let json: PostgresJSONDecoder
+    
+    func decode<T: Decodable>(_: T.Type, from data: Data) throws -> T { try self.json.decode(T.self, from: data) }
+    func decode<T: Decodable>(_: T.Type, from buffer: ByteBuffer) throws -> T { try self.json.decode(T.self, from: buffer) }
+}
 
-    public init(json: PostgresNIO.PostgresJSONDecoder = PostgresNIO._defaultJSONDecoder) {
-        self.json = json
+public final class PostgresDataDecoder {
+    public var json: PostgresJSONDecoder { self.underlyingContext.jsonDecoder }
+    internal let underlyingContext: PostgresDecodingContext<TypeErasedPostgresJSONDecoder>
+
+    public init(json: PostgresJSONDecoder = PostgresNIO._defaultJSONDecoder) {
+        self.underlyingContext = .init(jsonDecoder: .init(json: json))
     }
 
     public func decode<T>(_ type: T.Type, from data: PostgresData) throws -> T
@@ -16,7 +24,7 @@ public final class PostgresDataDecoder {
             guard let value = convertible.init(postgresData: data) else {
                 throw DecodingError.typeMismatch(T.self, .init(
                     codingPath: [],
-                    debugDescription: "Could not convert PostgreSQL data to \(T.self): \(data)"
+                    debugDescription: "Could not convert PostgreSQL data to \(T.self): \(String(describing: data as Any))"
                 ))
             }
             return value as! T

@@ -102,20 +102,11 @@ class PostgresKitTests: XCTestCase {
             .run().wait()
     }
 
-    func testDictionaryEncoding() throws {
-        let conn = try PostgresConnection.test(on: self.eventLoop).wait()
-        defer { try! conn.close().wait() }
-
-        struct Foo: Codable {
-            var bar: Int
-        }
-    }
-
     func testDecodeModelWithNil() throws {
         let conn = try PostgresConnection.test(on: self.eventLoop).wait()
         defer { try! conn.close().wait() }
 
-        let rows = try conn.query("SELECT 'foo'::text as foo, null as bar, 'baz'::text as baz").wait()
+        let rows = try conn.sql().raw("SELECT 'foo'::text as foo, null as bar, 'baz'::text as baz").all().wait()
         let row = rows[0]
         
         struct Test: Codable {
@@ -124,7 +115,7 @@ class PostgresKitTests: XCTestCase {
             var baz: String?
         }
 
-        let test = try row.sql().decode(model: Test.self)
+        let test = try row.decode(model: Test.self)
         XCTAssertEqual(test.foo, "foo")
         XCTAssertEqual(test.bar, nil)
         XCTAssertEqual(test.baz, "baz")
@@ -154,6 +145,19 @@ class PostgresKitTests: XCTestCase {
             PostgresDataEncoder().encode([Bar]())
         ]).wait()
         let rows = try connection.query("SELECT * FROM foo").wait()
+        print(rows)
+    }
+    
+    func testArrayEncoding_json_new() throws {
+        let connection = try PostgresConnection.test(on: self.eventLoop).wait()
+        defer { try! connection.close().wait() }
+        _ = try connection.query(.init(unsafeSQL: "DROP TABLE IF EXISTS foo"), logger: connection.logger).wait()
+        _ = try connection.query(.init(unsafeSQL: "CREATE TABLE foo (bar jsonb[] not null)"), logger: connection.logger).wait()
+        defer {
+            _ = try! connection.query(.init(unsafeSQL: "DROP TABLE foo"), logger: connection.logger).wait()
+        }
+        _ = try connection.query("INSERT INTO foo (bar) VALUES (\([Bar]()))", logger: connection.logger).wait()
+        let rows = try connection.query(.init(unsafeSQL: "SELECT * FROM foo"), logger: connection.logger).wait()
         print(rows)
     }
       
@@ -237,6 +241,16 @@ enum Bar: Int, Codable {
 }
 
 extension Bar: PostgresDataConvertible { }
+
+extension Bar: PostgresEncodable, PostgresArrayEncodable {
+    func encode<E: PostgresJSONEncoder>(into byteBuffer: inout ByteBuffer, context: PostgresEncodingContext<E>) throws {
+        try context.jsonEncoder.encode(self, into: &byteBuffer)
+    }
+    
+    static var psqlType: PostgresDataType { .jsonb }
+    static var psqlFormat: PostgresFormat { .binary }
+    static var psqlArrayType: PostgresDataType { .jsonbArray }
+}
 
 let isLoggingConfigured: Bool = {
     LoggingSystem.bootstrap { label in
