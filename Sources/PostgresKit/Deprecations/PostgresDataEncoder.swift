@@ -8,6 +8,7 @@ struct TypeErasedPostgresJSONEncoder: PostgresJSONEncoder {
     func encode<T: Encodable>(_ value: T, into buffer: inout ByteBuffer) throws { try self.json.encode(value, into: &buffer) }
 }
 
+@available(*, deprecated, message: "Use `PostgresJSONEncoder` and `PostgresEncodable` instead.")
 public final class PostgresDataEncoder {
     public var json: PostgresJSONEncoder { self.underlyingContext.jsonEncoder }
     internal let underlyingContext: PostgresEncodingContext<TypeErasedPostgresJSONEncoder>

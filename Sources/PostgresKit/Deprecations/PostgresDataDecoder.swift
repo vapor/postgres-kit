@@ -8,6 +8,7 @@ struct TypeErasedPostgresJSONDecoder: PostgresJSONDecoder {
     func decode<T: Decodable>(_: T.Type, from buffer: ByteBuffer) throws -> T { try self.json.decode(T.self, from: buffer) }
 }
 
+@available(*, deprecated, message: "Use `PostgresDecodingContext` instead.")
 public final class PostgresDataDecoder {
     public var json: PostgresJSONDecoder { self.underlyingContext.jsonDecoder }
     internal let underlyingContext: PostgresDecodingContext<TypeErasedPostgresJSONDecoder>
@@ -24,7 +25,7 @@ public final class PostgresDataDecoder {
             guard let value = convertible.init(postgresData: data) else {
                 throw DecodingError.typeMismatch(T.self, .init(
                     codingPath: [],
-                    debugDescription: "Could not convert PostgreSQL data to \(T.self): \(String(describing: data as Any))"
+                    debugDescription: "Could not convert PostgreSQL data to \(T.self): \(data as Any)"
                 ))
             }
             return value as! T
@@ -131,5 +132,10 @@ public final class PostgresDataDecoder {
             // Recurse back into the data decoder, don't repeat its logic here.
             return try self.dataDecoder.decode(T.self, from: self.data)
         }
+    }
+
+    @available(*, deprecated, renamed: "json")
+    public var jsonDecoder: JSONDecoder {
+        return self.json as! JSONDecoder
     }
 }
