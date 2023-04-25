@@ -80,7 +80,7 @@ jobs:
       matrix:
         dbimage: ['postgres:15', 'postgres:13', 'postgres:11']
         swiftver: [
-            'swift:5.6-focal', 'swift:5.7-jammy', 'swift:5.8-jammy',
+            'swift:5.7-jammy', 'swift:5.8-jammy',
             'swiftlang/swift:nightly-5.9-jammy',
             'swiftlang/swift:nightly-main-jammy'
         ]
@@ -123,7 +123,7 @@ jobs:
         dbimage: ['postgres:15']
         dbauth: ['scram-sha-256']
         swiftver: [
-            'swift:5.6-focal', 'swift:5.7-jammy', 'swift:5.8-jammy',
+            'swift:5.7-jammy', 'swift:5.8-jammy',
             'swiftlang/swift:nightly-5.9-jammy',
             'swiftlang/swift:nightly-main-jammy'
         ]
