@@ -2,6 +2,7 @@ import PostgresNIO
 import Foundation
 import SQLKit
 
+@available(*, deprecated, message: "Use `.sql(jsonEncoder:jsonDecoder:)` instead.")
 extension PostgresDatabase {
     public func sql(encoder: PostgresDataEncoder) -> SQLDatabase { self.sql(encoder: encoder, decoder: .init()) }
     public func sql(decoder: PostgresDataDecoder) -> SQLDatabase { self.sql(encoder: .init(), decoder: decoder) }
@@ -11,7 +12,9 @@ extension PostgresDatabase {
             decodingContext: decoder.underlyingContext
         )
     }
-    
+}
+
+extension PostgresDatabase {
     public func sql<E: PostgresJSONEncoder, D: PostgresJSONDecoder>(
         jsonEncoder: E, jsonDecoder: D
     ) -> SQLDatabase {
@@ -45,16 +48,14 @@ extension _PostgresSQLDatabase: SQLDatabase {
         return self.eventLoop.makeCompletedFuture {
             var bindings = PostgresBindings(capacity: binds.count)
             for bind in binds {
-                if let encodableBind = bind as? PostgresNonThrowingEncodable { bindings.append(encodableBind, context: self.encodingContext) }
-                else if let encodableBind = bind as? PostgresEncodable { try bindings.append(encodableBind, context: self.encodingContext) }
-                else { try bindings.append(PostgresDataEncoder(json: self.encodingContext.jsonEncoder).encode(bind)) }
+                try PostgresDataTranslation.encode(value: bind, in: self.encodingContext, to: &bindings)
             }
             return bindings
         }.flatMap { bindings in self.database.withConnection {
             $0.query(
                 .init(unsafeSQL: sql, binds: bindings),
                 logger: $0.logger,
-                { onRow($0.sql(decoder: .init(json: self.decodingContext.jsonDecoder))) }
+                { onRow($0.sql(jsonDecoder: self.decodingContext.jsonDecoder)) }
             )
         } }.map { _ in }
     }

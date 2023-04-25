@@ -3,6 +3,7 @@ import Foundation
 import SQLKit
 
 extension PostgresRow {
+    @available(*, deprecated, message: "Use `.sql(jsonDecoder:)` instead.")
     public func sql(decoder: PostgresDataDecoder) -> SQLRow {
         _PostgresSQLRow(row: self.makeRandomAccess(), decodingContext: decoder.underlyingContext)
     }
@@ -43,10 +44,6 @@ private struct _PostgresSQLRow<D: PostgresJSONDecoder>: SQLRow {
             throw _Error.missingColumn(column)
         }
         
-        if let postgresDecodableType = D.self as? any PostgresDecodable.Type {
-            return try self.randomAccessView[column].decode(postgresDecodableType, context: self.decodingContext) as! D
-        } else {
-            return try PostgresDataDecoder(json: self.decodingContext.jsonDecoder).decode(D.self, from: self.randomAccessView[data: column])
-        }
+        return try PostgresDataTranslation.decode(D.self, from: self.randomAccessView[column], in: self.decodingContext)
     }
 }
