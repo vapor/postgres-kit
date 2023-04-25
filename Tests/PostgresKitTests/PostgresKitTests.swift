@@ -1,4 +1,4 @@
-import PostgresKit
+@testable import PostgresKit
 import SQLKitBenchmark
 import XCTest
 import Logging
@@ -133,31 +133,16 @@ class PostgresKitTests: XCTestCase {
         print(rows)
     }
 
-    func testArrayEncoding_json() throws {
-        let connection = try PostgresConnection.test(on: self.eventLoop).wait()
-        defer { try! connection.close().wait() }
-        _ = try connection.query("DROP TABLE IF EXISTS foo").wait()
-        _ = try connection.query("CREATE TABLE foo (bar integer[] not null)").wait()
-        defer {
-            _ = try! connection.query("DROP TABLE foo").wait()
-        }
-        _ = try connection.query("INSERT INTO foo (bar) VALUES ($1)", [
-            PostgresDataEncoder().encode([Bar]())
-        ]).wait()
-        let rows = try connection.query("SELECT * FROM foo").wait()
-        print(rows)
-    }
-    
     func testArrayEncoding_json_new() throws {
         let connection = try PostgresConnection.test(on: self.eventLoop).wait()
         defer { try! connection.close().wait() }
-        _ = try connection.query(.init(unsafeSQL: "DROP TABLE IF EXISTS foo"), logger: connection.logger).wait()
-        _ = try connection.query(.init(unsafeSQL: "CREATE TABLE foo (bar jsonb[] not null)"), logger: connection.logger).wait()
+        _ = try connection.query("DROP TABLE IF EXISTS foo", logger: connection.logger).wait()
+        _ = try connection.query("CREATE TABLE foo (bar integer[] not null)", logger: connection.logger).wait()
         defer {
-            _ = try! connection.query(.init(unsafeSQL: "DROP TABLE foo"), logger: connection.logger).wait()
+            _ = try! connection.query("DROP TABLE foo", logger: connection.logger).wait()
         }
         _ = try connection.query("INSERT INTO foo (bar) VALUES (\([Bar]()))", logger: connection.logger).wait()
-        let rows = try connection.query(.init(unsafeSQL: "SELECT * FROM foo"), logger: connection.logger).wait()
+        let rows = try connection.query("SELECT * FROM foo", logger: connection.logger).wait()
         print(rows)
     }
       
@@ -207,14 +192,14 @@ class PostgresKitTests: XCTestCase {
         }
         
         let instance = UnusualType(prop1: "hello", prop2: [true, false, false, true], prop3: [[true, true], [false], [true], []])
-        let encoded1 = try PostgresDataEncoder().encode(instance)
-        let encoded2 = try PostgresDataEncoder().encode([instance, instance])
+        let encoded1 = try PostgresDataTranslation.encode(codingPath: [], userInfo: [:], value: instance, in: .default, file: #fileID, line: #line)
+        let encoded2 = try PostgresDataTranslation.encode(codingPath: [], userInfo: [:], value: [instance, instance], in: .default, file: #fileID, line: #line)
         
         XCTAssertEqual(encoded1.type, .jsonb)
         XCTAssertEqual(encoded2.type, .jsonbArray)
         
-        let decoded1 = try PostgresDataDecoder().decode(UnusualType.self, from: encoded1)
-        let decoded2 = try PostgresDataDecoder().decode([UnusualType].self, from: encoded2)
+        let decoded1 = try PostgresDataTranslation.decode(UnusualType.self, from: .init(bytes: encoded1.value, dataType: encoded1.type, format: encoded1.formatCode, columnName: "", columnIndex: -1), in: .default)
+        let decoded2 = try PostgresDataTranslation.decode([UnusualType].self, from: .init(bytes: encoded2.value, dataType: encoded2.type, format: encoded2.formatCode, columnName: "", columnIndex: -1), in: .default)
         
         XCTAssertEqual(decoded1.prop3, instance.prop3)
         XCTAssertEqual(decoded2.count, 2)
@@ -240,16 +225,14 @@ enum Bar: Int, Codable {
     case one, two
 }
 
-extension Bar: PostgresDataConvertible { }
-
-extension Bar: PostgresEncodable, PostgresArrayEncodable {
-    func encode<E: PostgresJSONEncoder>(into byteBuffer: inout ByteBuffer, context: PostgresEncodingContext<E>) throws {
-        try context.jsonEncoder.encode(self, into: &byteBuffer)
+extension Bar: PostgresNonThrowingEncodable, PostgresArrayEncodable {
+    func encode<E: PostgresJSONEncoder>(into byteBuffer: inout ByteBuffer, context: PostgresEncodingContext<E>) {
+        self.rawValue.encode(into: &byteBuffer, context: context)
     }
     
-    static var psqlType: PostgresDataType { .jsonb }
+    static var psqlType: PostgresDataType { .int8 }
     static var psqlFormat: PostgresFormat { .binary }
-    static var psqlArrayType: PostgresDataType { .jsonbArray }
+    static var psqlArrayType: PostgresDataType { .int8Array }
 }
 
 let isLoggingConfigured: Bool = {
