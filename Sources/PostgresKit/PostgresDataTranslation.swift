@@ -58,7 +58,12 @@ internal struct PostgresDataTranslation {
                 guard cell.dataType == .json || cell.dataType == .jsonb else {
                     throw DecodingError.dataCorrupted(.init(codingPath: codingPath, debugDescription: "Unable to interpret value of PSQL type \(cell.dataType): \(cell.bytes.map { "\($0)" } ?? "null")"))
                 }
-                return try context.jsonDecoder.decode(T.self, from: cell.bytes ?? .init())
+                if cell.dataType == .jsonb, cell.format == .binary, let buffer = cell.bytes {
+                    // TODO: Un-hardcode this magic knowledge of the JSONB encoding
+                    return try context.jsonDecoder.decode(T.self, from: buffer.getSlice(at: buffer.readerIndex + 1, length: buffer.readableBytes - 1) ?? .init())
+                } else {
+                    return try context.jsonDecoder.decode(T.self, from: cell.bytes ?? .init())
+                }
             }
         }
     }
@@ -86,7 +91,7 @@ internal struct PostgresDataTranslation {
         }
     }
     
-    fileprivate static func encode<T: Encodable, E: PostgresJSONEncoder>(
+    internal/*fileprivate*/ static func encode<T: Encodable, E: PostgresJSONEncoder>(
         codingPath: [any CodingKey], userInfo: [CodingUserInfoKey: Any],
         value: T,
         in context: PostgresEncodingContext<E>,
