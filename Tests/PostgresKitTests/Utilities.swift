@@ -11,11 +11,11 @@ import PostgresNIO
 
 extension PostgresConnection {
     static func test(on eventLoop: EventLoop) -> EventLoopFuture<PostgresConnection> {
-        return PostgresConnectionSource(configuration: .test).makeConnection(logger: .init(label: "vapor.codes.postgres-kit.test"), on: eventLoop)
+        return PostgresConnectionSource(sqlConfiguration: .test).makeConnection(logger: .init(label: "vapor.codes.postgres-kit.test"), on: eventLoop)
     }
 }
 
-extension PostgresConfiguration {
+extension SQLPostgresConfiguration {
     static var test: Self {
         .init(
             hostname: env("POSTGRES_HOSTNAME") ?? "localhost",
@@ -23,7 +23,7 @@ extension PostgresConfiguration {
             username: env("POSTGRES_USER") ?? "vapor_username",
             password: env("POSTGRES_PASSWORD") ?? "vapor_password",
             database: env("POSTGRES_DB") ?? "vapor_database",
-            tlsConfiguration: nil
+            tls: .disable
         )
     }
 }

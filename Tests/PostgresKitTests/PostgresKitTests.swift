@@ -15,7 +15,7 @@ class PostgresKitTests: XCTestCase {
     }
     
     func testPerformance() throws {
-        let db = PostgresConnectionSource(configuration: .test)
+        let db = PostgresConnectionSource(sqlConfiguration: .test)
         let pool = EventLoopGroupConnectionPool(
             source: db,
             maxConnectionsPerEventLoop: 2,
@@ -122,9 +122,9 @@ class PostgresKitTests: XCTestCase {
     }
 
     func testEventLoopGroupSQL() throws {
-        var configuration = PostgresConfiguration.test
+        var configuration = SQLPostgresConfiguration.test
         configuration.searchPath = ["foo", "bar", "baz"]
-        let source = PostgresConnectionSource(configuration: configuration)
+        let source = PostgresConnectionSource(sqlConfiguration: configuration)
         let pool = EventLoopGroupConnectionPool(source: source, on: self.eventLoopGroup)
         defer { pool.shutdown() }
         let db = pool.database(logger: .init(label: "test")).sql()

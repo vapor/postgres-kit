@@ -2,6 +2,7 @@ import NIOSSL
 import Foundation
 import NIOCore
 
+@available(*, deprecated, message: "Use `SQLPostgresConfiguration` instead.")
 public struct PostgresConfiguration {
     public var address: () throws -> SocketAddress
     public var username: String
