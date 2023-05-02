@@ -37,7 +37,15 @@ internal struct PostgresDataTranslation {
     ) throws -> T {
         /// Preferred modern fast-path: Direct conformance to ``PostgresDecodable``, let the cell decode.
         if let fastPathType = T.self as? any PostgresDecodable.Type {
-            return try cell.decode(fastPathType, context: context) as! T
+            let cellToDecode: PostgresCell
+            if cell.dataType.isUserDefined && (T.self is String.Type || T.self is String?.Type) { // Workaround cheat for Fluent's enum "support"
+                cellToDecode = PostgresCell(bytes: cell.bytes, dataType: .name, format: cell.format, columnName: cell.columnName, columnIndex: cell.columnIndex)
+            } else if cell.format == .binary && [.char, .varchar, .text].contains(cell.dataType) && T.self is Decimal.Type { // Workaround cheat for Fluent's assumption that Decimal strings work
+                cellToDecode = PostgresCell(bytes: cell.bytes, dataType: .numeric, format: .text, columnName: cell.columnName, columnIndex: cell.columnIndex)
+            } else {
+                cellToDecode = cell
+            }
+            return try cellToDecode.decode(fastPathType, context: context, file: file, line: line) as! T
         /// Legacy "fast"-path: Direct conformance to ``PostgresDataConvertible``; use is deprecated.
         } else if let legacyPathType = T.self as? any PostgresLegacyDataConvertible.Type {
             let legacyData = PostgresData(type: cell.dataType, typeModifier: nil, formatCode: cell.format, value: cell.bytes)
@@ -63,6 +71,15 @@ internal struct PostgresDataTranslation {
                     return try context.jsonDecoder.decode(T.self, from: buffer.getSlice(at: buffer.readerIndex + 1, length: buffer.readableBytes - 1) ?? .init())
                 } else {
                     return try context.jsonDecoder.decode(T.self, from: cell.bytes ?? .init())
+                }
+            } catch let error as PostgresDecodingError {
+                /// We effectively transform PostgresDecodingErrors into plain DecodingErrors here, mostly so the full
+                /// coding path, which gives us the original type(s) involved, is preserved.
+                let context = DecodingError.Context(codingPath: codingPath, debugDescription: "\(String(reflecting: error))", underlyingError: error)
+                switch error.code {
+                case .typeMismatch: throw DecodingError.typeMismatch(T.self, context)
+                case .missingData: throw DecodingError.valueNotFound(T.self, context)
+                default: throw DecodingError.dataCorrupted(context)
                 }
             }
         }
@@ -149,6 +166,7 @@ private final class ArrayAwareBoxUwrappingDecoder<T0: Decodable, D: PostgresJSON
                 bytes: data.value, dataType: data.type, format: data.formatCode,
                 columnName: self.decoder.cell.columnName, columnIndex: self.decoder.cell.columnIndex
             )
+
             let result = try PostgresDataTranslation.decode(
                 codingPath: self.codingPath + [SomeCodingKey(intValue: self.currentIndex)],
                 userInfo: self.decoder.userInfo,
