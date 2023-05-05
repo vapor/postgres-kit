@@ -14,8 +14,8 @@ private extension PostgresCell {
     var codingKey: any CodingKey { SomeCodingKey(stringValue: !self.columnName.isEmpty ? "\(self.columnName) (\(self.columnIndex))" : "\(self.columnIndex)") }
 }
 
-internal struct PostgresDataTranslation {
-    /// This typealias serves to limit the deprecation noise caused by ``PostgresDatConvertible`` to a single
+struct PostgresDataTranslation {
+    /// This typealias serves to limit the deprecation noise caused by ``PostgresDataConvertible`` to a single
     /// warning, down from what would otherwise be a minimum of two. It has no other purpose.
     fileprivate typealias PostgresLegacyDataConvertible = PostgresDataConvertible
     
@@ -108,12 +108,23 @@ internal struct PostgresDataTranslation {
         }
     }
     
-    internal/*fileprivate*/ static func encode<T: Encodable, E: PostgresJSONEncoder>(
+    fileprivate static func encode<T: Encodable, E: PostgresJSONEncoder>(
         codingPath: [any CodingKey], userInfo: [CodingUserInfoKey: Any],
         value: T,
         in context: PostgresEncodingContext<E>,
         file: String, line: Int
     ) throws -> PostgresData {
+        // TODO: Avoid repeating the conformance checks here, or at the very least only repeat them after a second level of nesting...
+        if let fastPathValue = value as? any PostgresEncodable {
+            var buffer = ByteBuffer()
+            try fastPathValue.encode(into: &buffer, context: context)
+            return PostgresData(type: type(of: fastPathValue).psqlType, typeModifier: nil, formatCode: type(of: fastPathValue).psqlFormat, value: buffer)
+        } else if let legacyPathValue = value as? any PostgresDataTranslation.PostgresLegacyDataConvertible {
+            guard let legacyData = legacyPathValue.postgresData else {
+                throw EncodingError.invalidValue(value, .init(codingPath: [], debugDescription: "Couldn't get PSQL encoding from value '\(value)'"))
+            }
+            return legacyData
+        }
         // TODO: Make all of this work without relying on the legacy PostgresData array machinery
         do {
             let encoder = ArrayAwareBoxWrappingPostgresEncoder(codingPath: codingPath, userInfo: userInfo, context: context, file: file, line: line)
