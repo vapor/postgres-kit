@@ -1,40 +1,34 @@
 import PostgresNIO
-import Foundation
+import Logging
 import SQLKit
 
-@available(*, deprecated, message: "Use `.sql(jsonEncoder:jsonDecoder:)` instead.")
 extension PostgresDatabase {
-    public func sql(encoder: PostgresDataEncoder) -> SQLDatabase { self.sql(encoder: encoder, decoder: .init()) }
-    public func sql(decoder: PostgresDataDecoder) -> SQLDatabase { self.sql(encoder: .init(), decoder: decoder) }
-    public func sql(encoder: PostgresDataEncoder, decoder: PostgresDataDecoder) -> SQLDatabase {
-        _PostgresSQLDatabase(database: self,
-            encodingContext: encoder.underlyingContext,
-            decodingContext: decoder.underlyingContext
-        )
-    }
-}
-
-extension PostgresDatabase {
-    public func sql<E: PostgresJSONEncoder, D: PostgresJSONDecoder>(
-        jsonEncoder: E, jsonDecoder: D
-    ) -> SQLDatabase {
-        _PostgresSQLDatabase(database: self,
-            encodingContext: .init(jsonEncoder: jsonEncoder),
-            decodingContext: .init(jsonDecoder: jsonDecoder)
-        )
+    @inlinable
+    public func sql(queryLogLevel: Logger.Level? = .debug) -> some SQLDatabase {
+        self.sql(encodingContext: .default, decodingContext: .default, queryLogLevel: queryLogLevel)
     }
     
-    public func sql() -> SQLDatabase {
-        _PostgresSQLDatabase(database: self, encodingContext: .default, decodingContext: .default)
+    public func sql(
+        encodingContext: PostgresEncodingContext<some PostgresJSONEncoder>,
+        decodingContext: PostgresDecodingContext<some PostgresJSONDecoder>,
+        queryLogLevel: Logger.Level? = .debug
+    ) -> some SQLDatabase {
+        _PostgresSQLDatabase(database: self, encodingContext: encodingContext, decodingContext: decodingContext, queryLogLevel: queryLogLevel)
     }
 }
 
-// MARK: Private
-
-private struct _PostgresSQLDatabase<E: PostgresJSONEncoder, D: PostgresJSONDecoder> {
-    let database: PostgresDatabase
+private struct _PostgresSQLDatabase<PDatabase: PostgresDatabase, E: PostgresJSONEncoder, D: PostgresJSONDecoder> {
+    let database: PDatabase
     let encodingContext: PostgresEncodingContext<E>
     let decodingContext: PostgresDecodingContext<D>
+    let queryLogLevel: Logger.Level?
+    
+    init(database: PDatabase, encodingContext: PostgresEncodingContext<E>, decodingContext: PostgresDecodingContext<D>, queryLogLevel: Logger.Level?) {
+        self.database = database
+        self.encodingContext = encodingContext
+        self.decodingContext = decodingContext
+        self.queryLogLevel = queryLogLevel
+    }
 }
 
 extension _PostgresSQLDatabase: SQLDatabase {
@@ -45,6 +39,9 @@ extension _PostgresSQLDatabase: SQLDatabase {
     func execute(sql query: SQLExpression, _ onRow: @escaping (SQLRow) -> ()) -> EventLoopFuture<Void> {
         let (sql, binds) = self.serialize(query)
         
+        if let queryLogLevel {
+            self.logger.log(level: queryLogLevel, "\(sql) [\(binds)]")
+        }
         return self.eventLoop.makeCompletedFuture {
             var bindings = PostgresBindings(capacity: binds.count)
             for bind in binds {
@@ -55,7 +52,7 @@ extension _PostgresSQLDatabase: SQLDatabase {
             $0.query(
                 .init(unsafeSQL: sql, binds: bindings),
                 logger: $0.logger,
-                { onRow($0.sql(jsonDecoder: self.decodingContext.jsonDecoder)) }
+                { onRow($0.sql(decodingContext: self.decodingContext)) }
             )
         } }.map { _ in }
     }

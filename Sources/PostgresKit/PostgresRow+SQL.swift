@@ -3,21 +3,20 @@ import Foundation
 import SQLKit
 
 extension PostgresRow {
-    @available(*, deprecated, message: "Use `.sql(jsonDecoder:)` instead.")
-    public func sql(decoder: PostgresDataDecoder) -> SQLRow {
-        _PostgresSQLRow(row: self.makeRandomAccess(), decodingContext: decoder.underlyingContext)
+    @inlinable
+    public func sql() -> some SQLRow {
+        self.sql(decodingContext: .default)
     }
     
-    public func sql<D: PostgresJSONDecoder>(jsonDecoder: D) -> SQLRow {
-        _PostgresSQLRow(row: self.makeRandomAccess(), decodingContext: .init(jsonDecoder: jsonDecoder))
+    @inlinable
+    public func sql(jsonDecoder: some PostgresJSONDecoder) -> some SQLRow {
+        self.sql(decodingContext: .init(jsonDecoder: jsonDecoder))
     }
     
-    public func sql() -> SQLRow {
-        _PostgresSQLRow(row: self.makeRandomAccess(), decodingContext: .default)
+    public func sql(decodingContext: PostgresDecodingContext<some PostgresJSONDecoder>) -> some SQLRow {
+        _PostgresSQLRow(randomAccessView: self.makeRandomAccess(), decodingContext: decodingContext)
     }
 }
-
-// MARK: Private
 
 private struct _PostgresSQLRow<D: PostgresJSONDecoder>: SQLRow {
     let randomAccessView: PostgresRandomAccessRow

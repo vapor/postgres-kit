@@ -1,20 +1,12 @@
 import Foundation
 import PostgresNIO
 
-struct TypeErasedPostgresJSONDecoder: PostgresJSONDecoder {
-    let json: PostgresJSONDecoder
-    
-    func decode<T: Decodable>(_: T.Type, from data: Data) throws -> T { try self.json.decode(T.self, from: data) }
-    func decode<T: Decodable>(_: T.Type, from buffer: ByteBuffer) throws -> T { try self.json.decode(T.self, from: buffer) }
-}
-
 @available(*, deprecated, message: "Use `PostgresDecodingContext` instead.")
 public final class PostgresDataDecoder {
-    public var json: PostgresJSONDecoder { self.underlyingContext.jsonDecoder }
-    internal let underlyingContext: PostgresDecodingContext<TypeErasedPostgresJSONDecoder>
+    public let json: any PostgresJSONDecoder
 
-    public init(json: PostgresJSONDecoder = PostgresNIO._defaultJSONDecoder) {
-        self.underlyingContext = .init(jsonDecoder: .init(json: json))
+    public init(json: any PostgresJSONDecoder = PostgresNIO._defaultJSONDecoder) {
+        self.json = json
     }
 
     public func decode<T>(_ type: T.Type, from data: PostgresData) throws -> T

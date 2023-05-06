@@ -1,20 +1,12 @@
 import Foundation
 import PostgresNIO
 
-struct TypeErasedPostgresJSONEncoder: PostgresJSONEncoder {
-    let json: PostgresJSONEncoder
-    
-    func encode<T: Encodable>(_ value: T) throws -> Data { try self.json.encode(value) }
-    func encode<T: Encodable>(_ value: T, into buffer: inout ByteBuffer) throws { try self.json.encode(value, into: &buffer) }
-}
-
 @available(*, deprecated, message: "Use `PostgresJSONEncoder` and `PostgresEncodable` instead.")
 public final class PostgresDataEncoder {
-    public var json: PostgresJSONEncoder { self.underlyingContext.jsonEncoder }
-    internal let underlyingContext: PostgresEncodingContext<TypeErasedPostgresJSONEncoder>
+    public let json: any PostgresJSONEncoder
 
-    public init(json: PostgresJSONEncoder = PostgresNIO._defaultJSONEncoder) {
-        self.underlyingContext = .init(jsonEncoder: .init(json: json))
+    public init(json: any PostgresJSONEncoder = PostgresNIO._defaultJSONEncoder) {
+        self.json = json
     }
 
     public func encode(_ value: Encodable) throws -> PostgresData {
