@@ -9,11 +9,11 @@ public final class PostgresDataDecoder {
         self.json = json
     }
 
-    public func decode<T>(_ type: T.Type, from data: PostgresData) throws -> T
+    public func decode<T>(_: T.Type, from data: PostgresData) throws -> T
         where T: Decodable
     {
         // If `T` can be converted directly, just do so.
-        if let convertible = T.self as? PostgresDataConvertible.Type {
+        if let convertible = T.self as? any PostgresDataConvertible.Type {
             guard let value = convertible.init(postgresData: data) else {
                 throw DecodingError.typeMismatch(T.self, .init(
                     codingPath: [],
@@ -53,7 +53,7 @@ public final class PostgresDataDecoder {
     }
 
     private final class GiftBoxUnwrapDecoder: Decoder, SingleValueDecodingContainer {
-        var codingPath: [CodingKey] { [] }
+        var codingPath: [any CodingKey] { [] }
         var userInfo: [CodingUserInfoKey : Any] { [:] }
 
         let dataDecoder: PostgresDataDecoder
@@ -68,7 +68,7 @@ public final class PostgresDataDecoder {
             throw DecodingError.dataCorruptedError(in: self, debugDescription: "Dictionary containers must be JSON-encoded")
         }
 
-        func unkeyedContainer() throws -> UnkeyedDecodingContainer {
+        func unkeyedContainer() throws -> any UnkeyedDecodingContainer {
             guard let array = self.data.array else {
                 throw DecodingError.dataCorruptedError(in: self, debugDescription: "Non-natively typed arrays must be JSON-encoded")
             }
@@ -78,7 +78,7 @@ public final class PostgresDataDecoder {
         struct ArrayContainer: UnkeyedDecodingContainer {
             let data: [PostgresData]
             let dataDecoder: PostgresDataDecoder
-            var codingPath: [CodingKey] { [] }
+            var codingPath: [any CodingKey] { [] }
             var count: Int? { self.data.count }
             var isAtEnd: Bool { self.currentIndex >= self.data.count }
             var currentIndex: Int = 0
@@ -92,7 +92,7 @@ public final class PostgresDataDecoder {
                 return false
             }
             
-            mutating func decode<T>(_ type: T.Type) throws -> T where T : Decodable {
+            mutating func decode<T>(_: T.Type) throws -> T where T: Decodable {
                 // Do _not_ shorten this using `defer`, otherwise `currentIndex` is incorrectly incremented.
                 let result = try self.dataDecoder.decode(T.self, from: self.data[self.currentIndex])
                 self.currentIndex += 1
@@ -103,16 +103,16 @@ public final class PostgresDataDecoder {
                 throw DecodingError.dataCorruptedError(in: self, debugDescription: "Data nesting is not supported")
             }
             
-            mutating func nestedUnkeyedContainer() throws -> UnkeyedDecodingContainer {
+            mutating func nestedUnkeyedContainer() throws -> any UnkeyedDecodingContainer {
                 throw DecodingError.dataCorruptedError(in: self, debugDescription: "Data nesting is not supported")
             }
             
-            mutating func superDecoder() throws -> Decoder {
+            mutating func superDecoder() throws -> any Decoder {
                 throw DecodingError.dataCorruptedError(in: self, debugDescription: "Data nesting is not supported")
             }
         }
         
-        func singleValueContainer() throws -> SingleValueDecodingContainer {
+        func singleValueContainer() throws -> any SingleValueDecodingContainer {
             return self
         }
         
@@ -120,7 +120,7 @@ public final class PostgresDataDecoder {
             self.data.value == nil
         }
 
-        func decode<T>(_ type: T.Type) throws -> T where T : Decodable {
+        func decode<T>(_: T.Type) throws -> T where T: Decodable {
             // Recurse back into the data decoder, don't repeat its logic here.
             return try self.dataDecoder.decode(T.self, from: self.data)
         }

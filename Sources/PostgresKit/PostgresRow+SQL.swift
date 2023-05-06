@@ -8,31 +8,28 @@ extension PostgresRow {
         self.sql(decodingContext: .default)
     }
     
-    @inlinable
-    public func sql(jsonDecoder: some PostgresJSONDecoder) -> some SQLRow {
-        self.sql(decodingContext: .init(jsonDecoder: jsonDecoder))
-    }
-    
     public func sql(decodingContext: PostgresDecodingContext<some PostgresJSONDecoder>) -> some SQLRow {
         _PostgresSQLRow(randomAccessView: self.makeRandomAccess(), decodingContext: decodingContext)
     }
 }
 
-private struct _PostgresSQLRow<D: PostgresJSONDecoder>: SQLRow {
+private struct _PostgresSQLRow<D: PostgresJSONDecoder> {
     let randomAccessView: PostgresRandomAccessRow
     let decodingContext: PostgresDecodingContext<D>
 
     enum _Error: Error {
         case missingColumn(String)
     }
-    
-    init(row: PostgresRandomAccessRow, decodingContext: PostgresDecodingContext<D>) {
-        self.randomAccessView = row
-        self.decodingContext = decodingContext
+}
+
+extension _PostgresSQLRow: SQLRow {
+    var allColumns: [String] {
+        self.randomAccessView.map { $0.columnName }
     }
 
-    var allColumns: [String] { self.randomAccessView.map { $0.columnName } }
-    func contains(column: String) -> Bool { self.randomAccessView.contains(column) }
+    func contains(column: String) -> Bool {
+        self.randomAccessView.contains(column)
+    }
 
     func decodeNil(column: String) throws -> Bool {
         !self.randomAccessView.contains(column) || self.randomAccessView[column].bytes == nil

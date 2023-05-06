@@ -16,7 +16,7 @@ public struct PostgresConnectionSource: ConnectionPoolSource {
 
     public func makeConnection(
         logger: Logger,
-        on eventLoop: EventLoop
+        on eventLoop: any EventLoop
     ) -> EventLoopFuture<PostgresConnection> {
         let connectionFuture = PostgresConnection.connect(
             on: eventLoop,

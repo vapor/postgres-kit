@@ -33,10 +33,11 @@ private struct _PostgresSQLDatabase<PDatabase: PostgresDatabase, E: PostgresJSON
 
 extension _PostgresSQLDatabase: SQLDatabase {
     var logger: Logger { self.database.logger }
-    var eventLoop: EventLoop { self.database.eventLoop }
-    var dialect: SQLDialect { PostgresDialect() }
+    var eventLoop: any EventLoop { self.database.eventLoop }
+    var version: (any SQLDatabaseReportedVersion)? { nil } // PSQL doesn't send version in wire protocol, must use SQL to read it
+    var dialect: any SQLDialect { PostgresDialect() }
     
-    func execute(sql query: SQLExpression, _ onRow: @escaping (SQLRow) -> ()) -> EventLoopFuture<Void> {
+    func execute(sql query: any SQLExpression, _ onRow: @escaping (any SQLRow) -> ()) -> EventLoopFuture<Void> {
         let (sql, binds) = self.serialize(query)
         
         if let queryLogLevel {

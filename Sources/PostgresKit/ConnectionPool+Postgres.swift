@@ -4,25 +4,26 @@ import AsyncKit
 import Logging
 
 extension EventLoopGroupConnectionPool where Source == PostgresConnectionSource {
-    public func database(logger: Logger) -> PostgresDatabase {
+    public func database(logger: Logger) -> any PostgresDatabase {
         _EventLoopGroupConnectionPoolPostgresDatabase(pool: self, logger: logger)
     }
 }
 
-// MARK: Private
-
-private struct _EventLoopGroupConnectionPoolPostgresDatabase {
-    let pool: EventLoopGroupConnectionPool<PostgresConnectionSource>
-    let logger: Logger
+extension EventLoopConnectionPool where Source == PostgresConnectionSource {
+    public func database(logger: Logger) -> any PostgresDatabase {
+        _EventLoopConnectionPoolPostgresDatabase(pool: self, logger: logger)
+    }
 }
 
-extension _EventLoopGroupConnectionPoolPostgresDatabase: PostgresDatabase {
-    var eventLoop: EventLoop { self.pool.eventLoopGroup.next() }
 
-    func send(_ request: PostgresRequest, logger: Logger) -> EventLoopFuture<Void> {
-        self.pool.withConnection(logger: logger) {
-            $0.send(request, logger: logger)
-        }
+private struct _EventLoopGroupConnectionPoolPostgresDatabase: PostgresDatabase {
+    let pool: EventLoopGroupConnectionPool<PostgresConnectionSource>
+    let logger: Logger
+
+    var eventLoop: any EventLoop { self.pool.eventLoopGroup.any() }
+
+    func send(_ request: any PostgresRequest, logger: Logger) -> EventLoopFuture<Void> {
+        self.pool.withConnection(logger: logger) { $0.send(request, logger: logger) }
     }
 
     func withConnection<T>(_ closure: @escaping (PostgresConnection) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
@@ -30,24 +31,14 @@ extension _EventLoopGroupConnectionPoolPostgresDatabase: PostgresDatabase {
     }
 }
 
-extension EventLoopConnectionPool where Source == PostgresConnectionSource {
-    public func database(logger: Logger) -> PostgresDatabase {
-        _EventLoopConnectionPoolPostgresDatabase(pool: self, logger: logger)
-    }
-}
-
-private struct _EventLoopConnectionPoolPostgresDatabase {
+private struct _EventLoopConnectionPoolPostgresDatabase: PostgresDatabase {
     let pool: EventLoopConnectionPool<PostgresConnectionSource>
     let logger: Logger
-}
 
-extension _EventLoopConnectionPoolPostgresDatabase: PostgresDatabase {
-    var eventLoop: EventLoop { self.pool.eventLoop }
+    var eventLoop: any EventLoop { self.pool.eventLoop }
     
-    func send(_ request: PostgresRequest, logger: Logger) -> EventLoopFuture<Void> {
-        self.pool.withConnection(logger: logger) {
-            $0.send(request, logger: logger)
-        }
+    func send(_ request: any PostgresRequest, logger: Logger) -> EventLoopFuture<Void> {
+        self.pool.withConnection(logger: logger) { $0.send(request, logger: logger) }
     }
     
     func withConnection<T>(_ closure: @escaping (PostgresConnection) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
