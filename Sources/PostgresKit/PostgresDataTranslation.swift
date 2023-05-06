@@ -145,11 +145,11 @@ struct PostgresDataTranslation {
 }
 
 private final class ArrayAwareBoxUwrappingDecoder<T0: Decodable, D: PostgresJSONDecoder>: Decoder, SingleValueDecodingContainer {
-    let codingPath: [CodingKey], userInfo: [CodingUserInfoKey: Any]
+    let codingPath: [any CodingKey], userInfo: [CodingUserInfoKey: Any]
     let cell: PostgresCell, context: PostgresDecodingContext<D>
     let file: String, line: Int
  
-    init(codingPath: [CodingKey], userInfo: [CodingUserInfoKey: Any], cell: PostgresCell, context: PostgresDecodingContext<D>, file: String, line: Int) {
+    init(codingPath: [any CodingKey], userInfo: [CodingUserInfoKey: Any], cell: PostgresCell, context: PostgresDecodingContext<D>, file: String, line: Int) {
         self.codingPath = codingPath
         self.cell = cell
         self.context = context
@@ -160,7 +160,7 @@ private final class ArrayAwareBoxUwrappingDecoder<T0: Decodable, D: PostgresJSON
     
     struct ArrayContainer: UnkeyedDecodingContainer {
         let data: [PostgresData], decoder: ArrayAwareBoxUwrappingDecoder
-        var codingPath: [CodingKey] { self.decoder.codingPath }
+        var codingPath: [any CodingKey] { self.decoder.codingPath }
         var count: Int? { self.data.count }
         var isAtEnd: Bool { self.currentIndex >= self.data.count }
         var currentIndex = 0
@@ -189,15 +189,15 @@ private final class ArrayAwareBoxUwrappingDecoder<T0: Decodable, D: PostgresJSON
         
         private var rejectNestingError: DecodingError { .dataCorruptedError(in: self, debugDescription: "Data nesting is not supported") }
         mutating func nestedContainer<K: CodingKey>(keyedBy: K.Type) throws -> KeyedDecodingContainer<K> { throw self.rejectNestingError }
-        mutating func nestedUnkeyedContainer() throws -> UnkeyedDecodingContainer { throw self.rejectNestingError }
-        mutating func superDecoder() throws -> Decoder { throw self.rejectNestingError }
+        mutating func nestedUnkeyedContainer() throws -> any UnkeyedDecodingContainer { throw self.rejectNestingError }
+        mutating func superDecoder() throws -> any Decoder { throw self.rejectNestingError }
     }
     
     func container<Key: CodingKey>(keyedBy: Key.Type) throws -> KeyedDecodingContainer<Key> {
         throw DecodingError.dataCorrupted(.init(codingPath: self.codingPath, debugDescription: "Dictionary containers must be JSON-encoded"))
     }
     
-    func unkeyedContainer() throws -> UnkeyedDecodingContainer {
+    func unkeyedContainer() throws -> any UnkeyedDecodingContainer {
         // TODO: Find a better way to figure out arrays
         guard let array = PostgresData(type: self.cell.dataType, typeModifier: nil, formatCode: self.cell.format, value: self.cell.bytes).array else {
             throw DecodingError.dataCorrupted(.init(codingPath: self.codingPath, debugDescription: "Non-natively typed arrays must be JSON-encoded"))
@@ -205,7 +205,7 @@ private final class ArrayAwareBoxUwrappingDecoder<T0: Decodable, D: PostgresJSON
         return ArrayContainer(data: array, decoder: self)
     }
     
-    func singleValueContainer() throws -> SingleValueDecodingContainer { self }
+    func singleValueContainer() throws -> any SingleValueDecodingContainer { self }
     
     func decodeNil() -> Bool { self.cell.bytes == nil }
     
@@ -251,13 +251,13 @@ private final class ArrayAwareBoxWrappingPostgresEncoder<E: PostgresJSONEncoder>
         }
     }
     
-    var codingPath: [CodingKey]
+    var codingPath: [any CodingKey]
     let userInfo: [CodingUserInfoKey: Any]
     let context: PostgresEncodingContext<E>
     let file: String, line: Int
     var value: Value
 
-    init(codingPath: [CodingKey], userInfo: [CodingUserInfoKey: Any], context: PostgresEncodingContext<E>, file: String, line: Int, value: Value = .invalid) {
+    init(codingPath: [any CodingKey], userInfo: [CodingUserInfoKey: Any], context: PostgresEncodingContext<E>, file: String, line: Int, value: Value = .invalid) {
         self.codingPath = codingPath
         self.userInfo = userInfo
         self.context = context
@@ -271,19 +271,19 @@ private final class ArrayAwareBoxWrappingPostgresEncoder<E: PostgresJSONEncoder>
         return .init(FailureEncoder())
     }
     
-    func unkeyedContainer() -> UnkeyedEncodingContainer {
+    func unkeyedContainer() -> any UnkeyedEncodingContainer {
         self.value.requestIndexed()
         return ArrayContainer(encoder: self)
     }
     
-    func singleValueContainer() -> SingleValueEncodingContainer {
+    func singleValueContainer() -> any SingleValueEncodingContainer {
         precondition(!self.value.isValid, "Requested multiple containers from the same encoder.")
         return self
     }
     
     struct ArrayContainer: UnkeyedEncodingContainer {
         let encoder: ArrayAwareBoxWrappingPostgresEncoder
-        var codingPath: [CodingKey] { self.encoder.codingPath }
+        var codingPath: [any CodingKey] { self.encoder.codingPath }
         var count: Int { self.encoder.value.indexedCount }
         mutating func encodeNil() throws { self.encoder.value.store(indexedScalar: .null) }
         mutating func encode<T: Encodable>(_ value: T) throws {
@@ -294,8 +294,8 @@ private final class ArrayAwareBoxWrappingPostgresEncoder<E: PostgresJSONEncoder>
             ))
         }
         mutating func nestedContainer<K: CodingKey>(keyedBy: K.Type) -> KeyedEncodingContainer<K> { self.superEncoder().container(keyedBy: K.self) }
-        mutating func nestedUnkeyedContainer() -> UnkeyedEncodingContainer { self.superEncoder().unkeyedContainer() }
-        mutating func superEncoder() -> Encoder { ArrayAwareBoxWrappingPostgresEncoder(
+        mutating func nestedUnkeyedContainer() -> any UnkeyedEncodingContainer { self.superEncoder().unkeyedContainer() }
+        mutating func superEncoder() -> any Encoder { ArrayAwareBoxWrappingPostgresEncoder(
             codingPath: self.codingPath + [SomeCodingKey(intValue: self.count)], userInfo: self.encoder.userInfo,
             context: self.encoder.context,
             file: self.encoder.file, line: self.encoder.line,
@@ -314,7 +314,7 @@ private final class ArrayAwareBoxWrappingPostgresEncoder<E: PostgresJSONEncoder>
 
     /// This is a workaround for the inability of encoders to throw errors in various places. It's still better than fatalError()ing.
     struct FailureEncoder<K: CodingKey>: Encoder, KeyedEncodingContainerProtocol, UnkeyedEncodingContainer, SingleValueEncodingContainer {
-        let codingPath = [CodingKey](), userInfo = [CodingUserInfoKey: Any](), count = 0
+        let codingPath = [any CodingKey](), userInfo = [CodingUserInfoKey: Any](), count = 0
         init() {}; init() where K == SomeCodingKey {}
         func encodeNil() throws { throw FallbackSentinel() }
         func encodeNil(forKey: K) throws { throw FallbackSentinel() }
@@ -322,13 +322,13 @@ private final class ArrayAwareBoxWrappingPostgresEncoder<E: PostgresJSONEncoder>
         func encode<T: Encodable>(_: T, forKey: K) throws { throw FallbackSentinel() }
         func nestedContainer<N: CodingKey>(keyedBy: N.Type) -> KeyedEncodingContainer<N> { .init(FailureEncoder<N>()) }
         func nestedContainer<N: CodingKey>(keyedBy: N.Type, forKey: K) -> KeyedEncodingContainer<N> { .init(FailureEncoder<N>()) }
-        func nestedUnkeyedContainer() -> UnkeyedEncodingContainer { self }
-        func nestedUnkeyedContainer(forKey: K) -> UnkeyedEncodingContainer { self }
-        func superEncoder() -> Encoder { self }
-        func superEncoder(forKey: K) -> Encoder { self }
+        func nestedUnkeyedContainer() -> any UnkeyedEncodingContainer { self }
+        func nestedUnkeyedContainer(forKey: K) -> any UnkeyedEncodingContainer { self }
+        func superEncoder() -> any Encoder { self }
+        func superEncoder(forKey: K) -> any Encoder { self }
         func container<K: CodingKey>(keyedBy: K.Type) -> KeyedEncodingContainer<K> { .init(FailureEncoder<K>()) }
-        func unkeyedContainer() -> UnkeyedEncodingContainer { self }
-        func singleValueContainer() -> SingleValueEncodingContainer { self }
+        func unkeyedContainer() -> any UnkeyedEncodingContainer { self }
+        func singleValueContainer() -> any SingleValueEncodingContainer { self }
     }
 
     // TODO: Finish all this and make it work

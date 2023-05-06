@@ -337,7 +337,7 @@ public struct PostgresColumnType: SQLExpression, Hashable {
         /// Array
         indirect case array(of: Primitive)
 
-        /// See ``Swift/CustomStringConvertible``.
+        /// See ``Swift/CustomStringConvertible/description``.
         var description: String {
             switch self {
             case .bigint: return "BIGINT"

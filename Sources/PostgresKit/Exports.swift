@@ -5,7 +5,7 @@
 @_documentation(visibility: internal) @_exported import SQLKit
 @_documentation(visibility: internal) @_exported import struct Foundation.URL
 
-#elseif !BUILDING_DOCC
+#else
 
 @_exported import AsyncKit
 @_exported import PostgresNIO
