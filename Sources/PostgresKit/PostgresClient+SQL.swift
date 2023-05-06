@@ -31,7 +31,7 @@ private struct _PostgresSQLDatabase<PDatabase: PostgresDatabase, E: PostgresJSON
     }
 }
 
-extension _PostgresSQLDatabase: SQLDatabase {
+extension _PostgresSQLDatabase: SQLDatabase, PostgresDatabase {
     var logger: Logger { self.database.logger }
     var eventLoop: any EventLoop { self.database.eventLoop }
     var version: (any SQLDatabaseReportedVersion)? { nil } // PSQL doesn't send version in wire protocol, must use SQL to read it
@@ -56,5 +56,13 @@ extension _PostgresSQLDatabase: SQLDatabase {
                 { onRow($0.sql(decodingContext: self.decodingContext)) }
             )
         } }.map { _ in }
+    }
+    
+    func send(_ request: any PostgresRequest, logger: Logger) -> EventLoopFuture<Void> {
+        self.database.send(request, logger: logger)
+    }
+    
+    func withConnection<T>(_ closure: @escaping (PostgresConnection) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
+        self.database.withConnection(closure)
     }
 }

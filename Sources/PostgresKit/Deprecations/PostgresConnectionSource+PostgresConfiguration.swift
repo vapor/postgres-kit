@@ -39,25 +39,31 @@ extension PostgresConnectionSource {
     
     @available(*, deprecated, message: "Use `init(sqlConfiguration:)` instead.")
     public init(configuration: PostgresConfiguration) {
+        self.init(sqlConfiguration: .init(legacyConfiguration: configuration))
+    }
+}
+
+extension SQLPostgresConfiguration {
+    // N.B.: This is public only for the sake of deprecated support in FluentPostgresDriver. Don't use it.
+    @available(*, deprecated, message: "This initializer is not intended for public use. Stop using `PostgresConfigration`.")
+    public init(legacyConfiguration configuration: PostgresConfiguration) {
         if let hostname = configuration._hostname, let port = configuration._port {
-            var config = SQLPostgresConfiguration(
+            self.init(
                 hostname: hostname, port: port,
                 username: configuration.username, password: configuration.password,
                 database: configuration.database,
                 tls: configuration.tlsConfiguration.flatMap { try? .require(.init(configuration: $0)) } ?? .disable
             )
-            config.coreConfiguration.options.requireBackendKeyData = configuration.requireBackendKeyData
-            config.searchPath = configuration.searchPath
-            self.init(sqlConfiguration: config)
+            self.coreConfiguration.options.requireBackendKeyData = configuration.requireBackendKeyData
+            self.searchPath = configuration.searchPath
         } else if let address = try? configuration.address(), let socketPath = address.pathname {
-            var config = SQLPostgresConfiguration(
+            self.init(
                 unixDomainSocketPath: socketPath,
                 username: configuration.username, password: configuration.password,
                 database: configuration.database
             )
-            config.coreConfiguration.options.requireBackendKeyData = configuration.requireBackendKeyData
-            config.searchPath = configuration.searchPath
-            self.init(sqlConfiguration: config)
+            self.coreConfiguration.options.requireBackendKeyData = configuration.requireBackendKeyData
+            self.searchPath = configuration.searchPath
         } else {
             fatalError("Nonsensical legacy configuration format")
         }
