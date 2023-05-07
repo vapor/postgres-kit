@@ -2,6 +2,7 @@ import AsyncKit
 import SQLKit
 
 /// Postgres-specific column types.
+@available(*, deprecated, message: "Use `PostgresDataType` instead.")
 public struct PostgresColumnType: SQLExpression, Hashable {
     public static var blob: PostgresColumnType { .varbit }
 
@@ -201,141 +202,53 @@ public struct PostgresColumnType: SQLExpression, Hashable {
     public static func array(_ type: PostgresColumnType) -> PostgresColumnType { .init(.array(of: type.primitive)) }
 
     private let primitive: Primitive
-
     private init(_ primitive: Primitive) { self.primitive = primitive }
 
     enum Primitive: CustomStringConvertible, Hashable {
-        /// signed eight-byte integer
-        case bigint
-
-        /// autoincrementing eight-byte integer
-        case bigserial
-
-        /// fixed-length bit string
-        case bit(Int?)
-
-        /// variable-length bit string
-        case varbit(Int?)
-
-        /// logical Boolean (true/false)
-        case boolean
-
-        /// rectangular box on a plane
-        case box
-
-        /// binary data (“byte array”)
-        case bytea
-
-        /// fixed-length character string
-        case char(Int?)
-
-        /// variable-length character string
-        case varchar(Int?)
-
-        /// IPv4 or IPv6 network address
-        case cidr
-
-        /// circle on a plane
-        case circle
-
-        /// calendar date (year, month, day)
-        case date
-
-        /// floating-point number (8 bytes)
-        case doublePrecision
-
-        /// IPv4 or IPv6 host address
-        case inet
-
-        /// signed four-byte integer
-        case integer
-
-        /// time span
-        case interval
-
-        /// textual JSON data
-        case json
-
-        /// binary JSON data, decomposed
-        case jsonb
-
-        /// infinite line on a plane
-        case line
-
-        /// line segment on a plane
-        case lseg
-
-        /// MAC (Media Access Control) address
-        case macaddr
-
-        /// MAC (Media Access Control) address (EUI-64 format)
-        case macaddr8
-
-        /// currency amount
-        case money
-
-        /// exact numeric of selectable precision
-        case numeric(Int?, Int?)
-
-        /// geometric path on a plane
-        case path
-
-        /// PostgreSQL Log Sequence Number
-        case pgLSN
-
-        /// geometric point on a plane
-        case point
-
-        /// closed geometric path on a plane
-        case polygon
-
-        /// single precision floating-point number (4 bytes)
-        case real
-
-        /// signed two-byte integer
-        case smallint
-
-        /// autoincrementing two-byte integer
-        case smallserial
-
-        /// autoincrementing four-byte integer
-        case serial
-
-        /// variable-length character string
-        case text
-
-        /// time of day (no time zone)
-        case time(Int?)
-
-        /// time of day, including time zone
-        case timetz(Int?)
-
-        /// date and time (no time zone)
-        case timestamp(Int?)
-
-        /// date and time, including time zone
-        case timestamptz(Int?)
-
-        /// text search query
-        case tsquery
-
-        /// text search document
-        case tsvector
-
-        /// user-level transaction ID snapshot
-        case txidSnapshot
-
-        /// universally unique identifier
-        case uuid
-
-        /// XML data
-        case xml
-
-        /// User-defined type
-        case custom(String)
-        
-        /// Array
-        indirect case array(of: Primitive)
+        case bigint /// signed eight-byte integer
+        case bigserial /// autoincrementing eight-byte integer
+        case bit(Int?) /// fixed-length bit string
+        case varbit(Int?) /// variable-length bit string
+        case boolean /// logical Boolean (true/false)
+        case box /// rectangular box on a plane
+        case bytea /// binary data (“byte array”)
+        case char(Int?) /// fixed-length character string
+        case varchar(Int?) /// variable-length character string
+        case cidr /// IPv4 or IPv6 network address
+        case circle /// circle on a plane
+        case date /// calendar date (year, month, day)
+        case doublePrecision /// floating-point number (8 bytes)
+        case inet /// IPv4 or IPv6 host address
+        case integer /// signed four-byte integer
+        case interval /// time span
+        case json /// textual JSON data
+        case jsonb /// binary JSON data, decomposed
+        case line /// infinite line on a plane
+        case lseg /// line segment on a plane
+        case macaddr /// MAC (Media Access Control) address
+        case macaddr8 /// MAC (Media Access Control) address (EUI-64 format)
+        case money /// currency amount
+        case numeric(Int?, Int?) /// exact numeric of selectable precision
+        case path /// geometric path on a plane
+        case pgLSN /// PostgreSQL Log Sequence Number
+        case point /// geometric point on a plane
+        case polygon /// closed geometric path on a plane
+        case real /// single precision floating-point number (4 bytes)
+        case smallint /// signed two-byte integer
+        case smallserial /// autoincrementing two-byte integer
+        case serial /// autoincrementing four-byte integer
+        case text /// variable-length character string
+        case time(Int?) /// time of day (no time zone)
+        case timetz(Int?) /// time of day, including time zone
+        case timestamp(Int?) /// date and time (no time zone)
+        case timestamptz(Int?) /// date and time, including time zone
+        case tsquery /// text search query
+        case tsvector /// text search document
+        case txidSnapshot /// user-level transaction ID snapshot
+        case uuid /// universally unique identifier
+        case xml /// XML data
+        case custom(String) /// User-defined type
+        indirect case array(of: Primitive) /// Array
 
         /// See ``Swift/CustomStringConvertible/description``.
         var description: String {
@@ -388,7 +301,7 @@ public struct PostgresColumnType: SQLExpression, Hashable {
         }
     }
 
-    /// See `SQLSerializable`.
+    /// See ``SQLExpression/serialize(to:)``.
     public func serialize(to serializer: inout SQLSerializer) {
         serializer.write(self.primitive.description)
     }
