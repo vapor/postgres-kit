@@ -35,11 +35,11 @@ extension _PostgresSQLRow: SQLRow {
         !self.randomAccessView.contains(column) || self.randomAccessView[column].bytes == nil
     }
 
-    func decode<D>(column: String, as type: D.Type) throws -> D where D : Decodable {
+    func decode<T: Decodable>(column: String, as type: T.Type) throws -> T {
         guard self.randomAccessView.contains(column) else {
             throw _Error.missingColumn(column)
         }
         
-        return try PostgresDataTranslation.decode(D.self, from: self.randomAccessView[column], in: self.decodingContext)
+        return try PostgresDataTranslation.decode(T.self, from: self.randomAccessView[column], in: self.decodingContext)
     }
 }

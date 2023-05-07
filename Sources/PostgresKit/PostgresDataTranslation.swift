@@ -326,7 +326,7 @@ private final class ArrayAwareBoxWrappingPostgresEncoder<E: PostgresJSONEncoder>
         func nestedUnkeyedContainer(forKey: K) -> any UnkeyedEncodingContainer { self }
         func superEncoder() -> any Encoder { self }
         func superEncoder(forKey: K) -> any Encoder { self }
-        func container<K: CodingKey>(keyedBy: K.Type) -> KeyedEncodingContainer<K> { .init(FailureEncoder<K>()) }
+        func container<N: CodingKey>(keyedBy: N.Type) -> KeyedEncodingContainer<N> { .init(FailureEncoder<N>()) }
         func unkeyedContainer() -> any UnkeyedEncodingContainer { self }
         func singleValueContainer() -> any SingleValueEncodingContainer { self }
     }
