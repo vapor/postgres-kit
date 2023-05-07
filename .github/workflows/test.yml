@@ -159,7 +159,7 @@ jobs:
       matrix:
         dbimage: ['postgresql@14']
         dbauth: ['scram-sha-256']
-        macos: ['macos-12']
+        macos: ['macos-13']
         xcode: ['latest-stable']
     runs-on: ${{ matrix.macos }}
     env:
