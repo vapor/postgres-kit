@@ -6,3 +6,5 @@ API breakage: func PostgresDatabase.sql(encoder:decoder:) has removed default ar
 API breakage: func PostgresDatabase.sql(encoder:decoder:) has removed default argument from parameter 1
 API breakage: func PostgresRow.sql(decoder:) has removed default argument from parameter 0
 API breakage: func PostgresColumnType.==(_:_:) has been removed
+API breakage: import Foundation has been removed
+
