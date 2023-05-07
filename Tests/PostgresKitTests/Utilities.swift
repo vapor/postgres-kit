@@ -1,17 +1,13 @@
 import XCTest
 import PostgresKit
 import Logging
-#if canImport(Darwin)
-import Darwin.C
-#else
-import Glibc
-#endif
+import Foundation
 import NIOCore
 import PostgresNIO
 
 extension PostgresConnection {
-    static func test(on eventLoop: EventLoop) -> EventLoopFuture<PostgresConnection> {
-        return PostgresConnectionSource(sqlConfiguration: .test).makeConnection(logger: .init(label: "vapor.codes.postgres-kit.test"), on: eventLoop)
+    static func test(on eventLoop: any EventLoop) -> EventLoopFuture<PostgresConnection> {
+        PostgresConnectionSource(sqlConfiguration: .test).makeConnection(logger: .init(label: "vapor.codes.postgres-kit.test"), on: eventLoop)
     }
 }
 
@@ -29,5 +25,5 @@ extension SQLPostgresConfiguration {
 }
 
 func env(_ name: String) -> String? {
-    getenv(name).flatMap { String(cString: $0) }
+    ProcessInfo.processInfo.environment[name]
 }
