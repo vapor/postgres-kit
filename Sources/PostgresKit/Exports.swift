@@ -1,4 +1,4 @@
-#if compiler(>=5.8)
+#if swift(>=5.8)
 
 @_documentation(visibility: internal) @_exported import AsyncKit
 @_documentation(visibility: internal) @_exported import PostgresNIO
