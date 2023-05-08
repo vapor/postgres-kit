@@ -330,36 +330,4 @@ private final class ArrayAwareBoxWrappingPostgresEncoder<E: PostgresJSONEncoder>
         func unkeyedContainer() -> any UnkeyedEncodingContainer { self }
         func singleValueContainer() -> any SingleValueEncodingContainer { self }
     }
-
-    // TODO: Finish all this and make it work
-    /*
-    enum State {
-        typealias ValueBinder = (inout PostgresBindings) throws -> Void
-        final class ArrayRef<T> { var contents: [T] = []; func append(_ value: T) { self.contents.append(value) } }
-
-        case start
-        case invalidOperation(Error)
-        case haveScalarValue(ValueBinder)
-        case haveHomogenousArray(ArrayRef<PostgresData>)
-        
-        mutating func handleInvalidOperation<T>(value: T, at codingPath: [CodingKey], description: String) {
-            if case .invalidOperation(_) = self { return }
-            self = .invalidOperation(EncodingError.invalidValue(value, .init(codingPath: codingPath, debugDescription: description)))
-        }
-        
-        mutating func handleProvideScalarValue<T: Encodable>(_ value: T, at codingPath: [CodingKey], withBinder binder: @escaping ValueBinder) {
-            switch self {
-            case .start: self = .haveScalarValue(binder)
-            default:     self.handleInvalidOperation(value: value, at: codingPath, description: "Can't encode scalar value in current state.")
-            }
-        }
-        
-        mutating func handleStartArray(at codingPath: [CodingKey]) {
-            switch self {
-            case .start: self = .haveHomogenousArray(.init())
-            default:     self.handleInvalidOperation(value: [PostgresData](), at: codingPath, description: "Can't encode array in current state.")
-        }
-    }
-    var state: State
-    */
 }
