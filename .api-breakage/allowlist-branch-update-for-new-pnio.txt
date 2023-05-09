@@ -1,0 +1,10 @@
+API breakage: var PostgresDialect.sharedSelectLockExpression has declared type change from SQLKit.SQLExpression? to (SQLKit.SQLExpression)?
+API breakage: accessor PostgresDialect.sharedSelectLockExpression.Get() has return type change from SQLKit.SQLExpression? to (SQLKit.SQLExpression)?
+API breakage: var PostgresDialect.exclusiveSelectLockExpression has declared type change from SQLKit.SQLExpression? to (SQLKit.SQLExpression)?
+API breakage: accessor PostgresDialect.exclusiveSelectLockExpression.Get() has return type change from SQLKit.SQLExpression? to (SQLKit.SQLExpression)?
+API breakage: func PostgresDatabase.sql(encoder:decoder:) has removed default argument from parameter 0
+API breakage: func PostgresDatabase.sql(encoder:decoder:) has removed default argument from parameter 1
+API breakage: func PostgresRow.sql(decoder:) has removed default argument from parameter 0
+API breakage: func PostgresColumnType.==(_:_:) has been removed
+API breakage: import Foundation has been removed
+

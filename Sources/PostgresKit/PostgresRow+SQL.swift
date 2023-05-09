@@ -1,27 +1,28 @@
 import PostgresNIO
+import Foundation
 import SQLKit
 
 extension PostgresRow {
-    public func sql(decoder: PostgresDataDecoder = .init()) -> SQLRow {
-        return _PostgresSQLRow(row: self.makeRandomAccess(), decoder: decoder)
+    @inlinable
+    public func sql() -> some SQLRow {
+        self.sql(decodingContext: .default)
+    }
+    
+    public func sql(decodingContext: PostgresDecodingContext<some PostgresJSONDecoder>) -> some SQLRow {
+        _PostgresSQLRow(randomAccessView: self.makeRandomAccess(), decodingContext: decodingContext)
     }
 }
 
-// MARK: Private
-
-private struct _PostgresSQLRow: SQLRow {
+private struct _PostgresSQLRow<D: PostgresJSONDecoder> {
     let randomAccessView: PostgresRandomAccessRow
-    let decoder: PostgresDataDecoder
+    let decodingContext: PostgresDecodingContext<D>
 
     enum _Error: Error {
         case missingColumn(String)
     }
-    
-    init(row: PostgresRandomAccessRow, decoder: PostgresDataDecoder) {
-        self.randomAccessView = row
-        self.decoder = decoder
-    }
+}
 
+extension _PostgresSQLRow: SQLRow {
     var allColumns: [String] {
         self.randomAccessView.map { $0.columnName }
     }
@@ -34,10 +35,11 @@ private struct _PostgresSQLRow: SQLRow {
         !self.randomAccessView.contains(column) || self.randomAccessView[column].bytes == nil
     }
 
-    func decode<D>(column: String, as type: D.Type) throws -> D where D : Decodable {
+    func decode<T: Decodable>(column: String, as type: T.Type) throws -> T {
         guard self.randomAccessView.contains(column) else {
             throw _Error.missingColumn(column)
         }
-        return try self.decoder.decode(D.self, from: self.randomAccessView[data: column])
+        
+        return try PostgresDataTranslation.decode(T.self, from: self.randomAccessView[column], in: self.decodingContext)
     }
 }

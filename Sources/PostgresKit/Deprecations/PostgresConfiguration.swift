@@ -2,6 +2,7 @@ import NIOSSL
 import Foundation
 import NIOCore
 
+@available(*, deprecated, message: "Use `SQLPostgresConfiguration` instead.")
 public struct PostgresConfiguration {
     public var address: () throws -> SocketAddress
     public var username: String
@@ -33,32 +34,22 @@ public struct PostgresConfiguration {
     }
     
     public init?(url: URL) {
-        guard url.scheme?.hasPrefix("postgres") == true else {
+        guard let comp = URLComponents(url: url, resolvingAgainstBaseURL: true),
+              comp.scheme?.hasPrefix("postgres") ?? false,
+              let hostname = comp.host, let username = comp.user
+        else {
             return nil
         }
-        guard let username = url.user else {
-            return nil
-        }
-        let password = url.password
-        guard let hostname = url.host else {
-            return nil
-        }
-        let port = url.port ?? Self.ianaPortNumber
-        
-        let tlsConfiguration: TLSConfiguration?
-        if url.query?.contains("ssl=true") == true || url.query?.contains("sslmode=require") == true {
-            tlsConfiguration = TLSConfiguration.makeClientConfiguration()
-        } else {
-            tlsConfiguration = nil
-        }
+        let password = comp.password, port = comp.port ?? Self.ianaPortNumber
+        let wantTLS = (comp.queryItems ?? []).contains { ["ssl=true", "sslmode=require"].contains($0.description) }
         
         self.init(
             hostname: hostname,
             port: port,
             username: username,
             password: password,
-            database: url.path.split(separator: "/").last.flatMap(String.init),
-            tlsConfiguration: tlsConfiguration
+            database: url.lastPathComponent,
+            tlsConfiguration: wantTLS ? .makeClientConfiguration() : nil
         )
     }
 

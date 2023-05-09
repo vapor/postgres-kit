@@ -1,15 +1,16 @@
 import Foundation
 import PostgresNIO
 
+@available(*, deprecated, message: "Use `PostgresJSONEncoder` and `PostgresEncodable` instead.")
 public final class PostgresDataEncoder {
-    public let json: PostgresJSONEncoder
+    public let json: any PostgresJSONEncoder
 
-    public init(json: PostgresJSONEncoder = PostgresNIO._defaultJSONEncoder) {
+    public init(json: any PostgresJSONEncoder = PostgresNIO._defaultJSONEncoder) {
         self.json = json
     }
 
     public func encode(_ value: Encodable) throws -> PostgresData {
-        if let custom = value as? PostgresDataConvertible, let data = custom.postgresData {
+        if let custom = value as? any PostgresDataConvertible, let data = custom.postgresData {
             return data
         } else {
             let encoder = _Encoder(parent: self)
@@ -24,16 +25,7 @@ public final class PostgresDataEncoder {
                     return PostgresData(array: indexed.contents, elementType: elementType)
                 }
             } catch is _Encoder.AssociativeValueSentinel {
-#if swift(<5.7)
-                struct _Wrapper: Encodable {
-                    let encodable: Encodable
-                    init(_ encodable: Encodable) { self.encodable = encodable }
-                    func encode(to encoder: Encoder) throws { try self.encodable.encode(to: encoder) }
-                }
-                return try PostgresData(jsonb: self.json.encode(_Wrapper(value))) // Swift <5.7 will complain that "Encodable does not conform to Encodable" without the wrapper
-#else
                 return try PostgresData(jsonb: self.json.encode(value))
-#endif
             }
         }
     }
@@ -72,7 +64,7 @@ public final class PostgresDataEncoder {
             }
         }
         
-        var userInfo: [CodingUserInfoKey : Any] { [:] }; var codingPath: [CodingKey] { [] }
+        var userInfo: [CodingUserInfoKey : Any] { [:] }; var codingPath: [any CodingKey] { [] }
         var parent: PostgresDataEncoder, value: Value
         
         init(parent: PostgresDataEncoder, value: Value = .invalid) { (self.parent, self.value) = (parent, value) }
@@ -80,27 +72,27 @@ public final class PostgresDataEncoder {
             precondition(!self.value.isValid, "Requested multiple containers from the same encoder.")
             return .init(_FailingKeyedContainer())
         }
-        func unkeyedContainer() -> UnkeyedEncodingContainer {
+        func unkeyedContainer() -> any UnkeyedEncodingContainer {
             self.value.requestIndexed(for: self)
             return _UnkeyedValueContainer(encoder: self)
         }
-        func singleValueContainer() -> SingleValueEncodingContainer {
+        func singleValueContainer() -> any SingleValueEncodingContainer {
             precondition(!self.value.isValid, "Requested multiple containers from the same encoder.")
             return _SingleValueContainer(encoder: self)
         }
         
         struct _UnkeyedValueContainer: UnkeyedEncodingContainer {
-            let encoder: _Encoder; var codingPath: [CodingKey] { self.encoder.codingPath }
+            let encoder: _Encoder; var codingPath: [any CodingKey] { self.encoder.codingPath }
             var count: Int { self.encoder.value.indexedCount }
             mutating func encodeNil() throws { self.encoder.value.addToIndexed(.null) }
             mutating func encode<T: Encodable>(_ value: T) throws { self.encoder.value.addToIndexed(try self.encoder.parent.encode(value)) }
             mutating func nestedContainer<K: CodingKey>(keyedBy: K.Type) -> KeyedEncodingContainer<K> { self.superEncoder().container(keyedBy: K.self) }
-            mutating func nestedUnkeyedContainer() -> UnkeyedEncodingContainer { self.superEncoder().unkeyedContainer() }
-            mutating func superEncoder() -> Encoder { _Encoder(parent: self.encoder.parent, value: self.encoder.value) } // NOT the same as self.encoder
+            mutating func nestedUnkeyedContainer() -> any UnkeyedEncodingContainer { self.superEncoder().unkeyedContainer() }
+            mutating func superEncoder() -> any Encoder { _Encoder(parent: self.encoder.parent, value: self.encoder.value) } // NOT the same as self.encoder
         }
 
         struct _SingleValueContainer: SingleValueEncodingContainer {
-            let encoder: _Encoder; var codingPath: [CodingKey] { self.encoder.codingPath }
+            let encoder: _Encoder; var codingPath: [any CodingKey] { self.encoder.codingPath }
             func encodeNil() throws { self.encoder.value.storeScalar(.null) }
             func encode<T: Encodable>(_ value: T) throws { self.encoder.value.storeScalar(try self.encoder.parent.encode(value)) }
         }
@@ -110,24 +102,24 @@ public final class PostgresDataEncoder {
         /// no-action keyed container because it can save a significant amount of time otherwise spent uselessly calling
         /// nested methods in some cases.
         struct _TaintedEncoder: Encoder, UnkeyedEncodingContainer, SingleValueEncodingContainer {
-            var userInfo: [CodingUserInfoKey : Any] { [:] }; var codingPath: [CodingKey] { [] }; var count: Int { 0 }
+            var userInfo: [CodingUserInfoKey : Any] { [:] }; var codingPath: [any CodingKey] { [] }; var count: Int { 0 }
             func container<K: CodingKey>(keyedBy: K.Type) -> KeyedEncodingContainer<K> { .init(_FailingKeyedContainer()) }
             func nestedContainer<K: CodingKey>(keyedBy: K.Type) -> KeyedEncodingContainer<K> { .init(_FailingKeyedContainer()) }
-            func unkeyedContainer() -> UnkeyedEncodingContainer { self }
-            func nestedUnkeyedContainer() -> UnkeyedEncodingContainer { self }
-            func singleValueContainer() -> SingleValueEncodingContainer { self }
-            func superEncoder() -> Encoder { self }
+            func unkeyedContainer() -> any UnkeyedEncodingContainer { self }
+            func nestedUnkeyedContainer() -> any UnkeyedEncodingContainer { self }
+            func singleValueContainer() -> any SingleValueEncodingContainer { self }
+            func superEncoder() -> any Encoder { self }
             func encodeNil() throws { throw AssociativeValueSentinel() }
             func encode<T: Encodable>(_: T) throws { throw AssociativeValueSentinel() }
         }
         struct _FailingKeyedContainer<K: CodingKey>: KeyedEncodingContainerProtocol {
-            var codingPath: [CodingKey] { [] }
+            var codingPath: [any CodingKey] { [] }
             func encodeNil(forKey: K) throws { throw AssociativeValueSentinel() }
             func encode<T: Encodable>(_: T, forKey: K) throws { throw AssociativeValueSentinel() }
             func nestedContainer<NK: CodingKey>(keyedBy: NK.Type, forKey: K) -> KeyedEncodingContainer<NK> { .init(_FailingKeyedContainer<NK>()) }
-            func nestedUnkeyedContainer(forKey: K) -> UnkeyedEncodingContainer { _TaintedEncoder() }
-            func superEncoder() -> Encoder { _TaintedEncoder() }
-            func superEncoder(forKey: K) -> Encoder { _TaintedEncoder() }
+            func nestedUnkeyedContainer(forKey: K) -> any UnkeyedEncodingContainer { _TaintedEncoder() }
+            func superEncoder() -> any Encoder { _TaintedEncoder() }
+            func superEncoder(forKey: K) -> any Encoder { _TaintedEncoder() }
         }
     }
 }
