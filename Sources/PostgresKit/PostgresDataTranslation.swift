@@ -42,6 +42,12 @@ struct PostgresDataTranslation {
                 cellToDecode = PostgresCell(bytes: cell.bytes, dataType: .name, format: cell.format, columnName: cell.columnName, columnIndex: cell.columnIndex)
             } else if cell.format == .binary && [.char, .varchar, .text].contains(cell.dataType) && T.self is Decimal.Type { // Workaround cheat for Fluent's assumption that Decimal strings work
                 cellToDecode = PostgresCell(bytes: cell.bytes, dataType: .numeric, format: .text, columnName: cell.columnName, columnIndex: cell.columnIndex)
+            } else if cell.format == .binary && cell.dataType == .numeric && T.self is Double.Type { // Workaround cheat for Fluent's expectation that Postgres's `numeric/decimal` can be decoded as Double
+                // Extremely manual workaround...
+                guard let value = PostgresData(type: cell.dataType, formatCode: cell.format, value: cell.bytes).numeric?.double else {
+                    throw DecodingError.dataCorrupted(.init(codingPath: codingPath, debugDescription: "Invalid numeric value encoding"))
+                }
+                return value as! T
             } else {
                 cellToDecode = cell
             }
