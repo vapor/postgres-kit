@@ -208,6 +208,22 @@ final class PostgresKitTests: XCTestCase {
         XCTAssertEqual(decoded1.prop3, instance.prop3)
         XCTAssertEqual(decoded2.count, 2)
     }
+    
+    func testFluentWorkaroundsDecoding() throws {
+        // SQLKit benchmarks already test enum handling
+        
+        // Text encoding for Decimal
+        let decimalBuffer = ByteBuffer(string: Decimal(12345.6789).description)
+        var decimalValue: Decimal?
+        XCTAssertNoThrow(decimalValue = try PostgresDataTranslation.decode(Decimal.self, from: .init(bytes: decimalBuffer, dataType: .numeric, format: .text, columnName: "", columnIndex: -1), in: .default))
+        XCTAssertEqual(decimalValue, Decimal(12345.6789))
+        
+        // Decoding Double from NUMERIC
+        let numericBuffer = PostgresData(numeric: .init(decimal: 12345.6789)).value
+        var numericValue: Double?
+        XCTAssertNoThrow(numericValue = try PostgresDataTranslation.decode(Double.self, from: .init(bytes: numericBuffer, dataType: .numeric, format: .binary, columnName: "", columnIndex: -1), in: .default))
+        XCTAssertEqual(numericValue, Double(Decimal(12345.6789).description))
+    }
 
     var eventLoop: any EventLoop { self.eventLoopGroup.any() }
     var eventLoopGroup: (any EventLoopGroup)!
