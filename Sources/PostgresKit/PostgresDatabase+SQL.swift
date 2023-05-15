@@ -60,9 +60,44 @@ extension _PostgresSQLDatabase: SQLDatabase, PostgresDatabase {
     
     func send(_ request: any PostgresRequest, logger: Logger) -> EventLoopFuture<Void> {
         self.database.send(request, logger: logger)
+        .flatMapErrorThrowing { try PostgresDataTranslation.applyPSQLErrorBandaidIfNeeded(for: $0) }
     }
     
     func withConnection<T>(_ closure: @escaping (PostgresConnection) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
         self.database.withConnection(closure)
+        .flatMapErrorThrowing { try PostgresDataTranslation.applyPSQLErrorBandaidIfNeeded(for: $0) }
+    }
+}
+
+// This can go away as soon as https://github.com/vapor/postgres-nio/pull/360 is merged.
+struct ExpressivePSQLError: Error, CustomStringConvertible, CustomDebugStringConvertible {
+    let underlyingError: PSQLError
+    var description: String { "Database error" }
+    var debugDescription: String {
+        var desc = #"PSQLError(code: \#(self.underlyingError.code)"#
+        if let serverInfo = self.underlyingError.serverInfo {
+            desc.append(", serverInfo: [")
+            desc.append(["localizedSeverity": PSQLError.ServerInfo.Field.localizedSeverity, "severity": .severity, "sqlState": .sqlState, "message": .message, "detail": .detail, "hint": .hint, "position": .position, "internalPosition": .internalPosition, "internalQuery": .internalQuery, "locationContext": .locationContext, "schemaName": .schemaName, "tableName": .tableName, "columnName": .columnName, "dataTypeName": .dataTypeName, "constraintName": .constraintName, "file": .file, "line": .line, "routine": .routine].compactMap { name, field in serverInfo[field].map { "\(name): \($0)" } }.joined(separator: ", "))
+            desc.append("]")
+        }
+        if let underlying = self.underlyingError.underlying { desc.append(", underlying: \(String(reflecting: underlying))") }
+        if let file = self.underlyingError.file {
+            desc.append(", triggeredFromRequestInFile: \(file)")
+            if let line = self.underlyingError.line { desc.append(", line: \(line)") }
+        }
+        if let query = self.underlyingError.query { desc.append(", query: \(query)") }
+        desc.append(")")
+        return desc
+    }
+}
+
+extension PostgresDataTranslation {
+    @usableFromInline
+    static func applyPSQLErrorBandaidIfNeeded(for error: any Error) throws -> Never {
+        if let psqlError = error as? PSQLError {
+            throw ExpressivePSQLError(underlyingError: psqlError)
+        } else {
+            throw error
+        }
     }
 }

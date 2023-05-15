@@ -30,8 +30,10 @@ public struct PostgresConnectionSource: ConnectionPoolSource {
                 let string = searchPath.map { #""\#($0)""# }.joined(separator: ", ")
                 return conn.simpleQuery("SET search_path = \(string)").map { _ in conn }
             }
+            .flatMapErrorThrowing { try PostgresDataTranslation.applyPSQLErrorBandaidIfNeeded(for: $0) }
         } else {
             return connectionFuture
+            .flatMapErrorThrowing { try PostgresDataTranslation.applyPSQLErrorBandaidIfNeeded(for: $0) }
         }
     }
 }
