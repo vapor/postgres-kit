@@ -54,4 +54,19 @@ public struct PostgresDialect: SQLDialect {
     public var sharedSelectLockExpression: (any SQLExpression)? { SQLRaw("FOR SHARE") }
 
     public var exclusiveSelectLockExpression: (any SQLExpression)? { SQLRaw("FOR UPDATE") }
+
+    public func nestedSubpathExpression(in column: any SQLExpression, for path: [String]) -> (any SQLExpression)? {
+        guard !path.isEmpty else { return nil }
+        
+        let descender = SQLList(
+            [column] + path.dropLast().map(SQLLiteral.string(_:)),
+            separator: SQLRaw("->")
+        )
+        let accessor = SQLList(
+            [descender, SQLLiteral.string(path.last!)],
+            separator: SQLRaw("->>")
+        )
+        
+        return SQLGroupExpression(accessor)
+    }
 }
