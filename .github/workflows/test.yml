@@ -3,8 +3,8 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 on:
-  pull_request: { branches: ['*'] }
-  push: { branches: ['main'] }
+  pull_request: { types: [opened, reopened, synchronize, ready_for_review] }
+  push: { branches: [ main ] }
   
 env:
   LOG_LEVEL: info
@@ -23,39 +23,9 @@ env:
   POSTGRES_PASSWORD_B: 'test_password'
 
 jobs:
-  # Baseline test run for code coverage stats
-  codecov:
-    strategy:
-      matrix: { dbimage: ['postgres:15'], dbauth: ['scram-sha-256'] }
-    runs-on: ubuntu-latest
-    container: swift:5.8-jammy
-    services:
-      psql-a:
-        image: ${{ matrix.dbimage }}
-        env:
-          POSTGRES_USER: 'test_username'
-          POSTGRES_DB: 'test_database'
-          POSTGRES_PASSWORD: 'test_password'
-          POSTGRES_HOST_AUTH_METHOD: ${{ matrix.dbauth }}
-          POSTGRES_INITDB_ARGS: --auth-host=${{ matrix.dbauth }}
-    steps:
-      - name: Save Postgres version and method to env
-        run: |
-          echo POSTGRES_VERSION='${{ matrix.dbimage }}' >> $GITHUB_ENV
-          echo POSTGRES_AUTH_METHOD='${{ matrix.dbauth }}' >> $GITHUB_ENV
-      - name: Check out package
-        uses: actions/checkout@v3
-      - name: Run local tests with coverage
-        run: swift test --enable-code-coverage
-      - name: Submit coverage report to Codecov.io
-        uses: vapor/swift-codecov-action@v0.2
-        with:
-          cc_env_vars: 'SWIFT_VERSION,SWIFT_PLATFORM,RUNNER_OS,RUNNER_ARCH,POSTGRES_VERSION,POSTGRES_AUTH_METHOD'
-          cc_fail_ci_if_error: false
-
   # Check for API breakage versus main
   api-breakage:
-    if: github.event_name == 'pull_request'
+    if: ${{ !(github.event.pull_request.draft || false) }}
     runs-on: ubuntu-latest
     container: swift:5.8-jammy
     steps:
@@ -67,7 +37,7 @@ jobs:
 
   # Run Linux unit tests against various configurations
   linux-unit:
-    if: github.event_name == 'pull_request'
+    if: ${{ !(github.event.pull_request.draft || false) }}
     strategy:
       fail-fast: false
       matrix:
@@ -82,8 +52,8 @@ jobs:
             {dbimage: 'postgres:13', dbauth: 'md5'},
             {dbimage: 'postgres:11', dbauth: 'trust'}
         ]
-    container: ${{ matrix.swiftver }}
     runs-on: ubuntu-latest
+    container: ${{ matrix.swiftver }}
     services:
       psql-a:
         image: ${{ matrix.dbimage }}
@@ -106,10 +76,22 @@ jobs:
         uses: actions/checkout@v3
       - name: Run local tests
         run: swift test
+      - name: Note Swift version
+        if: ${{ contains(matrix.swiftver, 'nightly') }}
+        run: |
+          echo "SWIFT_PLATFORM=$(. /etc/os-release && echo "${ID}${VERSION_ID}")" >>"${GITHUB_ENV}"
+          echo "SWIFT_VERSION=$(cat /.swift_tag)" >>"${GITHUB_ENV}"
+      - name: Upload code coverage
+        uses: vapor/swift-codecov-action@v0.2
+        env:
+          POSTGRES_VERSION: ${{ matrix.dbimage }}
+          POSTGRES_AUTH_METHOD: ${{ matrix.dbauth }}
+        with:
+          cc_env_vars: 'SWIFT_VERSION,SWIFT_PLATFORM,RUNNER_OS,RUNNER_ARCH,POSTGRES_VERSION,POSTGRES_AUTH_METHOD'
 
   # Test integration with dependent package on Linux
   linux-integration:
-    if: github.event_name == 'pull_request'
+    if: ${{ !(github.event.pull_request.draft || false) }}
     strategy:
       fail-fast: false
       matrix:
@@ -120,8 +102,8 @@ jobs:
             'swiftlang/swift:nightly-5.9-jammy',
             'swiftlang/swift:nightly-main-jammy'
         ]
-    container: ${{ matrix.swiftver }}
     runs-on: ubuntu-latest
+    container: ${{ matrix.swiftver }}
     services:
       psql-a:
         image: ${{ matrix.dbimage }}
@@ -153,7 +135,7 @@ jobs:
 
   # Run macOS unit tests against various configurations
   macos-unit:
-    if: github.event_name == 'pull_request'
+    if: ${{ !(github.event.pull_request.draft || false) }}
     strategy:
       fail-fast: false
       matrix:
@@ -165,20 +147,29 @@ jobs:
     env:
       POSTGRES_HOSTNAME: 127.0.0.1
       POSTGRES_DB: postgres
-      POSTGRES_HOST_AUTH_METHOD: ${{ matrix.dbauth }}
     steps:
       - name: Select latest available Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: ${{ matrix.xcode }}
       - name: Install Postgres, setup DB and auth, and wait for server start
+        env:
+          POSTGRES_VERSION: ${{ matrix.dbimage }}
+          POSTGRES_AUTH_METHOD: ${{ matrix.dbauth }}
         run: |
-          export PATH="$(brew --prefix)/opt/${{ matrix.formula }}/bin:$PATH" PGDATA=/tmp/vapor-postgres-test
-          (brew unlink postgresql || true) && brew install ${{ matrix.dbimage }} && brew link --force ${{ matrix.dbimage }}
-          initdb --locale=C --auth-host ${{ matrix.dbauth }} -U $POSTGRES_USER --pwfile=<(echo $POSTGRES_PASSWORD)
+          export PATH="$(brew --prefix)/opt/${POSTGRES_VERSION}/bin:$PATH" PGDATA=/tmp/vapor-postgres-test
+          (brew unlink postgresql || true) && brew install "${POSTGRES_VERSION}" && brew link --force "${POSTGRES_VERSION}"
+          initdb --locale=C --auth-host "${POSTGRES_AUTH_METHOD}" -U "${POSTGRES_USER}" --pwfile=<(echo "${POSTGRES_PASSWORD}")
           pg_ctl start --wait
         timeout-minutes: 2
       - name: Checkout code
         uses: actions/checkout@v3
       - name: Run local tests
         run: swift test
+      - name: Upload code coverage
+        uses: vapor/swift-codecov-action@v0.2
+        env:
+          POSTGRES_VERSION: ${{ matrix.dbimage }}
+          POSTGRES_AUTH_METHOD: ${{ matrix.dbauth }}
+        with:
+          cc_env_vars: 'MD_APPLE_SDK_ROOT,SWIFT_VERSION,SWIFT_PLATFORM,RUNNER_OS,RUNNER_ARCH,POSTGRES_VERSION,POSTGRES_AUTH_METHOD'
