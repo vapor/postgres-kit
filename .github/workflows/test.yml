@@ -75,7 +75,7 @@ jobs:
       - name: Check out package
         uses: actions/checkout@v3
       - name: Run local tests
-        run: swift test
+        run: swift test --enable-code-coverage
       - name: Note Swift version
         if: ${{ contains(matrix.swiftver, 'nightly') }}
         run: |
@@ -165,7 +165,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
       - name: Run local tests
-        run: swift test
+        run: swift test --enable-code-coverage
       - name: Upload code coverage
         uses: vapor/swift-codecov-action@v0.2
         env:
