@@ -9,7 +9,7 @@ public struct SQLPostgresConfiguration {
     /// `UInt16(getservbyname("postgresql", "tcp").pointee.s_port).byteSwapped`
     public static var ianaPortNumber: Int { 5432 }
 
-    /// See ``PostgresNIO/PostgresConnection/Configuration``.
+    // See `PostgresNIO.PostgresConnection.Configuration`.
     public var coreConfiguration: PostgresConnection.Configuration
 
     /// Optional `search_path` to set on new connections.

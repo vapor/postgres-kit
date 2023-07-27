@@ -27,3 +27,12 @@ extension SQLPostgresConfiguration {
 func env(_ name: String) -> String? {
     ProcessInfo.processInfo.environment[name]
 }
+
+let isLoggingConfigured: Bool = {
+    LoggingSystem.bootstrap { label in
+        var handler = StreamLogHandler.standardOutput(label: label)
+        handler.logLevel = env("LOG_LEVEL").flatMap { Logger.Level(rawValue: $0) } ?? .info
+        return handler
+    }
+    return true
+}()

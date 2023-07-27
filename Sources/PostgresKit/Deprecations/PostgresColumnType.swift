@@ -1,4 +1,3 @@
-import AsyncKit
 import SQLKit
 
 /// Postgres-specific column types.
@@ -250,7 +249,7 @@ public struct PostgresColumnType: SQLExpression, Hashable {
         case custom(String) /// User-defined type
         indirect case array(of: Primitive) /// Array
 
-        /// See ``Swift/CustomStringConvertible/description``.
+        /// See `CustomStringConvertible.description`.
         var description: String {
             switch self {
             case .bigint: return "BIGINT"
@@ -301,7 +300,7 @@ public struct PostgresColumnType: SQLExpression, Hashable {
         }
     }
 
-    /// See ``SQLExpression/serialize(to:)``.
+    // See `SQLExpression.serialize(to:)`.
     public func serialize(to serializer: inout SQLSerializer) {
         serializer.write(self.primitive.description)
     }
