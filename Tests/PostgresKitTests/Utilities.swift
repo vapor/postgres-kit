@@ -16,9 +16,9 @@ extension SQLPostgresConfiguration {
         .init(
             hostname: env("POSTGRES_HOSTNAME") ?? "localhost",
             port: env("POSTGRES_PORT").flatMap(Int.init) ?? Self.ianaPortNumber,
-            username: env("POSTGRES_USER") ?? "vapor_username",
-            password: env("POSTGRES_PASSWORD") ?? "vapor_password",
-            database: env("POSTGRES_DB") ?? "vapor_database",
+            username: env("POSTGRES_USER") ?? "test_username",
+            password: env("POSTGRES_PASSWORD") ?? "test_password",
+            database: env("POSTGRES_DB") ?? "test_database",
             tls: .disable
         )
     }
