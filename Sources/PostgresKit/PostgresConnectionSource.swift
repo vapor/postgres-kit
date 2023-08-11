@@ -3,6 +3,7 @@ import Atomics
 import AsyncKit
 import Logging
 import PostgresNIO
+import SQLKit
 import NIOCore
 
 public struct PostgresConnectionSource: ConnectionPoolSource {
@@ -27,8 +28,10 @@ public struct PostgresConnectionSource: ConnectionPoolSource {
         
         if let searchPath = self.sqlConfiguration.searchPath {
             return connectionFuture.flatMap { conn in
-                let string = searchPath.map { #""\#($0)""# }.joined(separator: ", ")
-                return conn.simpleQuery("SET search_path = \(string)").map { _ in conn }
+                conn.sql(queryLogLevel: nil)
+                    .raw("SET search_path TO \(idents: searchPath, joinedBy: ",")")
+                    .run()
+                    .map { _ in conn }
             }
         } else {
             return connectionFuture
