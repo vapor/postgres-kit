@@ -64,6 +64,8 @@ public struct SQLPostgresConfiguration {
     /// The aliases always have the same semantics as the "canonical" modes, despite any differences
     /// suggested by their names.
     ///
+    /// Also for compatibility, the URL scheme may also be `postgresql` or `postgresql+uds`.
+    ///
     /// > Note: It is possible to emulate `libpq`'s definitions for `prefer` (TLS if available with
     /// > no certificate verification), `require` (TLS enforced, but also without certificate
     /// > verification) and `verify-ca` (TLS enforced with no hostname verification) by manually
@@ -94,7 +96,7 @@ public struct SQLPostgresConfiguration {
         }
         
         switch comp.scheme {
-        case "postgres", "postgres+tcp":
+        case "postgres", "postgres+tcp", "postgresql", "postgresql+tcp":
             guard let hostname = comp.host, !hostname.isEmpty else {
                 throw URLError(.badURL, userInfo: [NSURLErrorFailingURLErrorKey: url, NSURLErrorFailingURLStringErrorKey: url.absoluteString])
             }
@@ -104,7 +106,7 @@ public struct SQLPostgresConfiguration {
                 database: url.lastPathComponent.isEmpty ? nil : url.lastPathComponent,
                 tls: try decideTLSConfig(from: comp.queryItems ?? [], defaultMode: "prefer")
             )
-        case "postgres+uds":
+        case "postgres+uds", "postgresql+uds":
             guard (comp.host?.isEmpty ?? true || comp.host == "localhost"), comp.port == nil, !comp.path.isEmpty, comp.path != "/" else {
                 throw URLError(.badURL, userInfo: [NSURLErrorFailingURLErrorKey: url, NSURLErrorFailingURLStringErrorKey: url.absoluteString])
             }
