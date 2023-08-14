@@ -61,6 +61,10 @@ final class SQLPostgresConfigurationTests: XCTestCase {
             XCTAssertTrue(config.coreConfiguration.tls.isEnforced)
         }
         
+        XCTAssertNoThrow(try SQLPostgresConfiguration(url: "postgresql://test_username@test_hostname"))
+        XCTAssertNoThrow(try SQLPostgresConfiguration(url: "postgresql+tcp://test_username@test_hostname"))
+        XCTAssertNoThrow(try SQLPostgresConfiguration(url: "postgresql+uds://test_username@/tmp/postgres.sock"))
+        
         XCTAssertThrowsError(try SQLPostgresConfiguration(url: "postgres+tcp://test_hostname"), "should fail when username missing")
         XCTAssertThrowsError(try SQLPostgresConfiguration(url: "postgres+tcp://test_username@test_hostname?tlsmode=absurd"), "should fail when TLS mode invalid")
         XCTAssertThrowsError(try SQLPostgresConfiguration(url: "postgres+uds://localhost/tmp/postgres.sock?tlsmode=require"), "should fail when username missing")
