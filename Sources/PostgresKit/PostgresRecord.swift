@@ -27,48 +27,28 @@ public macro PostgresRecord() = #externalMacro(
     type: "PostgresRecordMacroType"
 )
 
-// MARK: PostgresRecord
-public protocol PostgresRecord {
-    init(
-        _from row: PostgresRow,
-        context: PostgresDecodingContext<some PostgresJSONDecoder>,
-        file: String,
-        line: Int
-    ) throws
-}
-
-// MARK: +PostgresRow
-extension PostgresRow {
-    public func decode<Record: PostgresRecord>(
-        _ recordType: Record.Type = Record.self,
-        file: String = #fileID,
-        line: Int = #line
-    ) throws -> Record {
-        try Record.init(
-            _from: self,
-            context: .default,
-            file: file,
-            line: line
-        )
-    }
-
-    public func decode<Record: PostgresRecord>(
-        _ recordType: Record.Type = Record.self,
-        context: PostgresDecodingContext<some PostgresJSONDecoder>,
-        file: String = #fileID,
-        line: Int = #line
-    ) throws -> Record {
-        try Record.init(
-            _from: self,
-            context: context,
-            file: file,
-            line: line
-        )
-    }
-}
-
 #warning("to test")
 @PostgresRecord
 struct MyTable {
-    let thing: String
+    static let tableName = "my_table"
+
+    let int: Int
+    let string: String
+
+//    func update<PI1, PI2>(
+//        key: KeyPath<Self, PI1>,
+//        to: PI1,
+//        whereKey: KeyPath<Self, PI2>,
+//        isEqualTo whereTo: KeyPath<Self, PI2>,
+//        on connection: PostgresConnection,
+//        logger: Logger
+//    ) async throws where PI1: PostgresInterpolatable, PI2: PostgresInterpolatable {
+//        try await connection.query("""
+//            UPDATE \(unescaped: Self.tableName)
+//            SET \(key) = \(to),
+//            WHERE \(whereKey) = \(whereTo)
+//            """,
+//            logger: logger
+//        )
+//    }
 }

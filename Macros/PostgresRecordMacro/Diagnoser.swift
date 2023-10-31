@@ -24,10 +24,42 @@ struct Diagnoser<Context: MacroExpansionContext> {
             )
         ))
     }
+
+    func unsupportedPattern(_ pattern: String, node: some SyntaxProtocol) {
+        let diagnosis = Diagnosis.unsupportedPattern(pattern)
+        context.diagnose(Diagnostic(
+            node: node,
+            position: node.position,
+            message: diagnosis.diagnosticMessage,
+            highlights: nil,
+            notes: [],
+            fixIt: .init(
+                message: diagnosis.fixItMessage,
+                changes: []
+            )
+        ))
+    }
+
+    func typeSyntaxNotFound(name: String, node: some SyntaxProtocol) {
+        let diagnosis = Diagnosis.typeSyntaxNotFound(name: name)
+        context.diagnose(Diagnostic(
+            node: node,
+            position: node.position,
+            message: diagnosis.diagnosticMessage,
+            highlights: nil,
+            notes: [],
+            fixIt: .init(
+                message: diagnosis.fixItMessage,
+                changes: []
+            )
+        ))
+    }
 }
 
 private enum Diagnosis: Error {
     case cannotConformToProtocol(String)
+    case unsupportedPattern(String)
+    case typeSyntaxNotFound(name: String)
 
     private struct _DiagnosticMessage: DiagnosticMessage {
         let parent: Diagnosis
@@ -36,6 +68,10 @@ private enum Diagnosis: Error {
             switch parent {
             case let .cannotConformToProtocol(proto):
                 return "Simultaneous conformance to '\(proto)' is not supported"
+            case let .unsupportedPattern(pattern):
+                return "Pattern of '\(pattern)' is unsupported. Please file and issue in at https://github.com/vapor/postgres-kit/issues"
+            case let .typeSyntaxNotFound(name):
+                return "Type declaration was not found for property '\(name)'."
             }
         }
 
@@ -55,6 +91,10 @@ private enum Diagnosis: Error {
             switch parent {
             case let .cannotConformToProtocol(proto):
                 return "Remove conformance to '\(proto)'"
+            case .unsupportedPattern:
+                return "As a workaround, try to use a more common pattern."
+            case .typeSyntaxNotFound:
+                return "Please provide an explicit type."
             }
         }
 

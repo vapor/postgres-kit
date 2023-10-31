@@ -35,13 +35,19 @@ public enum PostgresRecordMacroType: ExtensionMacro {
 
         let members = structDecl.memberBlock.members
         let variableDecls = members.compactMap { $0.decl.as(VariableDeclSyntax.self) }
-        let variables = try variableDecls.flatMap(Variable.parse(from:))
+        let variables = try variableDecls.flatMap {
+            try Variable.parse(from: $0, diagnoser: diagnoser)
+        }.filter {
+            !($0.isStatic || $0.isComputed)
+        }
 
         let name = structDecl.name.trimmedDescription
         let initializer = variables.makePostgresRecordInit(name: name, accessLevel: accessLevel)
+        let codingKeys = variables.makeCodingKeys(accessLevel: accessLevel)
         let postgresRecord = try ExtensionDeclSyntax("""
         extension \(raw: name): PostgresRecord {
         \(raw: initializer)
+        \(raw: codingKeys)
         }
         """)
 

@@ -1,4 +1,5 @@
 import SwiftSyntax
+import SwiftSyntaxMacros
 
 extension StructDeclSyntax {
     func removingInheritedType(at idx: InheritedTypeListSyntax.Index) -> Self {
@@ -14,8 +15,7 @@ extension StructDeclSyntax {
     var accessLevelModifier: String? {
         let accessLevels: [Keyword] = [.open, .public, .package, .internal, .private, .fileprivate]
         for modifier in self.modifiers {
-            guard let modifier = modifier.as(DeclModifierSyntax.self),
-                  case let .keyword(keyword) = modifier.name.tokenKind else {
+            guard case let .keyword(keyword) = modifier.name.tokenKind else {
                 continue
             }
             if accessLevels.contains(keyword) {
@@ -38,5 +38,19 @@ extension SyntaxProtocol {
     /// Build a syntax node from this `Buildable` and format it with the given format.
     func reformatted() -> Self {
         return self.formatted().as(Self.self)!
+    }
+}
+
+extension DeclModifierListSyntax {
+    func contains(_ keyword: Keyword) -> Bool {
+        for modifier in self {
+            guard case let .keyword(existingKeyword) = modifier.name.tokenKind else {
+                continue
+            }
+            if keyword == existingKeyword {
+                return true
+            }
+        }
+        return false
     }
 }

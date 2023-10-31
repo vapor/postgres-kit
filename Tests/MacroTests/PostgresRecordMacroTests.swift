@@ -9,14 +9,32 @@ final class PostgresRecordMacroTests: XCTestCase {
         assertMacroExpansion("""
             @PostgresRecord
             public struct MyTable {
+                var computed: String {
+                    "compi!"
+                }
+                static let name: String
+
                 let int: Int
-                let string: String?
+                let string: String? {
+                    didSet {
+                        /// Do Nothing
+                    }
+                }
             }
             """,
             expandedSource: #"""
             public struct MyTable {
+                var computed: String {
+                    "compi!"
+                }
+                static let name: String
+
                 let int: Int
-                let string: String?
+                let string: String? {
+                    didSet {
+                        /// Do Nothing
+                    }
+                }
             }
 
             extension MyTable: PostgresRecord {
@@ -34,6 +52,10 @@ final class PostgresRecordMacroTests: XCTestCase {
                     )
                     self.int = decoded.0
                     self.string = decoded.1
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case int
+                    case string
                 }
             }
             """#,
