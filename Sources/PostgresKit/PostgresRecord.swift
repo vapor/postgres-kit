@@ -20,7 +20,7 @@ import PostgresNIO
 @attached(
     extension,
     conformances: PostgresRecord,
-    names: named(init)
+    names: arbitrary // for now
 )
 public macro PostgresRecord() = #externalMacro(
     module: "PostgresRecordMacro",
@@ -30,25 +30,8 @@ public macro PostgresRecord() = #externalMacro(
 #warning("to test")
 @PostgresRecord
 struct MyTable {
-    static let tableName = "my_table"
-
     let int: Int
     let string: String
 
-//    func update<PI1, PI2>(
-//        key: KeyPath<Self, PI1>,
-//        to: PI1,
-//        whereKey: KeyPath<Self, PI2>,
-//        isEqualTo whereTo: KeyPath<Self, PI2>,
-//        on connection: PostgresConnection,
-//        logger: Logger
-//    ) async throws where PI1: PostgresInterpolatable, PI2: PostgresInterpolatable {
-//        try await connection.query("""
-//            UPDATE \(unescaped: Self.tableName)
-//            SET \(key) = \(to),
-//            WHERE \(whereKey) = \(whereTo)
-//            """,
-//            logger: logger
-//        )
-//    }
+    static let name = ""
 }
