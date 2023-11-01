@@ -31,7 +31,7 @@ public macro PostgresRecord() = #externalMacro(
 @PostgresRecord
 struct MyTable {
     let int: Int
-    let string: String
+    let string = ""
 
     static let name = ""
 }

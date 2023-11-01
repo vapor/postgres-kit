@@ -5,17 +5,15 @@ struct Variable {
     let name: String
     let isStatic: Bool
     let isComputed: Bool
-    let type: ParsedType
+    let type: ParsedType?
+    let binding: PatternBindingSyntax
 
-    static func parse(
-        from element: VariableDeclSyntax,
-        diagnoser: Diagnoser<some MacroExpansionContext>
-    ) throws -> [Variable] {
+    static func parse(from element: VariableDeclSyntax) throws -> [Variable] {
         let isStatic = element.modifiers.contains(.static)
         return try element.bindings.compactMap { binding -> Variable? in
             let isComputed = binding.accessorBlock.map({ Self.isComputed($0.accessors) }) ?? false
             guard let pattern = binding.pattern.as(IdentifierPatternSyntax.self) else {
-                diagnoser.unsupportedPattern(
+                Diagnoser.shared.unsupportedPattern(
                     binding.pattern.trimmedDescription,
                     node: binding.pattern
                 )
@@ -23,17 +21,16 @@ struct Variable {
             }
             let name = pattern.identifier.trimmed.text
 
-            guard let typeSyntax = binding.typeAnnotation?.type else {
-                diagnoser.typeSyntaxNotFound(name: name, node: binding)
-                return nil
+            let type = try binding.typeAnnotation.map {
+                try ParsedType(syntax: $0.type)
             }
-            let type = try ParsedType(syntax: typeSyntax)
 
             return Variable(
                 name: name,
                 isStatic: isStatic,
                 isComputed: isComputed,
-                type: type
+                type: type,
+                binding: binding
             )
         }
     }

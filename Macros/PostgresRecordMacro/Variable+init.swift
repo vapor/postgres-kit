@@ -1,8 +1,8 @@
 import SwiftSyntax
 
 extension [Variable] {
-    func makePostgresRecordInit(name: String, accessLevel: String) -> String {
-        """
+    func makePostgresRecordInit(name: String, accessLevel: String) throws -> String {
+        try """
         \(accessLevel)init(
             _from row: PostgresRow,
             context: PostgresDecodingContext<some PostgresJSONDecoder>,
@@ -20,8 +20,22 @@ extension [Variable] {
         """
     }
 
-    private func makeType() -> String {
-        "(\(self.map(\.type.description).joined(separator: ","))).self"
+    private func makeType() throws -> String {
+        let count = self.count
+        let variables = self.compactMap { variable -> Variable? in
+            if variable.type == nil {
+                Diagnoser.shared.typeSyntaxNotFound(name: variable.name, node: variable.binding)
+                return nil
+            } else {
+                return variable
+            }
+        }
+        /// Some variable had unexpected type.
+        if count != variables.count {
+            throw MacroError.vagueError
+        } else {
+            return "(\(variables.map(\.type!.description).joined(separator: ","))).self"
+        }
     }
 
     private func makeInitializations() -> String {

@@ -2,8 +2,10 @@ import SwiftSyntax
 import SwiftSyntaxMacros
 import SwiftDiagnostics
 
-struct Diagnoser<Context: MacroExpansionContext> {
-    let context: Context
+struct Diagnoser {
+    let context: any MacroExpansionContext
+
+    static var shared: Diagnoser! = nil
 
     func cannotConformToProtocol(
         name: String,
@@ -16,12 +18,7 @@ struct Diagnoser<Context: MacroExpansionContext> {
             position: old.position,
             message: diagnosis.diagnosticMessage,
             highlights: nil,
-            notes: [],
-            fixIt: .replace(
-                message: diagnosis.fixItMessage,
-                oldNode: old,
-                newNode: new
-            )
+            notes: []
         ))
     }
 
@@ -32,11 +29,7 @@ struct Diagnoser<Context: MacroExpansionContext> {
             position: node.position,
             message: diagnosis.diagnosticMessage,
             highlights: nil,
-            notes: [],
-            fixIt: .init(
-                message: diagnosis.fixItMessage,
-                changes: []
-            )
+            notes: []
         ))
     }
 
@@ -47,11 +40,7 @@ struct Diagnoser<Context: MacroExpansionContext> {
             position: node.position,
             message: diagnosis.diagnosticMessage,
             highlights: nil,
-            notes: [],
-            fixIt: .init(
-                message: diagnosis.fixItMessage,
-                changes: []
-            )
+            notes: []
         ))
     }
 }
@@ -69,9 +58,9 @@ private enum Diagnosis: Error {
             case let .cannotConformToProtocol(proto):
                 return "Simultaneous conformance to '\(proto)' is not supported"
             case let .unsupportedPattern(pattern):
-                return "Pattern of '\(pattern)' is unsupported. Please file and issue in at https://github.com/vapor/postgres-kit/issues"
+                return "Pattern of '\(pattern)' is unsupported. As a workaround, try to use a more common pattern. Please file and issue in at https://github.com/vapor/postgres-kit/issues"
             case let .typeSyntaxNotFound(name):
-                return "Type declaration was not found for property '\(name)'."
+                return "Type declaration was not found for property '\(name)'. Please provide an explicit type"
             }
         }
 
@@ -91,10 +80,8 @@ private enum Diagnosis: Error {
             switch parent {
             case let .cannotConformToProtocol(proto):
                 return "Remove conformance to '\(proto)'"
-            case .unsupportedPattern:
-                return "As a workaround, try to use a more common pattern."
-            case .typeSyntaxNotFound:
-                return "Please provide an explicit type."
+            case .unsupportedPattern, .typeSyntaxNotFound:
+                return ""
             }
         }
 

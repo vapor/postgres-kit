@@ -11,7 +11,7 @@ public enum PostgresRecordMacroType: ExtensionMacro {
         in context: some MacroExpansionContext
     ) throws -> [ExtensionDeclSyntax] {
         if declaration.hasError { return [] }
-        let diagnoser = Diagnoser(context: context)
+        Diagnoser.shared = Diagnoser(context: context)
 
         guard let structDecl = declaration.as(StructDeclSyntax.self) else {
             throw MacroError.isNotStruct
@@ -24,7 +24,7 @@ public enum PostgresRecordMacroType: ExtensionMacro {
             let proto = inheritedTypes[idx]
             let name = proto.trimmedDescription
             if forbiddenProtocols.contains(name) {
-                diagnoser.cannotConformToProtocol(
+                Diagnoser.shared.cannotConformToProtocol(
                     name: name,
                     old: structDecl,
                     new: structDecl.removingInheritedType(at: idx)
@@ -35,15 +35,16 @@ public enum PostgresRecordMacroType: ExtensionMacro {
 
         let members = structDecl.memberBlock.members
         let variableDecls = members.compactMap { $0.decl.as(VariableDeclSyntax.self) }
-        let variables = try variableDecls.flatMap {
-            try Variable.parse(from: $0, diagnoser: diagnoser)
-        }.filter {
-            !($0.isStatic || $0.isComputed)
-        }
+        let storedVariables = try variableDecls
+            .flatMap(Variable.parse(from:))
+            .filter { !($0.isStatic || $0.isComputed) }
 
         let name = structDecl.name.trimmedDescription
-        let initializer = variables.makePostgresRecordInit(name: name, accessLevel: accessLevel)
-        let codingKeys = variables.makeCodingKeys(accessLevel: accessLevel)
+        let initializer = try storedVariables.makePostgresRecordInit(
+            name: name,
+            accessLevel: accessLevel
+        )
+        let codingKeys = storedVariables.makeCodingKeys(accessLevel: accessLevel)
         let postgresRecord = try ExtensionDeclSyntax("""
         extension \(raw: name): PostgresRecord {
         \(raw: initializer)
