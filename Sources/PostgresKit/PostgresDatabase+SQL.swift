@@ -1,6 +1,13 @@
 import PostgresNIO
 import Logging
-import SQLKit
+@preconcurrency import SQLKit
+
+// https://github.com/vapor/postgres-nio/pull/450
+#if compiler(>=5.10) && $RetroactiveAttribute
+extension PostgresEncodingContext: @retroactive @unchecked Sendable {}
+#else
+extension PostgresEncodingContext: @unchecked Sendable {}
+#endif
 
 extension PostgresDatabase {
     @inlinable
@@ -37,7 +44,7 @@ extension _PostgresSQLDatabase: SQLDatabase, PostgresDatabase {
     var version: (any SQLDatabaseReportedVersion)? { nil } // PSQL doesn't send version in wire protocol, must use SQL to read it
     var dialect: any SQLDialect { PostgresDialect() }
     
-    func execute(sql query: any SQLExpression, _ onRow: @escaping (any SQLRow) -> ()) -> EventLoopFuture<Void> {
+    func execute(sql query: any SQLExpression, _ onRow: @escaping @Sendable (any SQLRow) -> ()) -> EventLoopFuture<Void> {
         let (sql, binds) = self.serialize(query)
         
         if let queryLogLevel {

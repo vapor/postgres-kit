@@ -19,7 +19,7 @@ final class PostgresKitTests: XCTestCase {
         let pool = EventLoopGroupConnectionPool(
             source: db,
             maxConnectionsPerEventLoop: 2,
-            on: self.eventLoopGroup
+            on: MultiThreadedEventLoopGroup.singleton
         )
         defer { pool.shutdown() }
         // Postgres seems to take much longer on initial connections when using SCRAM-SHA-256 auth,
@@ -27,13 +27,13 @@ final class PostgresKitTests: XCTestCase {
         // Spin the pool a bit before running the measurement to warm it up.
         for _ in 1...25 {
             _ = try pool.withConnection { conn in
-                conn.query("SELECT 1;")
+                conn.query("SELECT 1")
             }.wait()
         }
         self.measure {
             for _ in 1...100 {
                 _ = try! pool.withConnection { conn in
-                    conn.query("SELECT 1;")
+                    conn.query("SELECT 1")
                 }.wait()
             }
         }
@@ -125,12 +125,12 @@ final class PostgresKitTests: XCTestCase {
         var configuration = SQLPostgresConfiguration.test
         configuration.searchPath = ["foo", "bar", "baz"]
         let source = PostgresConnectionSource(sqlConfiguration: configuration)
-        let pool = EventLoopGroupConnectionPool(source: source, on: self.eventLoopGroup)
+        let pool = EventLoopGroupConnectionPool(source: source, on: MultiThreadedEventLoopGroup.singleton)
         defer { pool.shutdown() }
         let db = pool.database(logger: .init(label: "test")).sql()
 
-        let rows = try db.raw("SELECT version();").all().wait()
-        print(rows)
+        let rows = try db.raw("SELECT version()").all().wait()
+        XCTAssertEqual(rows.count, 1)
     }
 
     func testIntegerArrayEncoding() throws {
@@ -225,19 +225,17 @@ final class PostgresKitTests: XCTestCase {
         XCTAssertEqual(numericValue, Double(Decimal(12345.6789).description))
     }
 
-    var eventLoop: any EventLoop { self.eventLoopGroup.any() }
-    var eventLoopGroup: (any EventLoopGroup)!
+    var eventLoop: any EventLoop { MultiThreadedEventLoopGroup.singleton.any() }
 
     override func setUpWithError() throws {
         try super.setUpWithError()
         XCTAssertTrue(isLoggingConfigured)
-        self.eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 2)
     }
+}
 
-    override func tearDownWithError() throws {
-        try self.eventLoopGroup.syncShutdownGracefully()
-        self.eventLoopGroup = nil
-        try super.tearDownWithError()
+extension PostgresCell {
+    fileprivate init(with data: PostgresData) {
+        self.init(bytes: data.value, dataType: data.type, format: data.formatCode, columnName: "", columnIndex: -1)
     }
 }
 

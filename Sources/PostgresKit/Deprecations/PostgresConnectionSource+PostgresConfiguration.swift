@@ -34,7 +34,7 @@ extension PostgresConnectionSource {
     }
     
     @available(*, deprecated, message: "Use `sqlConfiguration` instead.")
-    public var sslContext: Result<NIOSSLContext?, Error> { .success(self.sqlConfiguration.coreConfiguration.tls.sslContext) }
+    public var sslContext: Result<NIOSSLContext?, any Error> { .success(self.sqlConfiguration.coreConfiguration.tls.sslContext) }
     
     @available(*, deprecated, message: "Use `init(sqlConfiguration:)` instead.")
     public init(configuration: PostgresConfiguration) {
