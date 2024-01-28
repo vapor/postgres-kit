@@ -17,6 +17,9 @@ let package = Package(
         .watchOS(.v6),
         .tvOS(.v13),
     ],
+    products: [
+        .library(name: "PostgresKit", targets: ["PostgresKit"]),
+    ],
     dependencies: [
         .package(url: "https://github.com/vapor/postgres-nio.git", from: "1.20.0"),
         .package(url: "https://github.com/vapor/sql-kit.git", from: "3.28.0"),
