@@ -224,6 +224,18 @@ final class PostgresKitTests: XCTestCase {
         XCTAssertNoThrow(numericValue = try PostgresDataTranslation.decode(Double.self, from: .init(bytes: numericBuffer, dataType: .numeric, format: .binary, columnName: "", columnIndex: -1), in: .default))
         XCTAssertEqual(numericValue, Double(Decimal(12345.6789).description))
     }
+    
+    func testURLWorkaroundDecoding() throws {
+        let url = URL(string: "https://user:pass@www.example.com:8080/path/to/endpoint?query=value#fragment")!
+        
+        let encodedNormal = try PostgresDataTranslation.encode(codingPath: [], userInfo: [:], value: url, in: .default, file: #fileID, line: #line)
+        XCTAssertEqual(encodedNormal.value?.getString(at: 0, length: encodedNormal.value?.readableBytes ?? 0), url.absoluteString)
+        
+        let encodedBroken = try PostgresDataTranslation.encode(codingPath: [], userInfo: [:], value: "\"\(url.absoluteString)\"", in: .default, file: #fileID, line: #line)
+        
+        XCTAssertEqual(try PostgresDataTranslation.decode(URL.self, from: .init(with: encodedNormal), in: .default), url)
+        XCTAssertEqual(try PostgresDataTranslation.decode(URL.self, from: .init(with: encodedBroken), in: .default), url)
+    }
 
     var eventLoop: any EventLoop { MultiThreadedEventLoopGroup.singleton.any() }
 
