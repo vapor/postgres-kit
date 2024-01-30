@@ -1,8 +1,8 @@
 <p align="center">
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/vapor/postgres-kit/assets/1130717/b58fd682-5eed-4179-a47f-076d12b803f3">
-  <source media="(prefers-color-scheme: light)" srcset="https://github.com/vapor/postgres-kit/assets/1130717/3747a60d-e771-40ff-97ea-db4132957de8">
-  <img src="https://github.com/vapor/postgres-kit/assets/1130717/3747a60d-e771-40ff-97ea-db4132957de8" height="96" alt="PostgresKit">
+  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/vapor/postgres-kit/assets/1130717/02ca33b1-d788-4846-8280-7cd89f09c397">
+  <source media="(prefers-color-scheme: light)" srcset="https://github.com/vapor/postgres-kit/assets/1130717/91de055b-0e4f-42f3-8257-946ac40d731c">
+  <img src="https://github.com/vapor/postgres-kit/assets/1130717/91de055b-0e4f-42f3-8257-946ac40d731c" height="96" alt="PostgresKit">
 </picture> 
 <br>
 <br>
