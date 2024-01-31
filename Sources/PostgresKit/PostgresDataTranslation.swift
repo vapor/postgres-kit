@@ -14,6 +14,38 @@ private extension PostgresCell {
     var codingKey: any CodingKey { SomeCodingKey(stringValue: !self.columnName.isEmpty ? "\(self.columnName) (\(self.columnIndex))" : "\(self.columnIndex)") }
 }
 
+/// Sidestep problems with URL coding behavior by making it conform directly to Postgres coding.
+extension URL: PostgresNonThrowingEncodable {
+    public static var psqlType: PostgresDataType { String.psqlType }
+    public static var psqlFormat: PostgresFormat { String.psqlFormat }
+
+    @inlinable
+    public func encode(into byteBuffer: inout ByteBuffer, context: PostgresEncodingContext<some PostgresJSONEncoder>) {
+        self.absoluteString.encode(into: &byteBuffer, context: context)
+    }
+}
+
+/// Sidestep problems with URL coding behavior by making it conform directly to Postgres coding.
+extension URL: PostgresDecodable {
+    @inlinable
+    public init(
+        from buffer: inout ByteBuffer, type: PostgresDataType, format: PostgresFormat,
+        context: PostgresDecodingContext<some PostgresJSONDecoder>
+    ) throws {
+        let string = try String(from: &buffer, type: type, format: format, context: context)
+        
+        if let url = URL(string: string) {
+            self = url
+        }
+        // Also support the broken encoding we were emitting for awhile there.
+        else if string.hasPrefix("\""), string.hasSuffix("\""), let url = URL(string: String(string.dropFirst().dropLast())) {
+            self = url
+        } else {
+            throw PostgresDecodingError.Code.failure
+        }
+    }
+}
+
 struct PostgresDataTranslation {
     /// This typealias serves to limit the deprecation noise caused by ``PostgresDataConvertible`` to a single
     /// warning, down from what would otherwise be a minimum of two. It has no other purpose.

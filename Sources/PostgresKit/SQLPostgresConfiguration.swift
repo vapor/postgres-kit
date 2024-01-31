@@ -146,7 +146,7 @@ public struct SQLPostgresConfiguration {
     /// This is provided for calling code which wants to manage the underlying connection transport on its
     /// own, such as when tunneling a connection through SSH.
     public init(
-        establishedChannel: Channel,
+        establishedChannel: any Channel,
         username: String, password: String? = nil,
         database: String? = nil
     ) {

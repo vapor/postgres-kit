@@ -1,21 +1,19 @@
-<img src="https://user-images.githubusercontent.com/1342803/59063319-d190f500-8875-11e9-8fe6-16197dd56d0f.png" height="64" alt="PostgresKit">
+<p align="center">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/vapor/postgres-kit/assets/1130717/02ca33b1-d788-4846-8280-7cd89f09c397">
+  <source media="(prefers-color-scheme: light)" srcset="https://github.com/vapor/postgres-kit/assets/1130717/91de055b-0e4f-42f3-8257-946ac40d731c">
+  <img src="https://github.com/vapor/postgres-kit/assets/1130717/91de055b-0e4f-42f3-8257-946ac40d731c" height="96" alt="PostgresKit">
+</picture> 
 <br>
-<a href="https://docs.vapor.codes/4.0/">
-    <img src="http://img.shields.io/badge/read_the-docs-2196f3.svg" alt="Documentation">
-</a>
-<a href="https://discord.gg/vapor">
-    <img src="https://img.shields.io/discord/431917998102675485.svg" alt="Team Chat">
-</a>
-<a href="LICENSE">
-    <img src="http://img.shields.io/badge/license-MIT-brightgreen.svg" alt="MIT License">
-</a>
-<a href="https://github.com/vapor/postgres-kit/actions">
-    <img src="https://github.com/vapor/postgres-kit/workflows/test/badge.svg" alt="Continuous Integration">
-</a>
-<a href="https://swift.org">
-    <img src="http://img.shields.io/badge/swift-5.2-brightgreen.svg" alt="Swift 5.2">
-</a>
 <br>
+<a href="https://docs.vapor.codes/4.0/"><img src="https://design.vapor.codes/images/readthedocs.svg" alt="Documentation"></a>
+<a href="https://discord.gg/vapor"><img src="https://design.vapor.codes/images/discordchat.svg" alt="Team Chat"></a>
+<a href="LICENSE"><img src="https://design.vapor.codes/images/mitlicense.svg" alt="MIT License"></a>
+<a href="https://github.com/vapor/postgres-kit/actions/workflows/test.yml"><img src="https://img.shields.io/github/actions/workflow/status/vapor/postgres-kit/test.yml?event=push&style=plastic&logo=github&label=tests&logoColor=%23ccc" alt="Continuous Integration"></a>
+<a href="https://codecov.io/github/vapor/postgres-kit"><img src="https://img.shields.io/codecov/c/github/vapor/postgres-kit?style=plastic&logo=codecov&label=codecov"></a>
+<a href="https://swift.org"><img src="https://design.vapor.codes/images/swift57up.svg" alt="Swift 5.7+"></a>
+</p>
+
 <br>
 
 🐘 Non-blocking, event-driven Swift client for PostgreSQL.
@@ -39,7 +37,7 @@ Use the SPM string to easily include the dependendency in your `Package.swift` f
 
 PostgresKit supports the following platforms:
 
-- Ubuntu 16.04+
+- Ubuntu 20.04+
 - macOS 10.15+
 
 ## Overview

@@ -9,7 +9,7 @@ public final class PostgresDataEncoder {
         self.json = json
     }
 
-    public func encode(_ value: Encodable) throws -> PostgresData {
+    public func encode(_ value: any Encodable) throws -> PostgresData {
         if let custom = value as? any PostgresDataConvertible, let data = custom.postgresData {
             return data
         } else {

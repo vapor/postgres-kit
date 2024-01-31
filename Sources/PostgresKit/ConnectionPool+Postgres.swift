@@ -1,6 +1,6 @@
 import NIOCore
 import PostgresNIO
-import AsyncKit
+@preconcurrency import AsyncKit
 import Logging
 
 extension EventLoopGroupConnectionPool where Source == PostgresConnectionSource {

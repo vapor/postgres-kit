@@ -25,15 +25,33 @@ env:
 jobs:
   # Check for API breakage versus main
   api-breakage:
-    if: ${{ !(github.event.pull_request.draft || false) }}
+    if: ${{ github.event_name == 'pull_request' && !(github.event.pull_request.draft || false) }}
     runs-on: ubuntu-latest
     container: swift:jammy
     steps:
-      - name: Check out code
-        uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v4
         with: { 'fetch-depth': 0 }
-      - name: Run API breakage check action
-        uses: vapor/ci/.github/actions/ci-swift-check-api-breakage@main
+      - name: API breaking changes
+        run: |
+          git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+          swift package diagnose-api-breaking-changes origin/main
+
+  dependency-graph:
+    if: ${{ github.event_name == 'push' }}
+    runs-on: ubuntu-latest
+    container: swift:jammy
+    permissions:
+      contents: write
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Fix Git configuration
+        run: |
+          git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+          apt-get update && apt-get install -y curl
+      - name: Submit dependency graph
+        uses: vapor-community/swift-dependency-submission@v0.1
 
   code-coverage:
     if: ${{ !(github.event.pull_request.draft || false) }}
@@ -41,7 +59,7 @@ jobs:
     container: swift:jammy
     services:
       psql-a:
-        image: postgres:15
+        image: postgres:16
         env:
           POSTGRES_USER: test_username
           POSTGRES_DB: test_database
@@ -50,37 +68,38 @@ jobs:
           POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
     steps:
       - name: Check out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Run unit tests for coverage data
         run: swift test --enable-code-coverage
       - name: Upload coverage data
         uses: vapor/swift-codecov-action@v0.2
   
   gh-codeql:
-    if: ${{ !(github.event.pull_request.draft || false) }}
-    strategy:
-      fail-fast: false
-      matrix:
-        runner_os:
-          - ubuntu-latest
-          - macos-13
-    runs-on: ${{ matrix.runner_os }}
-    permissions:
-      security-events: write
+    if: ${{ false && !(github.event.pull_request.draft || false) }}
+    runs-on: ubuntu-latest
+    container:
+      image: swift:5.9-jammy
+    permissions: { actions: write, contents: read, security-events: write }
+    timeout-minutes: 60
     steps:
-      - name: Select appropriate Xcode version
-        if: ${{ startsWith(matrix.runner_os, 'macos') }}
-        uses: maxim-lobanov/setup-xcode@v1
-        with: { xcode-version: '~14.3' }
       - name: Check out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+      - name: Mark repo safe in non-fake global config
+        run: |
+          git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+      - name: Check Swift compatibility
+        id: swift-check
+        uses: vapor/ci/.github/actions/check-compatible-swift@main
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v2
+        if: ${{ steps.swift-check.outputs.swift-compatible == 'true' }}
+        uses: github/codeql-action/init@v3
         with: { languages: swift }
       - name: Perform build
+        if: ${{ steps.swift-check.outputs.swift-compatible == 'true' }}
         run: swift build
       - name: Run CodeQL analyze
-        uses: github/codeql-action/analyze@v2
+        if: ${{ steps.swift-check.outputs.swift-compatible == 'true' }}
+        uses: github/codeql-action/analyze@v3
 
   linux-unit:
     if: ${{ !(github.event.pull_request.draft || false) }}
@@ -88,20 +107,21 @@ jobs:
       fail-fast: false
       matrix:
         postgres-image:
-          - postgres:15
-          - postgres:13
-          - postgres:11
+          - postgres:16
+          - postgres:14
+          - postgres:12
         swift-image:
           - swift:5.7-jammy
           - swift:5.8-jammy
-          - swiftlang/swift:nightly-5.9-jammy
+          - swift:5.9-jammy
+          - swiftlang/swift:nightly-5.10-jammy
           - swiftlang/swift:nightly-main-jammy
         include:
-          - postgres-image: postgres:15
+          - postgres-image: postgres:16
             postgres-auth: scram-sha-256
-          - postgres-image: postgres:13
+          - postgres-image: postgres:14
             postgres-auth: md5
-          - postgres-image: postgres:11
+          - postgres-image: postgres:12
             postgres-auth: trust
     runs-on: ubuntu-latest
     container: ${{ matrix.swift-image }}
@@ -116,17 +136,17 @@ jobs:
           POSTGRES_INITDB_ARGS: --auth-host=${{ matrix.postgres-auth }}
     steps:
       - name: Check out package
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Run local tests
         run: swift test
 
   linux-integration:
     if: ${{ !(github.event.pull_request.draft || false) }}
     runs-on: ubuntu-latest
-    container: swift:5.8-jammy
+    container: swift:5.9-jammy
     services:
       psql-a:
-        image: postgres:15
+        image: postgres:16
         env:
           POSTGRES_USER: test_username
           POSTGRES_DB: test_database
@@ -143,10 +163,10 @@ jobs:
           POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
     steps:
       - name: Check out package
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with: { path: 'postgres-kit' }
       - name: Check out fluent-postgres-driver dependent
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with: { repository: 'vapor/fluent-postgres-driver', path: 'fluent-postgres-driver' }
       - name: Use local package
         run: swift package --package-path fluent-postgres-driver edit postgres-kit --path postgres-kit
@@ -158,10 +178,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        xcode-version:
-          - '~14.3'
-          - '15.0-beta'
-    runs-on: macos-13
+        include:
+          - macos-version: macos-13
+            xcode-version: '~14.3'
+          - macos-version: macos-14
+            xcode-version: latest
+    runs-on: ${{ matrix.macos-version }}
     env:
       POSTGRES_HOSTNAME: 127.0.0.1
       POSTGRES_DB: postgres
@@ -173,11 +195,11 @@ jobs:
       - name: Install Postgres, setup DB and auth, and wait for server start
         run: |
           export PATH="$(brew --prefix)/opt/postgresql@14/bin:$PATH" PGDATA=/tmp/vapor-postgres-test
-          (brew unlink postgresql || true) && brew install "postgresql@14" && brew link --force "postgresql@14"
+          (brew unlink postgresql || true) && brew install "postgresql@15" && brew link --force "postgresql@15"
           initdb --locale=C --auth-host "scram-sha-256" -U "${POSTGRES_USER}" --pwfile=<(echo "${POSTGRES_PASSWORD}")
           pg_ctl start --wait
         timeout-minutes: 2
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Run local tests
         run: swift test
