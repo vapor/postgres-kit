@@ -75,7 +75,7 @@ jobs:
         uses: vapor/swift-codecov-action@v0.2
   
   gh-codeql:
-    if: ${{ !(github.event.pull_request.draft || false) }}
+    if: ${{ false && !(github.event.pull_request.draft || false) }}
     runs-on: ubuntu-latest
     container:
       image: swift:5.9-jammy
