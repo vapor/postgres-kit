@@ -178,10 +178,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        xcode-version:
-          - '~14.3'
-          - 'latest'
-    runs-on: macos-13
+        include:
+          - macos-version: macos-13
+            xcode-version: '~14.3'
+          - macos-version: macos-14
+            xcode-version: latest
+    runs-on: ${{ matrix.macos-version }}
     env:
       POSTGRES_HOSTNAME: 127.0.0.1
       POSTGRES_DB: postgres
