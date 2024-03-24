@@ -18,18 +18,12 @@
 
 🐘 Non-blocking, event-driven Swift client for PostgreSQL.
 
-### Major Releases
-
-The table below shows a list of PostgresKit major releases alongside their compatible NIO and Swift versions. 
-
-|Version|NIO|Swift|SPM|
-|-|-|-|-|
-|2.0|2.0|5.8+|`from: "2.0.0"`|
+### Usage
 
 Use the SPM string to easily include the dependendency in your `Package.swift` file.
 
 ```swift
-.package(url: "https://github.com/vapor/postgres-kit.git", from: ...)
+.package(url: "https://github.com/vapor/postgres-kit.git", from: "2.0.0")
 ```
 
 ### Supported Platforms
