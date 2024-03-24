@@ -237,10 +237,11 @@ final class PostgresKitTests: XCTestCase {
         XCTAssertEqual(try PostgresDataTranslation.decode(URL.self, from: .init(with: encodedBroken), in: .default), url)
     }
 
-    var eventLoop: any EventLoop { MultiThreadedEventLoopGroup.singleton.any() }
+    var eventLoop: any EventLoop {
+        MultiThreadedEventLoopGroup.singleton.any()
+    }
 
-    override func setUpWithError() throws {
-        try super.setUpWithError()
+    override class func setUp() {
         XCTAssertTrue(isLoggingConfigured)
     }
 }

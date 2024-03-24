@@ -15,12 +15,13 @@ extension EventLoopConnectionPool where Source == PostgresConnectionSource {
     }
 }
 
-
 private struct _EventLoopGroupConnectionPoolPostgresDatabase: PostgresDatabase {
     let pool: EventLoopGroupConnectionPool<PostgresConnectionSource>
     let logger: Logger
 
-    var eventLoop: any EventLoop { self.pool.eventLoopGroup.any() }
+    var eventLoop: any EventLoop {
+        self.pool.eventLoopGroup.any()
+    }
 
     func send(_ request: any PostgresRequest, logger: Logger) -> EventLoopFuture<Void> {
         self.pool.withConnection(logger: logger) { $0.send(request, logger: logger) }
@@ -35,7 +36,9 @@ private struct _EventLoopConnectionPoolPostgresDatabase: PostgresDatabase {
     let pool: EventLoopConnectionPool<PostgresConnectionSource>
     let logger: Logger
 
-    var eventLoop: any EventLoop { self.pool.eventLoop }
+    var eventLoop: any EventLoop {
+        self.pool.eventLoop
+    }
     
     func send(_ request: any PostgresRequest, logger: Logger) -> EventLoopFuture<Void> {
         self.pool.withConnection(logger: logger) { $0.send(request, logger: logger) }
