@@ -11,7 +11,7 @@
 <a href="LICENSE"><img src="https://design.vapor.codes/images/mitlicense.svg" alt="MIT License"></a>
 <a href="https://github.com/vapor/postgres-kit/actions/workflows/test.yml"><img src="https://img.shields.io/github/actions/workflow/status/vapor/postgres-kit/test.yml?event=push&style=plastic&logo=github&label=tests&logoColor=%23ccc" alt="Continuous Integration"></a>
 <a href="https://codecov.io/github/vapor/postgres-kit"><img src="https://img.shields.io/codecov/c/github/vapor/postgres-kit?style=plastic&logo=codecov&label=codecov"></a>
-<a href="https://swift.org"><img src="https://design.vapor.codes/images/swift57up.svg" alt="Swift 5.7+"></a>
+<a href="https://swift.org"><img src="https://design.vapor.codes/images/swift58up.svg" alt="Swift 5.8+"></a>
 </p>
 
 <br>
@@ -24,8 +24,7 @@ The table below shows a list of PostgresKit major releases alongside their compa
 
 |Version|NIO|Swift|SPM|
 |-|-|-|-|
-|2.0|2.0|5.2+|`from: "2.0.0"`|
-|1.0|1.0|4.0+|`from: "1.0.0"`|
+|2.0|2.0|5.8+|`from: "2.0.0"`|
 
 Use the SPM string to easily include the dependendency in your `Package.swift` file.
 
