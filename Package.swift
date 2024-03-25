@@ -1,4 +1,4 @@
-// swift-tools-version:5.7
+// swift-tools-version:5.8
 import PackageDescription
 
 let package = Package(
@@ -13,21 +13,38 @@ let package = Package(
         .library(name: "PostgresKit", targets: ["PostgresKit"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/vapor/postgres-nio.git", from: "1.14.2"),
+        .package(url: "https://github.com/vapor/postgres-nio.git", from: "1.20.2"),
         .package(url: "https://github.com/vapor/sql-kit.git", from: "3.28.0"),
-        .package(url: "https://github.com/vapor/async-kit.git", from: "1.14.0"),
-        .package(url: "https://github.com/apple/swift-atomics.git", from: "1.1.0")
+        .package(url: "https://github.com/vapor/async-kit.git", from: "1.19.0"),
+        .package(url: "https://github.com/apple/swift-atomics.git", from: "1.2.0")
     ],
     targets: [
-        .target(name: "PostgresKit", dependencies: [
-            .product(name: "AsyncKit", package: "async-kit"),
-            .product(name: "PostgresNIO", package: "postgres-nio"),
-            .product(name: "SQLKit", package: "sql-kit"),
-            .product(name: "Atomics", package: "swift-atomics")
-        ]),
-        .testTarget(name: "PostgresKitTests", dependencies: [
-            .target(name: "PostgresKit"),
-            .product(name: "SQLKitBenchmark", package: "sql-kit"),
-        ]),
+        .target(
+            name: "PostgresKit",
+            dependencies: [
+                .product(name: "AsyncKit", package: "async-kit"),
+                .product(name: "PostgresNIO", package: "postgres-nio"),
+                .product(name: "SQLKit", package: "sql-kit"),
+                .product(name: "Atomics", package: "swift-atomics"),
+            ],
+            swiftSettings: swiftSettings
+        ),
+        .testTarget(
+            name: "PostgresKitTests",
+            dependencies: [
+                .target(name: "PostgresKit"),
+                .product(name: "SQLKitBenchmark", package: "sql-kit"),
+            ],
+            swiftSettings: swiftSettings
+        ),
     ]
 )
+
+var swiftSettings: [SwiftSetting] { [
+    .enableUpcomingFeature("ExistentialAny"),
+    .enableUpcomingFeature("ConciseMagicFile"),
+    .enableUpcomingFeature("ForwardTrailingClosures"),
+    .enableUpcomingFeature("DisableOutwardActorInference"),
+    .enableUpcomingFeature("StrictConcurrency"),
+    .enableExperimentalFeature("StrictConcurrency=complete"),
+] }

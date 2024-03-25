@@ -1,6 +1,6 @@
 import PostgresNIO
 import Logging
-@preconcurrency import SQLKit
+import SQLKit
 
 // https://github.com/vapor/postgres-nio/pull/450
 #if compiler(>=5.10) && $RetroactiveAttribute
@@ -39,10 +39,21 @@ private struct _PostgresSQLDatabase<PDatabase: PostgresDatabase, E: PostgresJSON
 }
 
 extension _PostgresSQLDatabase: SQLDatabase, PostgresDatabase {
-    var logger: Logger { self.database.logger }
-    var eventLoop: any EventLoop { self.database.eventLoop }
-    var version: (any SQLDatabaseReportedVersion)? { nil } // PSQL doesn't send version in wire protocol, must use SQL to read it
-    var dialect: any SQLDialect { PostgresDialect() }
+    var logger: Logger {
+        self.database.logger
+    }
+    
+    var eventLoop: any EventLoop {
+        self.database.eventLoop
+    }
+    
+    var version: (any SQLDatabaseReportedVersion)? {
+        nil  // PSQL doesn't send version in wire protocol, must use SQL to read it
+    }
+    
+    var dialect: any SQLDialect {
+        PostgresDialect()
+    }
     
     func execute(sql query: any SQLExpression, _ onRow: @escaping @Sendable (any SQLRow) -> ()) -> EventLoopFuture<Void> {
         let (sql, binds) = self.serialize(query)
@@ -65,11 +76,48 @@ extension _PostgresSQLDatabase: SQLDatabase, PostgresDatabase {
         } }.map { _ in }
     }
     
+    func execute(
+        sql query: any SQLExpression,
+        _ onRow: @escaping @Sendable (any SQLRow) -> ()
+    ) async throws {
+        let (sql, binds) = self.serialize(query)
+        
+        if let queryLogLevel {
+            self.logger.log(level: queryLogLevel, "\(sql) [\(binds)]")
+        }
+
+        var bindings = PostgresBindings(capacity: binds.count)
+        for bind in binds {
+            try PostgresDataTranslation.encode(value: bind, in: self.encodingContext, to: &bindings)
+        }
+
+        _ = try await self.database.withConnection {
+            $0.query(
+                .init(unsafeSQL: sql, binds: bindings),
+                logger: $0.logger,
+                { onRow($0.sql(decodingContext: self.decodingContext)) }
+            )
+        }.get()
+    }
+    
+    
     func send(_ request: any PostgresRequest, logger: Logger) -> EventLoopFuture<Void> {
         self.database.send(request, logger: logger)
     }
     
     func withConnection<T>(_ closure: @escaping (PostgresConnection) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
         self.database.withConnection(closure)
+    }
+    
+    func withSession<R>(_ closure: @escaping (any SQLDatabase) async throws -> R) async throws -> R {
+        try await self.withConnection { c in
+            c.eventLoop.makeFutureWithTask {
+                try await closure(c.sql(
+                    encodingContext: self.encodingContext,
+                    decodingContext: self.decodingContext,
+                    queryLogLevel: self.queryLogLevel
+                ))
+            }
+        }.get()
     }
 }

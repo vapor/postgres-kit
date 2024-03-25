@@ -9,9 +9,13 @@ import Foundation
 final class PostgresKitTests: XCTestCase {
     func testSQLKitBenchmark() throws {
         let conn = try PostgresConnection.test(on: self.eventLoop).wait()
-        defer { try! conn.close().wait() }
+        defer { try? conn.close().wait() }
         let benchmark = SQLBenchmarker(on: conn.sql())
-        try benchmark.run()
+        do {
+            try benchmark.run()
+        } catch {
+            XCTFail("Caught error: \(String(reflecting: error))")
+        }
     }
     
     func testPerformance() throws {
@@ -56,37 +60,41 @@ final class PostgresKitTests: XCTestCase {
         
         let db = conn.sql()
         
-        try db.raw("DROP TABLE IF EXISTS \(ident: "foos")").run().wait()
-        try db.raw("""
-        CREATE TABLE \(ident: "foos") (
-            \(ident: "id") TEXT PRIMARY KEY,
-            \(ident: "description") TEXT,
-            \(ident: "latitude") DOUBLE PRECISION,
-            \(ident: "longitude") DOUBLE PRECISION,
-            \(ident: "created_by") TEXT,
-            \(ident: "created_at") TIMESTAMPTZ,
-            \(ident: "modified_by") TEXT,
-            \(ident: "modified_at") TIMESTAMPTZ
-        )
-        """).run().wait()
-        defer {
-            try? db.raw("DROP TABLE IF EXISTS \(ident: "foos")").run().wait()
-        }
-        
-        for i in 0..<5_000 {
-            let zipcode = Foo(
-                id: UUID().uuidString,
-                description: "test \(i)",
-                latitude: Double.random(in: 0...100),
-                longitude: Double.random(in: 0...100),
-                created_by: "test",
-                created_at: Date(),
-                modified_by: "test",
-                modified_at: Date()
+        do {
+            try db.raw("DROP TABLE IF EXISTS \(ident: "foos")").run().wait()
+            try db.raw("""
+            CREATE TABLE \(ident: "foos") (
+                \(ident: "id") TEXT PRIMARY KEY,
+                \(ident: "description") TEXT,
+                \(ident: "latitude") DOUBLE PRECISION,
+                \(ident: "longitude") DOUBLE PRECISION,
+                \(ident: "created_by") TEXT,
+                \(ident: "created_at") TIMESTAMPTZ,
+                \(ident: "modified_by") TEXT,
+                \(ident: "modified_at") TIMESTAMPTZ
             )
-            try db.insert(into: "foos")
-                .model(zipcode)
-                .run().wait()
+            """).run().wait()
+            defer {
+                try? db.raw("DROP TABLE IF EXISTS \(ident: "foos")").run().wait()
+            }
+            
+            for i in 0..<5_000 {
+                let zipcode = Foo(
+                    id: UUID().uuidString,
+                    description: "test \(i)",
+                    latitude: Double.random(in: 0...100),
+                    longitude: Double.random(in: 0...100),
+                    created_by: "test",
+                    created_at: Date(),
+                    modified_by: "test",
+                    modified_at: Date()
+                )
+                try db.insert(into: "foos")
+                    .model(zipcode)
+                    .run().wait()
+            }
+        } catch {
+            XCTFail("Caught error: \(String(reflecting: error))")
         }
     }
 
@@ -148,12 +156,6 @@ final class PostgresKitTests: XCTestCase {
         XCTAssertEqual(rows.first?.count, 1)
         XCTAssertEqual(rows.first?.first?.dataType, Bar.psqlArrayType)
         XCTAssertEqual(try rows.first?.first?.decode([Bar].self), [Bar]())
-    }
-      
-    func testEnum() throws {
-        let connection = try PostgresConnection.test(on: self.eventLoop).wait()
-        defer { try! connection.close().wait() }
-        try SQLBenchmarker(on: connection.sql()).testEnum()
     }
     
     /// Tests dealing with encoding of values whose `encode(to:)` implementation calls one of the `superEncoder()`
@@ -237,10 +239,11 @@ final class PostgresKitTests: XCTestCase {
         XCTAssertEqual(try PostgresDataTranslation.decode(URL.self, from: .init(with: encodedBroken), in: .default), url)
     }
 
-    var eventLoop: any EventLoop { MultiThreadedEventLoopGroup.singleton.any() }
+    var eventLoop: any EventLoop {
+        MultiThreadedEventLoopGroup.singleton.any()
+    }
 
-    override func setUpWithError() throws {
-        try super.setUpWithError()
+    override class func setUp() {
         XCTAssertTrue(isLoggingConfigured)
     }
 }

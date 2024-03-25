@@ -78,7 +78,7 @@ jobs:
     if: ${{ false && !(github.event.pull_request.draft || false) }}
     runs-on: ubuntu-latest
     container:
-      image: swift:5.9-jammy
+      image: swift:5.10-jammy
     permissions: { actions: write, contents: read, security-events: write }
     timeout-minutes: 60
     steps:
@@ -111,10 +111,9 @@ jobs:
           - postgres:14
           - postgres:12
         swift-image:
-          - swift:5.7-jammy
           - swift:5.8-jammy
           - swift:5.9-jammy
-          - swiftlang/swift:nightly-5.10-jammy
+          - swift:5.10-jammy
           - swiftlang/swift:nightly-main-jammy
         include:
           - postgres-image: postgres:16
@@ -143,7 +142,7 @@ jobs:
   linux-integration:
     if: ${{ !(github.event.pull_request.draft || false) }}
     runs-on: ubuntu-latest
-    container: swift:5.9-jammy
+    container: swift:5.10-jammy
     services:
       psql-a:
         image: postgres:16
@@ -194,11 +193,12 @@ jobs:
           xcode-version: ${{ matrix.xcode-version }}
       - name: Install Postgres, setup DB and auth, and wait for server start
         run: |
+          brew upgrade || true
           export PATH="$(brew --prefix)/opt/postgresql@14/bin:$PATH" PGDATA=/tmp/vapor-postgres-test
-          (brew unlink postgresql || true) && brew install "postgresql@15" && brew link --force "postgresql@15"
+          (brew unlink postgresql@14 || true) && brew install "postgresql@15" && brew link --force "postgresql@15"
           initdb --locale=C --auth-host "scram-sha-256" -U "${POSTGRES_USER}" --pwfile=<(echo "${POSTGRES_PASSWORD}")
           pg_ctl start --wait
-        timeout-minutes: 2
+        timeout-minutes: 15
       - name: Checkout code
         uses: actions/checkout@v4
       - name: Run local tests
