@@ -203,7 +203,7 @@ public struct PostgresColumnType: SQLExpression, Hashable {
     private let primitive: Primitive
     private init(_ primitive: Primitive) { self.primitive = primitive }
 
-    enum Primitive: CustomStringConvertible, Hashable {
+    enum Primitive: CustomStringConvertible, Hashable, Sendable {
         case bigint /// signed eight-byte integer
         case bigserial /// autoincrementing eight-byte integer
         case bit(Int?) /// fixed-length bit string
