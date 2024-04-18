@@ -72,7 +72,9 @@ jobs:
       - name: Run unit tests for coverage data
         run: swift test --enable-code-coverage
       - name: Upload coverage data
-        uses: vapor/swift-codecov-action@v0.2
+        uses: vapor/swift-codecov-action@v0.3
+        with:
+          codecov_token: ${{ secrets.CODECOV_TOKEN }}
   
   gh-codeql:
     if: ${{ false && !(github.event.pull_request.draft || false) }}
@@ -87,18 +89,12 @@ jobs:
       - name: Mark repo safe in non-fake global config
         run: |
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
-      - name: Check Swift compatibility
-        id: swift-check
-        uses: vapor/ci/.github/actions/check-compatible-swift@main
       - name: Initialize CodeQL
-        if: ${{ steps.swift-check.outputs.swift-compatible == 'true' }}
         uses: github/codeql-action/init@v3
         with: { languages: swift }
       - name: Perform build
-        if: ${{ steps.swift-check.outputs.swift-compatible == 'true' }}
         run: swift build
       - name: Run CodeQL analyze
-        if: ${{ steps.swift-check.outputs.swift-compatible == 'true' }}
         uses: github/codeql-action/analyze@v3
 
   linux-unit:
@@ -137,7 +133,7 @@ jobs:
       - name: Check out package
         uses: actions/checkout@v4
       - name: Run local tests
-        run: swift test
+        run: swift test --sanitize=thread
 
   linux-integration:
     if: ${{ !(github.event.pull_request.draft || false) }}
@@ -170,7 +166,7 @@ jobs:
       - name: Use local package
         run: swift package --package-path fluent-postgres-driver edit postgres-kit --path postgres-kit
       - name: Run fluent-postgres-kit tests
-        run: swift test --package-path fluent-postgres-driver
+        run: swift test --package-path fluent-postgres-driver --sanitize=thread
 
   macos-unit:
     if: ${{ !(github.event.pull_request.draft || false) }}
@@ -194,12 +190,12 @@ jobs:
       - name: Install Postgres, setup DB and auth, and wait for server start
         run: |
           brew upgrade || true
-          export PATH="$(brew --prefix)/opt/postgresql@14/bin:$PATH" PGDATA=/tmp/vapor-postgres-test
-          (brew unlink postgresql@14 || true) && brew install "postgresql@15" && brew link --force "postgresql@15"
+          export PATH="$(brew --prefix)/opt/postgresql@13/bin:$PATH" PGDATA=/tmp/vapor-postgres-test
+          (brew unlink postgresql@14 || true) && brew install "postgresql@13" && brew link --force "postgresql@13"
           initdb --locale=C --auth-host "scram-sha-256" -U "${POSTGRES_USER}" --pwfile=<(echo "${POSTGRES_PASSWORD}")
           pg_ctl start --wait
         timeout-minutes: 15
       - name: Checkout code
         uses: actions/checkout@v4
       - name: Run local tests
-        run: swift test
+        run: swift test --sanitize=thread
