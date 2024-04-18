@@ -35,7 +35,7 @@ PostgresKit supports the following platforms:
 
 ## Overview
 
-PostgresKit is a [SQLKit] driver for PostgreSQL cliets. It supports building and serializing Postgres-dialect SQL queries. PostgresKit uses [PostgresNIO] to connect and communicate with the database server asynchronously. [AsyncKit](https://github.com/vapor/async-kit) is used to provide connection pooling.
+PostgresKit is an [SQLKit] driver for PostgreSQL cliets. It supports building and serializing Postgres-dialect SQL queries. PostgresKit uses [PostgresNIO] to connect and communicate with the database server asynchronously. [AsyncKit](https://github.com/vapor/async-kit) is used to provide connection pooling.
 
 > [!IMPORTANT]
 > It is strongly recommended that users who leverage PostgresKit directly (e.g. absent the Fluent ORM layer) take advantage of PostgresNIO's [PostgresClient] API for connection management rather than relying upon the legacy AsyncKit API.
