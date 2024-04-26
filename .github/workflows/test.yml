@@ -23,7 +23,6 @@ env:
   POSTGRES_PASSWORD_B: 'test_password'
 
 jobs:
-  # Check for API breakage versus main
   api-breakage:
     if: ${{ github.event_name == 'pull_request' && !(github.event.pull_request.draft || false) }}
     runs-on: ubuntu-latest
@@ -76,26 +75,26 @@ jobs:
         with:
           codecov_token: ${{ secrets.CODECOV_TOKEN }}
   
-  gh-codeql:
-    if: ${{ false && !(github.event.pull_request.draft || false) }}
-    runs-on: ubuntu-latest
-    container:
-      image: swift:5.10-jammy
-    permissions: { actions: write, contents: read, security-events: write }
-    timeout-minutes: 60
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-      - name: Mark repo safe in non-fake global config
-        run: |
-          git config --global --add safe.directory "${GITHUB_WORKSPACE}"
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
-        with: { languages: swift }
-      - name: Perform build
-        run: swift build
-      - name: Run CodeQL analyze
-        uses: github/codeql-action/analyze@v3
+#   gh-codeql:
+#     if: ${{ !(github.event.pull_request.draft || false) }}
+#     runs-on: ubuntu-latest
+#     container:
+#       image: swift:5.10-jammy
+#     permissions: { actions: write, contents: read, security-events: write }
+#     timeout-minutes: 60
+#     steps:
+#       - name: Check out code
+#         uses: actions/checkout@v4
+#       - name: Mark repo safe in non-fake global config
+#         run: |
+#           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+#       - name: Initialize CodeQL
+#         uses: github/codeql-action/init@v3
+#         with: { languages: swift }
+#       - name: Perform build
+#         run: swift build
+#       - name: Run CodeQL analyze
+#         uses: github/codeql-action/analyze@v3
 
   linux-unit:
     if: ${{ !(github.event.pull_request.draft || false) }}
