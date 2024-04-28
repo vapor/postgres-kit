@@ -2,13 +2,6 @@ import PostgresNIO
 import Logging
 import SQLKit
 
-// https://github.com/vapor/postgres-nio/pull/450
-#if compiler(>=5.10) && $RetroactiveAttribute
-extension PostgresEncodingContext: @retroactive @unchecked Sendable {}
-#else
-extension PostgresEncodingContext: @unchecked Sendable {}
-#endif
-
 extension PostgresDatabase {
     @inlinable
     public func sql(queryLogLevel: Logger.Level? = .debug) -> some SQLDatabase {
