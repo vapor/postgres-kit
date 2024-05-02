@@ -72,6 +72,8 @@ public struct PostgresDialect: SQLDialect {
     public func customDataType(for dataType: SQLDataType) -> (any SQLExpression)? {
         if case let .custom(expr) = dataType, (expr as? SQLRaw)?.sql == "TIMESTAMP" {
             return SQLRaw("TIMESTAMPTZ")
+        } else if case .blob = dataType {
+            return SQLRaw("BYTEA")
         } else {
             return nil
         }
