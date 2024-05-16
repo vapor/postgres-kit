@@ -1,5 +1,5 @@
 import NIOSSL
-import Atomics
+import NIOConcurrencyHelpers
 import AsyncKit
 import Logging
 import PostgresNIO
@@ -9,7 +9,7 @@ import NIOCore
 public struct PostgresConnectionSource: ConnectionPoolSource {
     public let sqlConfiguration: SQLPostgresConfiguration
     
-    private static let idGenerator = ManagedAtomic<Int>(0)
+    private static let idGenerator = NIOLockedValueBox<Int>(0)
     
     public init(sqlConfiguration: SQLPostgresConfiguration) {
         self.sqlConfiguration = sqlConfiguration
@@ -22,7 +22,7 @@ public struct PostgresConnectionSource: ConnectionPoolSource {
         let connectionFuture = PostgresConnection.connect(
             on: eventLoop,
             configuration: self.sqlConfiguration.coreConfiguration,
-            id: Self.idGenerator.wrappingIncrementThenLoad(ordering: .relaxed),
+            id: Self.idGenerator.withLockedValue { $0 += 1; return $0 },
             logger: logger
         )
         

@@ -13,25 +13,18 @@ extension PostgresDatabase {
         decodingContext: PostgresDecodingContext<some PostgresJSONDecoder>,
         queryLogLevel: Logger.Level? = .debug
     ) -> some SQLDatabase {
-        _PostgresSQLDatabase(database: self, encodingContext: encodingContext, decodingContext: decodingContext, queryLogLevel: queryLogLevel)
+        PostgresSQLDatabase(database: self, encodingContext: encodingContext, decodingContext: decodingContext, queryLogLevel: queryLogLevel)
     }
 }
 
-private struct _PostgresSQLDatabase<PDatabase: PostgresDatabase, E: PostgresJSONEncoder, D: PostgresJSONDecoder> {
+private struct PostgresSQLDatabase<PDatabase: PostgresDatabase, E: PostgresJSONEncoder, D: PostgresJSONDecoder> {
     let database: PDatabase
     let encodingContext: PostgresEncodingContext<E>
     let decodingContext: PostgresDecodingContext<D>
     let queryLogLevel: Logger.Level?
-    
-    init(database: PDatabase, encodingContext: PostgresEncodingContext<E>, decodingContext: PostgresDecodingContext<D>, queryLogLevel: Logger.Level?) {
-        self.database = database
-        self.encodingContext = encodingContext
-        self.decodingContext = decodingContext
-        self.queryLogLevel = queryLogLevel
-    }
 }
 
-extension _PostgresSQLDatabase: SQLDatabase, PostgresDatabase {
+extension PostgresSQLDatabase: SQLDatabase, PostgresDatabase {
     var logger: Logger {
         self.database.logger
     }
@@ -51,7 +44,7 @@ extension _PostgresSQLDatabase: SQLDatabase, PostgresDatabase {
     func execute(sql query: any SQLExpression, _ onRow: @escaping @Sendable (any SQLRow) -> ()) -> EventLoopFuture<Void> {
         let (sql, binds) = self.serialize(query)
         
-        if let queryLogLevel {
+        if let queryLogLevel = self.queryLogLevel {
             self.logger.log(level: queryLogLevel, "\(sql) [\(binds)]")
         }
         return self.eventLoop.makeCompletedFuture {
@@ -75,7 +68,7 @@ extension _PostgresSQLDatabase: SQLDatabase, PostgresDatabase {
     ) async throws {
         let (sql, binds) = self.serialize(query)
         
-        if let queryLogLevel {
+        if let queryLogLevel = self.queryLogLevel {
             self.logger.log(level: queryLogLevel, "\(sql) [\(binds)]")
         }
 
