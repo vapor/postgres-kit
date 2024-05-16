@@ -16,7 +16,6 @@ let package = Package(
         .package(url: "https://github.com/vapor/postgres-nio.git", from: "1.20.2"),
         .package(url: "https://github.com/vapor/sql-kit.git", from: "3.28.0"),
         .package(url: "https://github.com/vapor/async-kit.git", from: "1.19.0"),
-        .package(url: "https://github.com/apple/swift-atomics.git", from: "1.2.0")
     ],
     targets: [
         .target(
@@ -25,7 +24,6 @@ let package = Package(
                 .product(name: "AsyncKit", package: "async-kit"),
                 .product(name: "PostgresNIO", package: "postgres-nio"),
                 .product(name: "SQLKit", package: "sql-kit"),
-                .product(name: "Atomics", package: "swift-atomics"),
             ],
             swiftSettings: swiftSettings
         ),
@@ -45,6 +43,5 @@ var swiftSettings: [SwiftSetting] { [
     .enableUpcomingFeature("ConciseMagicFile"),
     .enableUpcomingFeature("ForwardTrailingClosures"),
     .enableUpcomingFeature("DisableOutwardActorInference"),
-    .enableUpcomingFeature("StrictConcurrency"),
     .enableExperimentalFeature("StrictConcurrency=complete"),
 ] }
