@@ -45,7 +45,7 @@ extension PostgresSQLDatabase: SQLDatabase, PostgresDatabase {
         let (sql, binds) = self.serialize(query)
         
         if let queryLogLevel = self.queryLogLevel {
-            self.logger.log(level: queryLogLevel, "\(sql) [\(binds)]")
+            self.logger.log(level: queryLogLevel, "Executing query", metadata: ["sql": .string(sql), "binds": .array(binds.map { .string("\($0)") })])
         }
         return self.eventLoop.makeCompletedFuture {
             var bindings = PostgresBindings(capacity: binds.count)
@@ -69,7 +69,7 @@ extension PostgresSQLDatabase: SQLDatabase, PostgresDatabase {
         let (sql, binds) = self.serialize(query)
         
         if let queryLogLevel = self.queryLogLevel {
-            self.logger.log(level: queryLogLevel, "\(sql) [\(binds)]")
+            self.logger.log(level: queryLogLevel, "Executing query", metadata: ["sql": .string(sql), "binds": .array(binds.map { .string("\($0)") })])
         }
 
         var bindings = PostgresBindings(capacity: binds.count)
