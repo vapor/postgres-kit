@@ -1,4 +1,5 @@
 import PostgresNIO
+import Dispatch
 import Logging
 import SQLKit
 
@@ -47,6 +48,9 @@ extension PostgresSQLDatabase: SQLDatabase, PostgresDatabase {
         if let queryLogLevel = self.queryLogLevel {
             self.logger.log(level: queryLogLevel, "Executing query", metadata: ["sql": .string(sql), "binds": .array(binds.map { .string("\($0)") })])
         }
+        
+        let startTime = DispatchTime.now()
+        
         return self.eventLoop.makeCompletedFuture {
             var bindings = PostgresBindings(capacity: binds.count)
             for bind in binds {
@@ -59,7 +63,16 @@ extension PostgresSQLDatabase: SQLDatabase, PostgresDatabase {
                 logger: $0.logger,
                 { onRow($0.sql(decodingContext: self.decodingContext)) }
             )
-        } }.map { _ in }
+        } }.map { _ in
+            if let queryLogLevel = self.queryLogLevel {
+                let executionTime = Int(DispatchTime.now().uptimeNanoseconds / UInt64(1_000_000) 
+                                        - startTime.uptimeNanoseconds / UInt64(1_000_000))
+                self.logger.log(level: queryLogLevel, "Query executed in \(executionTime) ms",
+                                metadata: ["sql": .string(sql),
+                                           "binds": .array(binds.map { .string("\($0)") }),
+                                           "execution_time_ms" : .stringConvertible(executionTime)])
+            }
+        }
     }
     
     func execute(
@@ -72,6 +85,8 @@ extension PostgresSQLDatabase: SQLDatabase, PostgresDatabase {
             self.logger.log(level: queryLogLevel, "Executing query", metadata: ["sql": .string(sql), "binds": .array(binds.map { .string("\($0)") })])
         }
 
+        let startTime = DispatchTime.now()
+        
         var bindings = PostgresBindings(capacity: binds.count)
         for bind in binds {
             try PostgresDataTranslation.encode(value: bind, in: self.encodingContext, to: &bindings)
@@ -84,6 +99,15 @@ extension PostgresSQLDatabase: SQLDatabase, PostgresDatabase {
                 { onRow($0.sql(decodingContext: self.decodingContext)) }
             )
         }.get()
+        
+        if let queryLogLevel = self.queryLogLevel {
+            let executionTime = Int(DispatchTime.now().uptimeNanoseconds / UInt64(1_000_000)
+                                    - startTime.uptimeNanoseconds / UInt64(1_000_000))
+            self.logger.log(level: queryLogLevel, "Query executed in \(executionTime) ms",
+                            metadata: ["sql": .string(sql),
+                                       "binds": .array(binds.map { .string("\($0)") }),
+                                       "execution_time_ms" : .stringConvertible(executionTime)])
+        }
     }
     
     
