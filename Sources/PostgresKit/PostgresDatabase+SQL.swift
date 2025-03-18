@@ -95,7 +95,7 @@ extension PostgresSQLDatabase: SQLDatabase, PostgresDatabase {
         self.database.withConnection(closure)
     }
     
-    func withSession<R>(_ closure: @escaping @Sendable (any SQLDatabase) async throws -> R) async throws -> R {
+    func withSession<R: Sendable>(_ closure: @escaping @Sendable (any SQLDatabase) async throws -> R) async throws -> R {
         try await self.withConnection { c in
             c.eventLoop.makeFutureWithTask {
                 try await closure(c.sql(

@@ -4,7 +4,7 @@ import NIOCore
 import PostgresNIO
 
 /// Provides configuration paramters for establishing PostgreSQL database connections.
-public struct SQLPostgresConfiguration {
+public struct SQLPostgresConfiguration: Sendable {
     /// IANA-assigned port number for PostgreSQL
     /// `UInt16(getservbyname("postgresql", "tcp").pointee.s_port).byteSwapped`
     public static var ianaPortNumber: Int { 5432 }
