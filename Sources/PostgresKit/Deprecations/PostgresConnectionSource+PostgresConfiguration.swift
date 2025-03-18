@@ -1,8 +1,8 @@
-import NIOSSL
 import Atomics
 import Logging
-import PostgresNIO
 import NIOCore
+import NIOSSL
+import PostgresNIO
 
 extension PostgresConnectionSource {
     @available(*, deprecated, message: "Use `sqlConfiguration` instead.")

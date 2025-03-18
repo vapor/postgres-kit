@@ -1,6 +1,6 @@
-import NIOSSL
 import Foundation
 import NIOCore
+import NIOSSL
 import PostgresNIO
 
 /// Provides configuration paramters for establishing PostgreSQL database connections.

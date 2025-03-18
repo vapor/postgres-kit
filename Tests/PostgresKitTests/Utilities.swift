@@ -1,13 +1,16 @@
-import XCTest
-import PostgresKit
-import Logging
 import Foundation
+import Logging
 import NIOCore
+import PostgresKit
 import PostgresNIO
+import XCTest
 
 extension PostgresConnection {
     static func test(on eventLoop: any EventLoop) -> EventLoopFuture<PostgresConnection> {
-        PostgresConnectionSource(sqlConfiguration: .test).makeConnection(logger: .init(label: "vapor.codes.postgres-kit.test"), on: eventLoop)
+        PostgresConnectionSource(sqlConfiguration: .test).makeConnection(
+            logger: .init(label: "vapor.codes.postgres-kit.test"),
+            on: eventLoop
+        )
     }
 }
 

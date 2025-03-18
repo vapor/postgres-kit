@@ -1,7 +1,7 @@
-import NIOCore
-import PostgresNIO
 @preconcurrency import AsyncKit
 import Logging
+import NIOCore
+import PostgresNIO
 
 extension EventLoopGroupConnectionPool where Source == PostgresConnectionSource {
     public func database(logger: Logger) -> any PostgresDatabase {
@@ -39,11 +39,11 @@ private struct _EventLoopConnectionPoolPostgresDatabase: PostgresDatabase {
     var eventLoop: any EventLoop {
         self.pool.eventLoop
     }
-    
+
     func send(_ request: any PostgresRequest, logger: Logger) -> EventLoopFuture<Void> {
         self.pool.withConnection(logger: logger) { $0.send(request, logger: logger) }
     }
-    
+
     func withConnection<T>(_ closure: @escaping (PostgresConnection) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
         self.pool.withConnection(logger: self.logger, closure)
     }

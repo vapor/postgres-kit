@@ -1,10 +1,10 @@
-@testable import PostgresKit
+import Foundation
+import Logging
+import NIOCore
+import PostgresNIO
 import SQLKitBenchmark
 import XCTest
-import Logging
-import PostgresNIO
-import NIOCore
-import Foundation
+@testable import PostgresKit
 
 final class PostgresKitTests: XCTestCase {
     func testSQLKitBenchmark() throws {

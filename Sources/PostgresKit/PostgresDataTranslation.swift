@@ -1,5 +1,5 @@
-import PostgresNIO
 import Foundation
+import PostgresNIO
 
 /// Quick and dirty ``CodingKey``, borrowed from FluentKit. If ``CodingKeyRepresentable`` wasn't broken by design
 /// (specifically, it can't be back-deployed before macOS 12.3 etc., even though it was introduced in Swift 5.6),

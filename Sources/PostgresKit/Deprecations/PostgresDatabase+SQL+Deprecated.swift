@@ -1,5 +1,5 @@
-import PostgresNIO
 import Foundation
+import PostgresNIO
 import SQLKit
 
 @available(*, deprecated, message: "Use `.sql(jsonEncoder:jsonDecoder:)` instead.")

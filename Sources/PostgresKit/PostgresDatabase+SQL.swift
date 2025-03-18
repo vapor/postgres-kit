@@ -1,5 +1,5 @@
-import PostgresNIO
 import Logging
+import PostgresNIO
 import SQLKit
 
 extension PostgresDatabase {
