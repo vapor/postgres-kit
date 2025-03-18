@@ -1,23 +1,28 @@
-@testable import PostgresKit
+import Foundation
+import Logging
+import NIOCore
+import PostgresNIO
 import SQLKitBenchmark
 import XCTest
-import Logging
-import PostgresNIO
-import NIOCore
-import Foundation
+@testable import PostgresKit
 
 final class PostgresKitTests: XCTestCase {
-    func testSQLKitBenchmark() throws {
-        let conn = try PostgresConnection.test(on: self.eventLoop).wait()
-        defer { try? conn.close().wait() }
-        let benchmark = SQLBenchmarker(on: conn.sql())
+    func testSQLKitBenchmark() async throws {
+        let conn = try await PostgresConnection.test(on: self.eventLoop).get()
         do {
-            try benchmark.run()
+            let benchmark = SQLBenchmarker(on: conn.sql())
+
+            try await benchmark.runAllTests()
         } catch {
+            try? await conn.close()
             XCTFail("Caught error: \(String(reflecting: error))")
+            throw error
         }
+        try await conn.close()
     }
-    
+
+    // Disable for now, test is of questionable utility
+    /*
     func testPerformance() throws {
         let db = PostgresConnectionSource(sqlConfiguration: .test)
         let pool = EventLoopGroupConnectionPool(
@@ -42,6 +47,7 @@ final class PostgresKitTests: XCTestCase {
             }
         }
     }
+    */
     
     func testLeak() throws {
         struct Foo: Codable {

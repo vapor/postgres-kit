@@ -1,5 +1,5 @@
-import PostgresNIO
 import Foundation
+import PostgresNIO
 
 /// Quick and dirty ``CodingKey``, borrowed from FluentKit. If ``CodingKeyRepresentable`` wasn't broken by design
 /// (specifically, it can't be back-deployed before macOS 12.3 etc., even though it was introduced in Swift 5.6),
@@ -17,7 +17,7 @@ private extension PostgresCell {
 }
 
 /// Sidestep problems with URL coding behavior by making it conform directly to Postgres coding.
-extension URL: PostgresNonThrowingEncodable, PostgresDecodable {
+extension Foundation.URL: PostgresNIO.PostgresNonThrowingEncodable, PostgresNIO.PostgresDecodable {
     public static var psqlType: PostgresDataType {
         String.psqlType
     }

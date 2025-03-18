@@ -1,5 +1,5 @@
-import PostgresNIO
 import Foundation
+import PostgresNIO
 import SQLKit
 
 extension PostgresRow {
@@ -7,7 +7,7 @@ extension PostgresRow {
     public func sql() -> some SQLRow {
         self.sql(decodingContext: .default)
     }
-    
+
     public func sql(decodingContext: PostgresDecodingContext<some PostgresJSONDecoder>) -> some SQLRow {
         _PostgresSQLRow(randomAccessView: self.makeRandomAccess(), decodingContext: decodingContext)
     }
@@ -39,7 +39,7 @@ extension _PostgresSQLRow: SQLRow {
         guard self.randomAccessView.contains(column) else {
             throw _Error.missingColumn(column)
         }
-        
+
         return try PostgresDataTranslation.decode(T.self, from: self.randomAccessView[column], in: self.decodingContext)
     }
 }

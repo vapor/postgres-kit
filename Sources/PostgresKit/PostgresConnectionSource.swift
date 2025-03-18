@@ -1,16 +1,16 @@
-import NIOSSL
-import NIOConcurrencyHelpers
 import AsyncKit
 import Logging
+import NIOConcurrencyHelpers
+import NIOCore
+import NIOSSL
 import PostgresNIO
 import SQLKit
-import NIOCore
 
 public struct PostgresConnectionSource: ConnectionPoolSource {
     public let sqlConfiguration: SQLPostgresConfiguration
-    
+
     private static let idGenerator = NIOLockedValueBox<Int>(0)
-    
+
     public init(sqlConfiguration: SQLPostgresConfiguration) {
         self.sqlConfiguration = sqlConfiguration
     }
@@ -22,10 +22,13 @@ public struct PostgresConnectionSource: ConnectionPoolSource {
         let connectionFuture = PostgresConnection.connect(
             on: eventLoop,
             configuration: self.sqlConfiguration.coreConfiguration,
-            id: Self.idGenerator.withLockedValue { $0 += 1; return $0 },
+            id: Self.idGenerator.withLockedValue {
+                $0 += 1
+                return $0
+            },
             logger: logger
         )
-        
+
         if let searchPath = self.sqlConfiguration.searchPath {
             return connectionFuture.flatMap { conn in
                 conn.sql(queryLogLevel: nil)
@@ -39,4 +42,4 @@ public struct PostgresConnectionSource: ConnectionPoolSource {
     }
 }
 
-extension PostgresConnection: ConnectionPoolItem {}
+extension PostgresNIO.PostgresConnection: AsyncKit.ConnectionPoolItem {}

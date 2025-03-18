@@ -1,6 +1,6 @@
-import NIOSSL
 import Foundation
 import NIOCore
+import NIOSSL
 
 @available(*, deprecated, message: "Use `SQLPostgresConfiguration` instead.")
 public struct PostgresConfiguration {

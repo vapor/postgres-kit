@@ -1,4 +1,4 @@
-@testable import PostgresKit
+import PostgresKit
 import XCTest
 
 final class SQLPostgresConfigurationTests: XCTestCase {
