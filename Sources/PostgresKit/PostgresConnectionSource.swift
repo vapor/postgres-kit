@@ -39,4 +39,4 @@ public struct PostgresConnectionSource: ConnectionPoolSource {
     }
 }
 
-extension PostgresConnection: ConnectionPoolItem {}
+extension PostgresNIO.PostgresConnection: AsyncKit.ConnectionPoolItem {}

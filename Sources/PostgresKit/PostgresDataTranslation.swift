@@ -17,7 +17,7 @@ private extension PostgresCell {
 }
 
 /// Sidestep problems with URL coding behavior by making it conform directly to Postgres coding.
-extension URL: PostgresNonThrowingEncodable, PostgresDecodable {
+extension Foundation.URL: PostgresNIO.PostgresNonThrowingEncodable, PostgresNIO.PostgresDecodable {
     public static var psqlType: PostgresDataType {
         String.psqlType
     }
