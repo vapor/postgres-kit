@@ -26,7 +26,7 @@ jobs:
   api-breakage:
     if: ${{ github.event_name == 'pull_request' && !(github.event.pull_request.draft || false) }}
     runs-on: ubuntu-latest
-    container: swift:jammy
+    container: swift:noble
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -36,86 +36,25 @@ jobs:
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
           swift package diagnose-api-breaking-changes origin/main
 
-  dependency-graph:
-    if: ${{ github.event_name == 'push' }}
-    runs-on: ubuntu-latest
-    container: swift:jammy
-    permissions:
-      contents: write
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-      - name: Fix Git configuration
-        run: |
-          git config --global --add safe.directory "${GITHUB_WORKSPACE}"
-          apt-get update && apt-get install -y curl
-      - name: Submit dependency graph
-        uses: vapor-community/swift-dependency-submission@v0.1
-
-  code-coverage:
-    if: ${{ !(github.event.pull_request.draft || false) }}
-    runs-on: ubuntu-latest
-    container: swift:jammy
-    services:
-      psql-a:
-        image: postgres:16
-        env:
-          POSTGRES_USER: test_username
-          POSTGRES_DB: test_database
-          POSTGRES_PASSWORD: test_password
-          POSTGRES_HOST_AUTH_METHOD: scram-sha-256
-          POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-      - name: Run unit tests for coverage data
-        run: swift test --enable-code-coverage
-      - name: Upload coverage data
-        uses: vapor/swift-codecov-action@v0.3
-        with:
-          codecov_token: ${{ secrets.CODECOV_TOKEN }}
-  
-#   gh-codeql:
-#     if: ${{ !(github.event.pull_request.draft || false) }}
-#     runs-on: ubuntu-latest
-#     container:
-#       image: swift:5.10-jammy
-#     permissions: { actions: write, contents: read, security-events: write }
-#     timeout-minutes: 60
-#     steps:
-#       - name: Check out code
-#         uses: actions/checkout@v4
-#       - name: Mark repo safe in non-fake global config
-#         run: |
-#           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
-#       - name: Initialize CodeQL
-#         uses: github/codeql-action/init@v3
-#         with: { languages: swift }
-#       - name: Perform build
-#         run: swift build
-#       - name: Run CodeQL analyze
-#         uses: github/codeql-action/analyze@v3
-
   linux-unit:
     if: ${{ !(github.event.pull_request.draft || false) }}
     strategy:
       fail-fast: false
       matrix:
         postgres-image:
-          - postgres:16
-          - postgres:14
-          - postgres:12
+          - postgres:17
+          - postgres:15
+          - postgres:13
         swift-image:
-          - swift:5.8-jammy
           - swift:5.9-jammy
-          - swift:5.10-jammy
-          - swiftlang/swift:nightly-main-jammy
+          - swift:5.10-noble
+          - swift:6.0-noble
         include:
-          - postgres-image: postgres:16
+          - postgres-image: postgres:17
             postgres-auth: scram-sha-256
-          - postgres-image: postgres:14
+          - postgres-image: postgres:15
             postgres-auth: md5
-          - postgres-image: postgres:12
+          - postgres-image: postgres:13
             postgres-auth: trust
     runs-on: ubuntu-latest
     container: ${{ matrix.swift-image }}
@@ -132,15 +71,19 @@ jobs:
       - name: Check out package
         uses: actions/checkout@v4
       - name: Run local tests
-        run: swift test --sanitize=thread
+        run: swift test --sanitize=thread --enable-code-coverage
+      - name: Upload coverage data
+        uses: vapor/swift-codecov-action@v0.3
+        with:
+          codecov_token: ${{ secrets.CODECOV_TOKEN || '' }}
 
   linux-integration:
     if: ${{ !(github.event.pull_request.draft || false) }}
     runs-on: ubuntu-latest
-    container: swift:5.10-jammy
+    container: swift:6.0-noble
     services:
       psql-a:
-        image: postgres:16
+        image: postgres:17
         env:
           POSTGRES_USER: test_username
           POSTGRES_DB: test_database
@@ -173,10 +116,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - macos-version: macos-13
-            xcode-version: '~14.3'
           - macos-version: macos-14
-            xcode-version: latest
+            xcode-version: latest-stable
+          - macos-version: macos-15
+            xcode-version: latest-stable
     runs-on: ${{ matrix.macos-version }}
     env:
       POSTGRES_HOSTNAME: 127.0.0.1
@@ -197,4 +140,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       - name: Run local tests
-        run: swift test --sanitize=thread
+        run: swift test --sanitize=thread --enable-code-coverage
+      - name: Upload coverage data
+        uses: vapor/swift-codecov-action@v0.3
+        with:
+          codecov_token: ${{ secrets.CODECOV_TOKEN || '' }}
+
+  musl:
+    runs-on: ubuntu-latest
+    container: swift:6.0-noble
+    timeout-minutes: 30
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Install SDK
+        run: swift sdk install https://download.swift.org/swift-6.0.3-release/static-sdk/swift-6.0.3-RELEASE/swift-6.0.3-RELEASE_static-linux-0.0.1.artifactbundle.tar.gz --checksum 67f765e0030e661a7450f7e4877cfe008db4f57f177d5a08a6e26fd661cdd0bd
+      - name: Build
+        run: swift build --swift-sdk x86_64-swift-linux-musl
