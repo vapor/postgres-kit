@@ -46,9 +46,9 @@ jobs:
           - postgres:15
           - postgres:13
         swift-image:
-          - swift:5.9-jammy
-          - swift:5.10-noble
+          - swift:5.10-jammy
           - swift:6.0-noble
+          - swift:6.1-noble
         include:
           - postgres-image: postgres:17
             postgres-auth: scram-sha-256
@@ -71,7 +71,7 @@ jobs:
       - name: Check out package
         uses: actions/checkout@v5
       - name: Run local tests
-        run: swift test --sanitize=thread --enable-code-coverage
+        run: swift test --enable-code-coverage
       - name: Upload coverage data
         uses: vapor/swift-codecov-action@v0.3
         with:
@@ -80,7 +80,7 @@ jobs:
   linux-integration:
     if: ${{ !(github.event.pull_request.draft || false) }}
     runs-on: ubuntu-latest
-    container: swift:6.0-noble
+    container: swift:6.1-noble
     services:
       psql-a:
         image: postgres:17
@@ -108,7 +108,7 @@ jobs:
       - name: Use local package
         run: swift package --package-path fluent-postgres-driver edit postgres-kit --path postgres-kit
       - name: Run fluent-postgres-kit tests
-        run: swift test --package-path fluent-postgres-driver --sanitize=thread
+        run: swift test --package-path fluent-postgres-driver
 
   macos-unit:
     if: ${{ !(github.event.pull_request.draft || false) }}
@@ -140,7 +140,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v5
       - name: Run local tests
-        run: swift test --sanitize=thread --enable-code-coverage
+        run: swift test --enable-code-coverage
       - name: Upload coverage data
         uses: vapor/swift-codecov-action@v0.3
         with:
@@ -148,12 +148,12 @@ jobs:
 
   musl:
     runs-on: ubuntu-latest
-    container: swift:6.0-noble
+    container: swift:6.1-noble
     timeout-minutes: 30
     steps:
       - name: Check out code
         uses: actions/checkout@v5
       - name: Install SDK
-        run: swift sdk install https://download.swift.org/swift-6.0.3-release/static-sdk/swift-6.0.3-RELEASE/swift-6.0.3-RELEASE_static-linux-0.0.1.artifactbundle.tar.gz --checksum 67f765e0030e661a7450f7e4877cfe008db4f57f177d5a08a6e26fd661cdd0bd
+        run: swift sdk install https://download.swift.org/swift-6.1.2-release/static-sdk/swift-6.1.2-RELEASE/swift-6.1.2-RELEASE_static-linux-0.0.1.artifactbundle.tar.gz --checksum df0b40b9b582598e7e3d70c82ab503fd6fbfdff71fd17e7f1ab37115a0665b3b
       - name: Build
         run: swift build --swift-sdk x86_64-swift-linux-musl
