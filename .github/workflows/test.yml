@@ -29,7 +29,7 @@ jobs:
     container: swift:noble
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with: { 'fetch-depth': 0 }
       - name: API breaking changes
         run: |
@@ -69,7 +69,7 @@ jobs:
           POSTGRES_INITDB_ARGS: --auth-host=${{ matrix.postgres-auth }}
     steps:
       - name: Check out package
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Run local tests
         run: swift test --sanitize=thread --enable-code-coverage
       - name: Upload coverage data
@@ -100,10 +100,10 @@ jobs:
           POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
     steps:
       - name: Check out package
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with: { path: 'postgres-kit' }
       - name: Check out fluent-postgres-driver dependent
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with: { repository: 'vapor/fluent-postgres-driver', path: 'fluent-postgres-driver' }
       - name: Use local package
         run: swift package --package-path fluent-postgres-driver edit postgres-kit --path postgres-kit
@@ -138,7 +138,7 @@ jobs:
           pg_ctl start --wait
         timeout-minutes: 15
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Run local tests
         run: swift test --sanitize=thread --enable-code-coverage
       - name: Upload coverage data
@@ -152,7 +152,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Install SDK
         run: swift sdk install https://download.swift.org/swift-6.0.3-release/static-sdk/swift-6.0.3-RELEASE/swift-6.0.3-RELEASE_static-linux-0.0.1.artifactbundle.tar.gz --checksum 67f765e0030e661a7450f7e4877cfe008db4f57f177d5a08a6e26fd661cdd0bd
       - name: Build
