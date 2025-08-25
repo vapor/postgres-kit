@@ -12,7 +12,13 @@
 
 <br>
 
-🐘 Non-blocking, event-driven Swift client for PostgreSQL.
+PostgresKit is an [SQLKit] driver for PostgreSQL clients.
+
+## Overview
+
+PostgresKit supports building and serializing Postgres-dialect SQL queries using [SQLKit]'s API. PostgresKit uses [PostgresNIO] to connect and communicate with the database server asynchronously. [AsyncKit] is used to provide connection pooling.
+
+> Important: It is strongly recommended that users who leverage PostgresKit directly (e.g. absent the Fluent ORM layer) take advantage of PostgresNIO's [PostgresClient] API for connection management rather than relying upon the legacy AsyncKit API.
 
 ### Usage
 
@@ -29,21 +35,14 @@ PostgresKit supports the following platforms:
 - Ubuntu 20.04+
 - macOS 10.15+
 
-## Overview
-
-PostgresKit is an [SQLKit] driver for PostgreSQL clients. It supports building and serializing Postgres-dialect SQL queries. PostgresKit uses [PostgresNIO] to connect and communicate with the database server asynchronously. [AsyncKit] is used to provide connection pooling.
-
-> [!IMPORTANT]
-> It is strongly recommended that users who leverage PostgresKit directly (e.g. absent the Fluent ORM layer) take advantage of PostgresNIO's [PostgresClient] API for connection management rather than relying upon the legacy AsyncKit API.
-
 ### Configuration
 
-Database connection options and credentials are specified using a `PostgresConfiguration` struct. 
+Database connection options and credentials are specified using a ``SQLPostgresConfiguration`` struct. 
 
 ```swift
 import PostgresKit
 
-let configuration = PostgresConfiguration(
+let configuration = SQLPostgresConfiguration(
     hostname: "localhost",
     username: "vapor_username",
     password: "vapor_password",
@@ -51,15 +50,15 @@ let configuration = PostgresConfiguration(
 )
 ```
 
-URL string based configuration is also supported.
+URL-based configuration is also supported.
 
 ```swift
-guard let configuration = PostgresConfiguration(url: "postgres://...") else {
+guard let configuration = SQLPostgresConfiguration(url: "postgres://...") else {
     ...
 }
 ```
 
-To connect via unix-domain sockets, use `unixDomainSocketPath` instead of `hostname` and `port`.
+To connect via unix-domain sockets, use ``SQLPostgresConfiguration/init(unixDomainSocketPath:username:password:database:)`` instead of ``SQLPostgresConfiguration/init(hostname:port:username:password:database:tls:)``.
 
 ```swift
 let configuration = PostgresConfiguration(
@@ -72,7 +71,7 @@ let configuration = PostgresConfiguration(
 
 ### Connection Pool
 
-Once you have a `PostgresConfiguration`, you can use it to create a connection source and pool.
+Once you have a ``SQLPostgresConfiguration``, you can use it to create a connection source and pool.
 
 ```swift
 let eventLoopGroup: EventLoopGroup = NIOSingletons.posixEventLoopGroup
@@ -85,7 +84,7 @@ let pools = EventLoopGroupConnectionPool(
 try await pools.shutdownAsync()
 ```
 
-First create a `PostgresConnectionSource` using the configuration struct. This type is responsible for creating new connections to your database server as needed.
+First create a ``PostgresConnectionSource`` using the configuration struct. This type is responsible for creating new connections to your database server as needed.
 
 Next, use the connection source to create an `EventLoopGroupConnectionPool`. You will also need to pass an `EventLoopGroup`. For more information on creating an `EventLoopGroup`, visit [SwiftNIO's documentation]. Make sure to shutdown the connection pool before it deinitializes. 
 

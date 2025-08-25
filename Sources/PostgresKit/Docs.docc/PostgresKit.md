@@ -4,7 +4,13 @@
     @TitleHeading(Package)
 }
 
-🐘 Non-blocking, event-driven Swift client for PostgreSQL.
+PostgresKit is an [SQLKit] driver for PostgreSQL clients.
+
+## Overview
+
+PostgresKit supports building and serializing Postgres-dialect SQL queries using [SQLKit]'s API. PostgresKit uses [PostgresNIO] to connect and communicate with the database server asynchronously. [AsyncKit] is used to provide connection pooling.
+
+> Important: It is strongly recommended that users who leverage PostgresKit directly (e.g. absent the Fluent ORM layer) take advantage of PostgresNIO's [PostgresClient] API for connection management rather than relying upon the legacy AsyncKit API.
 
 ### Usage
 
@@ -20,12 +26,6 @@ PostgresKit supports the following platforms:
 
 - Ubuntu 20.04+
 - macOS 10.15+
-
-## Overview
-
-PostgresKit is an [SQLKit] driver for PostgreSQL clients. It supports building and serializing Postgres-dialect SQL queries. PostgresKit uses [PostgresNIO] to connect and communicate with the database server asynchronously. [AsyncKit] is used to provide connection pooling.
-
-> Important: It is strongly recommended that users who leverage PostgresKit directly (e.g. absent the Fluent ORM layer) take advantage of PostgresNIO's [PostgresClient] API for connection management rather than relying upon the legacy AsyncKit API.
 
 ### Configuration
 
