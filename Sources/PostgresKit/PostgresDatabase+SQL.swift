@@ -7,13 +7,18 @@ extension PostgresDatabase {
     public func sql(queryLogLevel: Logger.Level? = .debug) -> some SQLDatabase {
         self.sql(encodingContext: .default, decodingContext: .default, queryLogLevel: queryLogLevel)
     }
-    
+
     public func sql(
         encodingContext: PostgresEncodingContext<some PostgresJSONEncoder>,
         decodingContext: PostgresDecodingContext<some PostgresJSONDecoder>,
         queryLogLevel: Logger.Level? = .debug
     ) -> some SQLDatabase {
-        PostgresSQLDatabase(database: self, encodingContext: encodingContext, decodingContext: decodingContext, queryLogLevel: queryLogLevel)
+        PostgresSQLDatabase(
+            database: self,
+            encodingContext: encodingContext,
+            decodingContext: decodingContext,
+            queryLogLevel: queryLogLevel
+        )
     }
 }
 
@@ -28,22 +33,22 @@ extension PostgresSQLDatabase: SQLDatabase, PostgresDatabase {
     var logger: Logger {
         self.database.logger
     }
-    
+
     var eventLoop: any EventLoop {
         self.database.eventLoop
     }
-    
+
     var version: (any SQLDatabaseReportedVersion)? {
         nil  // PSQL doesn't send version in wire protocol, must use SQL to read it
     }
-    
+
     var dialect: any SQLDialect {
         PostgresDialect()
     }
-    
-    func execute(sql query: any SQLExpression, _ onRow: @escaping @Sendable (any SQLRow) -> ()) -> EventLoopFuture<Void> {
+
+    func execute(sql query: any SQLExpression, _ onRow: @escaping @Sendable (any SQLRow) -> Void) -> EventLoopFuture<Void> {
         let (sql, binds) = self.serialize(query)
-        
+
         if let queryLogLevel = self.queryLogLevel {
             self.logger.log(level: queryLogLevel, "Executing query", metadata: ["sql": .string(sql), "binds": .array(binds.map { .string("\($0)") })])
         }
@@ -61,13 +66,13 @@ extension PostgresSQLDatabase: SQLDatabase, PostgresDatabase {
             )
         } }.map { _ in }
     }
-    
+
     func execute(
         sql query: any SQLExpression,
-        _ onRow: @escaping @Sendable (any SQLRow) -> ()
+        _ onRow: @escaping @Sendable (any SQLRow) -> Void
     ) async throws {
         let (sql, binds) = self.serialize(query)
-        
+
         if let queryLogLevel = self.queryLogLevel {
             self.logger.log(level: queryLogLevel, "Executing query", metadata: ["sql": .string(sql), "binds": .array(binds.map { .string("\($0)") })])
         }
@@ -85,16 +90,15 @@ extension PostgresSQLDatabase: SQLDatabase, PostgresDatabase {
             )
         }.get()
     }
-    
-    
+
     func send(_ request: any PostgresRequest, logger: Logger) -> EventLoopFuture<Void> {
         self.database.send(request, logger: logger)
     }
-    
+
     func withConnection<T>(_ closure: @escaping (PostgresConnection) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
         self.database.withConnection(closure)
     }
-    
+
     func withSession<R: Sendable>(_ closure: @escaping @Sendable (any SQLDatabase) async throws -> R) async throws -> R {
         try await self.withConnection { c in
             c.eventLoop.makeFutureWithTask {

@@ -2,7 +2,7 @@ import SQLKit
 
 public struct PostgresDialect: SQLDialect {
     public init() {}
-    
+
     public var name: String {
         "postgresql"
     }
@@ -70,7 +70,7 @@ public struct PostgresDialect: SQLDialect {
     }
 
     public func customDataType(for dataType: SQLDataType) -> (any SQLExpression)? {
-        if case let .custom(expr) = dataType, (expr as? SQLRaw)?.sql == "TIMESTAMP" {
+        if case .custom(let expr) = dataType, (expr as? SQLRaw)?.sql == "TIMESTAMP" {
             return SQLRaw("TIMESTAMPTZ")
         } else if case .blob = dataType {
             return SQLRaw("BYTEA")
@@ -85,11 +85,11 @@ public struct PostgresDialect: SQLDialect {
 
     public var unionFeatures: SQLUnionFeatures {
         [
-            .union,     .unionAll,
+            .union, .unionAll,
             .intersect, .intersectAll,
-            .except,    .exceptAll,
+            .except, .exceptAll,
             .explicitDistinct,
-            .parenthesizedSubqueries
+            .parenthesizedSubqueries,
         ]
     }
 
@@ -103,7 +103,7 @@ public struct PostgresDialect: SQLDialect {
 
     public func nestedSubpathExpression(in column: any SQLExpression, for path: [String]) -> (any SQLExpression)? {
         guard !path.isEmpty else { return nil }
-        
+
         let descender = SQLList(
             [column] + path.dropLast().map(SQLLiteral.string(_:)),
             separator: SQLRaw("->")
@@ -112,7 +112,7 @@ public struct PostgresDialect: SQLDialect {
             [descender, SQLLiteral.string(path.last!)],
             separator: SQLRaw("->>")
         )
-        
+
         return SQLGroupExpression(accessor)
     }
 }

@@ -15,7 +15,7 @@
       "logo-shape": { "dark": "#000", "light": "#fff" },
       "fill":       { "dark": "#000", "light": "#fff" }
     },
-    "icons": { "technology": "/postgreskit/images/vapor-postgreskit-logo.svg" }
+    "icons": { "technology": "/postgreskit/images/PostgresKit/vapor-postgreskit-logo.svg" }
   },
   "features": {
     "quickNavigation": { "enable": true },

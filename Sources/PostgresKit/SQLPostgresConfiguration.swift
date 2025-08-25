@@ -76,7 +76,7 @@ public struct SQLPostgresConfiguration: Sendable {
     /// > additional information and recommendations.
     ///
     /// [tlsconfig]:
-    /// https://swiftpackageindex.com/apple/swift-nio-ssl/main/documentation/niossl/tlsconfiguration
+    /// https://swiftpackageindex.com/apple/swift-nio-ssl/documentation/niossl/tlsconfiguration
     public init(url: URL) throws {
         guard let comp = URLComponents(url: url, resolvingAgainstBaseURL: true), let username = comp.user else {
             throw URLError(.badURL, userInfo: [NSURLErrorFailingURLErrorKey: url, NSURLErrorFailingURLStringErrorKey: url.absoluteString])
@@ -141,7 +141,7 @@ public struct SQLPostgresConfiguration: Sendable {
     }
     
     /// Create a ``SQLPostgresConfiguration`` for establishing a connection to a server over a
-    /// preestablished `NIOCore/Channel`.
+    /// preestablished `NIOCore.Channel`.
     ///
     /// This is provided for calling code which wants to manage the underlying connection transport on its
     /// own, such as when tunneling a connection through SSH.
