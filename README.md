@@ -16,7 +16,7 @@
 
 ### Usage
 
-Use the SPM string to easily include the dependendency in your `Package.swift` file.
+Reference this package in your `Package.swift` to include it in your project.
 
 ```swift
 .package(url: "https://github.com/vapor/postgres-kit.git", from: "2.0.0")
@@ -75,14 +75,14 @@ let configuration = PostgresConfiguration(
 Once you have a `PostgresConfiguration`, you can use it to create a connection source and pool.
 
 ```swift
-let eventLoopGroup: EventLoopGroup = ...
-defer { try! eventLoopGroup.syncShutdown() }
-
+let eventLoopGroup: EventLoopGroup = NIOSingletons.posixEventLoopGroup
 let pools = EventLoopGroupConnectionPool(
     source: PostgresConnectionSource(configuration: configuration), 
     on: eventLoopGroup
 )
-defer { pools.shutdown() }
+
+// When you're done:
+try await pools.shutdownAsync()
 ```
 
 First create a `PostgresConnectionSource` using the configuration struct. This type is responsible for creating new connections to your database server as needed.
