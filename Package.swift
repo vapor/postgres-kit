@@ -1,4 +1,4 @@
-// swift-tools-version:5.9
+// swift-tools-version:5.10
 import PackageDescription
 
 let package = Package(
@@ -13,9 +13,9 @@ let package = Package(
         .library(name: "PostgresKit", targets: ["PostgresKit"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/vapor/postgres-nio.git", from: "1.21.1"),
-        .package(url: "https://github.com/vapor/sql-kit.git", from: "3.29.3"),
-        .package(url: "https://github.com/vapor/async-kit.git", from: "1.19.0"),
+        .package(url: "https://github.com/vapor/postgres-nio.git", from: "1.27.0"),
+        .package(url: "https://github.com/vapor/sql-kit.git", from: "3.33.1"),
+        .package(url: "https://github.com/vapor/async-kit.git", from: "1.21.0"),
     ],
     targets: [
         .target(
@@ -40,6 +40,7 @@ let package = Package(
 
 var swiftSettings: [SwiftSetting] { [
     .enableUpcomingFeature("ExistentialAny"),
+    .enableUpcomingFeature("MemberImportVisibility"),
     .enableUpcomingFeature("ConciseMagicFile"),
     .enableUpcomingFeature("ForwardTrailingClosures"),
     .enableUpcomingFeature("DisableOutwardActorInference"),

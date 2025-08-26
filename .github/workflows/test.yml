@@ -68,6 +68,8 @@ jobs:
           POSTGRES_HOST_AUTH_METHOD: ${{ matrix.postgres-auth }}
           POSTGRES_INITDB_ARGS: --auth-host=${{ matrix.postgres-auth }}
     steps:
+      - name: Install curl
+        run: apt-get update -y -q && apt-get install -y curl
       - name: Check out package
         uses: actions/checkout@v5
       - name: Run local tests
@@ -133,7 +135,7 @@ jobs:
         run: |
           brew upgrade || true
           export PATH="$(brew --prefix)/opt/postgresql@13/bin:$PATH" PGDATA=/tmp/vapor-postgres-test
-          (brew unlink postgresql@14 || true) && brew install "postgresql@13" && brew link --force "postgresql@13"
+          brew install "postgresql@17" && brew link --force "postgresql@17"
           initdb --locale=C --auth-host "scram-sha-256" -U "${POSTGRES_USER}" --pwfile=<(echo "${POSTGRES_PASSWORD}")
           pg_ctl start --wait
         timeout-minutes: 15

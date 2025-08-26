@@ -1,27 +1,27 @@
 import Foundation
 import PostgresNIO
 
-/// Quick and dirty ``CodingKey``, borrowed from FluentKit. If ``CodingKeyRepresentable`` wasn't broken by design
+/// Quick and dirty `CodingKey`, borrowed from FluentKit. If `CodingKeyRepresentable` wasn't broken by design
 /// (specifically, it can't be back-deployed before macOS 12.3 etc., even though it was introduced in Swift 5.6),
 /// we'd use that instead.
-fileprivate struct SomeCodingKey: CodingKey, Hashable {
+private struct SomeCodingKey: CodingKey, Hashable {
     let stringValue: String, intValue: Int?
     init(stringValue: String) { (self.stringValue, self.intValue) = (stringValue, Int(stringValue)) }
     init(intValue: Int) { (self.stringValue, self.intValue) = ("\(intValue)", intValue) }
 }
 
-private extension PostgresCell {
-    var codingKey: any CodingKey {
+extension PostgresCell {
+    fileprivate var codingKey: any CodingKey {
         PostgresKit.SomeCodingKey(stringValue: !self.columnName.isEmpty ? "\(self.columnName) (\(self.columnIndex))" : "\(self.columnIndex)")
     }
 }
 
 /// Sidestep problems with URL coding behavior by making it conform directly to Postgres coding.
-extension Foundation.URL: PostgresNIO.PostgresNonThrowingEncodable, PostgresNIO.PostgresDecodable {
+extension URL {
     public static var psqlType: PostgresDataType {
         String.psqlType
     }
-    
+
     public static var psqlFormat: PostgresFormat {
         String.psqlFormat
     }
@@ -42,7 +42,7 @@ extension Foundation.URL: PostgresNIO.PostgresNonThrowingEncodable, PostgresNIO.
         context: PostgresDecodingContext<some PostgresJSONDecoder>
     ) throws {
         let string = try String(from: &buffer, type: type, format: format, context: context)
-        
+
         if let url = URL(string: string) {
             self = url
         }
@@ -55,16 +55,23 @@ extension Foundation.URL: PostgresNIO.PostgresNonThrowingEncodable, PostgresNIO.
     }
 }
 
+#if compiler(>=6.0)
+extension URL: @retroactive PostgresNonThrowingEncodable, @retroactive PostgresDecodable {}
+#else
+extension Foundation.URL: PostgresNIO.PostgresNonThrowingEncodable, PostgresNIO.PostgresDecodable {}
+#endif
+
 struct PostgresDataTranslation {
-    /// This typealias serves to limit the deprecation noise caused by ``PostgresDataConvertible`` to a single
+    /// This typealias serves to limit the deprecation noise caused by `PostgresDataConvertible` to a single
     /// warning, down from what would otherwise be a minimum of two. It has no other purpose.
     fileprivate typealias PostgresLegacyDataConvertible = PostgresDataConvertible
-    
+
     static func decode<T: Decodable, D: PostgresJSONDecoder>(
         _: T.Type = T.self,
         from cell: PostgresCell,
         in context: PostgresDecodingContext<D>,
-        file: String = #fileID, line: Int = #line
+        file: String = #fileID,
+        line: Int = #line
     ) throws -> T {
         try self.decode(
             codingPath: [cell.codingKey],
@@ -72,18 +79,21 @@ struct PostgresDataTranslation {
             T.self,
             from: cell,
             in: context,
-            file: file, line: line
+            file: file,
+            line: line
         )
     }
-    
+
     fileprivate static func decode<T: Decodable, D: PostgresJSONDecoder>(
-        codingPath: [any CodingKey], userInfo: [CodingUserInfoKey: Any],
+        codingPath: [any CodingKey],
+        userInfo: [CodingUserInfoKey: Any],
         _: T.Type = T.self,
         from cell: PostgresCell,
         in context: PostgresDecodingContext<D>,
-        file: String, line: Int
+        file: String,
+        line: Int
     ) throws -> T {
-        /// Preferred modern fast-path: Direct conformance to ``PostgresDecodable``, let the cell decode.
+        /// Preferred modern fast-path: Direct conformance to `PostgresDecodable`, let the cell decode.
         if let fastPathType = T.self as? any PostgresDecodable.Type {
             let cellToDecode: PostgresCell
 
@@ -127,8 +137,8 @@ struct PostgresDataTranslation {
                 cellToDecode = cell
             }
             return try cellToDecode.decode(fastPathType, context: context, file: file, line: line) as! T
-            
-        /// Legacy "fast"-path: Direct conformance to ``PostgresDataConvertible``; use is deprecated.
+
+        /// Legacy "fast"-path: Direct conformance to `PostgresDataConvertible`; use is deprecated.
         } else if let legacyPathType = T.self as? any PostgresLegacyDataConvertible.Type {
             let legacyData = PostgresData(type: cell.dataType, typeModifier: nil, formatCode: cell.format, value: cell.bytes)
 
@@ -139,8 +149,8 @@ struct PostgresDataTranslation {
             }
             return result as! T
         }
-        
-        /// Slow path: Descend through the ``Decodable`` machinery until we fail or find something we can convert.
+
+        /// Slow path: Descend through the `Decodable` machinery until we fail or find something we can convert.
         else {
             do {
                 return try T.init(from: ArrayAwareBoxUwrappingDecoder<T, D>(
@@ -172,7 +182,7 @@ struct PostgresDataTranslation {
                     debugDescription: "\(String(reflecting: error))",
                     underlyingError: error
                 )
-                
+
                 switch error.code {
                 case .typeMismatch: throw DecodingError.typeMismatch(T.self, context)
                 case .missingData: throw DecodingError.valueNotFound(T.self, context)
@@ -181,35 +191,38 @@ struct PostgresDataTranslation {
             }
         }
     }
-    
+
     static func encode<T: Encodable, E: PostgresJSONEncoder>(
         value: T,
         in context: PostgresEncodingContext<E>,
         to bindings: inout PostgresBindings,
-        file: String = #fileID, line: Int = #line
+        file: String = #fileID,
+        line: Int = #line
     ) throws {
-        /// Preferred modern fast-path: Direct conformance to ``PostgresEncodable``
+        /// Preferred modern fast-path: Direct conformance to `PostgresEncodable`
         if let fastPathValue = value as? any PostgresEncodable {
             try bindings.append(fastPathValue, context: context)
         }
-        /// Legacy "fast"-path: Direct conformance to ``PostgresDataConvertible``; use is deprecated.
+        /// Legacy "fast"-path: Direct conformance to `PostgresDataConvertible`; use is deprecated.
         else if let legacyPathValue = value as? any PostgresDataTranslation.PostgresLegacyDataConvertible {
             guard let legacyData = legacyPathValue.postgresData else {
                 throw EncodingError.invalidValue(value, .init(codingPath: [], debugDescription: "Couldn't get PSQL encoding from value '\(value)'"))
             }
             bindings.append(legacyData)
         }
-        /// Slow path: Descend through the ``Encodable`` machinery until we fail or find something we can convert.
+        /// Slow path: Descend through the `Encodable` machinery until we fail or find something we can convert.
         else {
             try bindings.append(self.encode(codingPath: [], userInfo: [:], value: value, in: context, file: file, line: line))
         }
     }
-    
+
     internal /*fileprivate*/ static func encode<T: Encodable, E: PostgresJSONEncoder>(
-        codingPath: [any CodingKey], userInfo: [CodingUserInfoKey: Any],
+        codingPath: [any CodingKey],
+        userInfo: [CodingUserInfoKey: Any],
         value: T,
         in context: PostgresEncodingContext<E>,
-        file: String, line: Int
+        file: String,
+        line: Int
     ) throws -> PostgresData {
         // TODO: Avoid repeating the conformance checks here, or at the very least only repeat them after a second level of nesting...
         if let fastPathValue = value as? any PostgresEncodable {
@@ -256,7 +269,7 @@ private final class ArrayAwareBoxUwrappingDecoder<T0: Decodable, D: PostgresJSON
         self.line = line
         self.userInfo = userInfo
     }
-    
+
     struct ArrayContainer: UnkeyedDecodingContainer {
         let data: [PostgresData]
         let decoder: ArrayAwareBoxUwrappingDecoder
@@ -264,23 +277,23 @@ private final class ArrayAwareBoxUwrappingDecoder<T0: Decodable, D: PostgresJSON
         var codingPath: [any CodingKey] {
             self.decoder.codingPath
         }
-        
+
         var count: Int? {
             self.data.count
         }
-        
+
         var isAtEnd: Bool {
             self.currentIndex >= self.data.count
         }
-        
+
         var currentIndex = 0
-        
+
         mutating func decodeNil() throws -> Bool {
             guard self.data[self.currentIndex].value == nil else { return false }
             self.currentIndex += 1
             return true
         }
-        
+
         mutating func decode<T: Decodable>(_: T.Type) throws -> T {
             // TODO: Don't fake a cell.
             let data = self.data[self.currentIndex], cell = PostgresCell(
@@ -297,17 +310,17 @@ private final class ArrayAwareBoxUwrappingDecoder<T0: Decodable, D: PostgresJSON
             self.currentIndex += 1
             return result
         }
-        
+
         private var rejectNestingError: DecodingError { .dataCorruptedError(in: self, debugDescription: "Data nesting is not supported") }
         mutating func nestedContainer<K: CodingKey>(keyedBy: K.Type) throws -> KeyedDecodingContainer<K> { throw self.rejectNestingError }
         mutating func nestedUnkeyedContainer() throws -> any UnkeyedDecodingContainer { throw self.rejectNestingError }
         mutating func superDecoder() throws -> any Decoder { throw self.rejectNestingError }
     }
-    
+
     func container<Key: CodingKey>(keyedBy: Key.Type) throws -> KeyedDecodingContainer<Key> {
         throw DecodingError.dataCorrupted(.init(codingPath: self.codingPath, debugDescription: "Dictionary containers must be JSON-encoded"))
     }
-    
+
     func unkeyedContainer() throws -> any UnkeyedDecodingContainer {
         // TODO: Find a better way to figure out arrays
         guard let array = PostgresData(type: self.cell.dataType, typeModifier: nil, formatCode: self.cell.format, value: self.cell.bytes).array else {
@@ -315,11 +328,11 @@ private final class ArrayAwareBoxUwrappingDecoder<T0: Decodable, D: PostgresJSON
         }
         return ArrayContainer(data: array, decoder: self)
     }
-    
+
     func singleValueContainer() throws -> any SingleValueDecodingContainer { self }
-    
+
     func decodeNil() -> Bool { self.cell.bytes == nil }
-    
+
     func decode<T: Decodable>(_: T.Type) throws -> T {
         try PostgresDataTranslation.decode(
             codingPath: self.codingPath + [PostgresKit.SomeCodingKey(stringValue: "(Unwrapping(\(T0.self)))")], userInfo: self.userInfo,
@@ -331,7 +344,7 @@ private final class ArrayAwareBoxUwrappingDecoder<T0: Decodable, D: PostgresJSON
 private final class ArrayAwareBoxWrappingPostgresEncoder<E: PostgresJSONEncoder>: Encoder, SingleValueEncodingContainer {
     enum Value {
         final class ArrayRef<T> { var contents: [T] = [] }
-        
+
         case invalid
         case indexed(ArrayRef<PostgresData>)
         case scalar(PostgresData)
@@ -350,7 +363,7 @@ private final class ArrayAwareBoxWrappingPostgresEncoder<E: PostgresJSONEncoder>
             case .indexed(_): break // existing array, adopt it for appending (support for superEncoder())
             }
         }
-        
+
         var indexedCount: Int {
             if case .indexed(let ref) = self { return ref.contents.count }
             else { preconditionFailure("Internal error in encoder (requested indexed count from non-indexed state)") }
@@ -361,7 +374,7 @@ private final class ArrayAwareBoxWrappingPostgresEncoder<E: PostgresJSONEncoder>
             else { preconditionFailure("Internal error in encoder (attempted store to indexed in non-indexed state)") }
         }
     }
-    
+
     var codingPath: [any CodingKey]
     let userInfo: [CodingUserInfoKey: Any]
     let context: PostgresEncodingContext<E>
@@ -376,22 +389,22 @@ private final class ArrayAwareBoxWrappingPostgresEncoder<E: PostgresJSONEncoder>
         self.line = line
         self.value = value
     }
-    
+
     func container<K: CodingKey>(keyedBy: K.Type) -> KeyedEncodingContainer<K> {
         precondition(!self.value.isValid, "Requested multiple containers from the same encoder.")
         return .init(FailureEncoder())
     }
-    
+
     func unkeyedContainer() -> any UnkeyedEncodingContainer {
         self.value.requestIndexed()
         return ArrayContainer(encoder: self)
     }
-    
+
     func singleValueContainer() -> any SingleValueEncodingContainer {
         precondition(!self.value.isValid, "Requested multiple containers from the same encoder.")
         return self
     }
-    
+
     struct ArrayContainer: UnkeyedEncodingContainer {
         let encoder: ArrayAwareBoxWrappingPostgresEncoder
         var codingPath: [any CodingKey] { self.encoder.codingPath }
@@ -420,7 +433,7 @@ private final class ArrayAwareBoxWrappingPostgresEncoder<E: PostgresJSONEncoder>
             codingPath: self.codingPath, userInfo: self.userInfo, value: value, in: self.context, file: self.file, line: self.line
         ))
     }
-    
+
     struct FallbackSentinel: Error {}
 
     /// This is a workaround for the inability of encoders to throw errors in various places. It's still better than fatalError()ing.
