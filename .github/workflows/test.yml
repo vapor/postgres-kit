@@ -59,7 +59,7 @@ jobs:
     runs-on: ubuntu-latest
     container: ${{ matrix.swift-image }}
     services:
-      *postgres_host_a :
+      psql-a:
         image: ${{ matrix.postgres-image }}
         env:
           POSTGRES_USER: *postgres_user_a
@@ -134,7 +134,7 @@ jobs:
       - name: Install Postgres, setup DB and auth, and wait for server start
         run: |
           brew upgrade || true
-          export PATH="$(brew --prefix)/opt/postgresql@13/bin:$PATH" PGDATA=/tmp/vapor-postgres-test
+          export PGDATA=/tmp/vapor-postgres-test
           brew install "postgresql@18" && brew link --force "postgresql@18"
           initdb --locale=C --auth-host "scram-sha-256" -U "${POSTGRES_USER}" --pwfile=<(echo "${POSTGRES_PASSWORD}")
           pg_ctl start --wait
