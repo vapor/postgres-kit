@@ -59,7 +59,7 @@ jobs:
     runs-on: ubuntu-latest
     container: ${{ matrix.swift-image }}
     services:
-      *postgres_host_a:
+      *postgres_host_a :
         image: ${{ matrix.postgres-image }}
         env:
           POSTGRES_USER: *postgres_user_a
