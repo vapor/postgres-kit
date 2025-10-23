@@ -12,8 +12,8 @@ env:
   POSTGRES_HOSTNAME_A: &postgres_host_a 'psql-a'
   POSTGRES_HOSTNAME_B: &postgres_host_b 'psql-b'
   POSTGRES_HOSTNAME: *postgres_host_a
-  POSTGRES_DB_A: &postgres_db_a 'test_database_a'
-  POSTGRES_DB_B: &postgres_db_b 'test_database_b'
+  POSTGRES_DB_A: &postgres_db_a 'test_database'
+  POSTGRES_DB_B: &postgres_db_b 'test_database'
   POSTGRES_DB: *postgres_db_a
   POSTGRES_USER_A: &postgres_user_a 'test_username'
   POSTGRES_USER_B: &postgres_user_b 'test_username'
@@ -59,7 +59,7 @@ jobs:
     runs-on: ubuntu-latest
     container: ${{ matrix.swift-image }}
     services:
-      psql-a:
+      *postgres_host_a:
         image: ${{ matrix.postgres-image }}
         env:
           POSTGRES_USER: *postgres_user_a
@@ -96,7 +96,7 @@ jobs:
         image: postgres:16
         env:
           POSTGRES_USER: *postgres_user_b
-          POSTGRES_DB: *postrges_db_b
+          POSTGRES_DB: *postgres_db_b
           POSTGRES_PASSWORD: *postgres_pass_b
           POSTGRES_HOST_AUTH_METHOD: scram-sha-256
           POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
