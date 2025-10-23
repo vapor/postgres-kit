@@ -3,53 +3,27 @@ import Logging
 import NIOCore
 import PostgresNIO
 import SQLKitBenchmark
-import XCTest
+import Testing
 @testable import PostgresKit
 
-final class PostgresKitTests: XCTestCase {
-    func testSQLKitBenchmark() async throws {
-        let conn = try await PostgresConnection.test(on: self.eventLoop).get()
-        do {
+extension AllSuites {
+
+@Suite
+struct PostgresKitTests {
+    @Test
+    func sqlKitBenchmark() async throws {
+        let conn = try await PostgresConnection.test(on: self.eventLoop)
+
+        await #expect(throws: Never.self) {
             let benchmark = SQLBenchmarker(on: conn.sql())
 
             try await benchmark.runAllTests()
-        } catch {
-            try? await conn.close()
-            XCTFail("Caught error: \(String(reflecting: error))")
-            throw error
         }
         try await conn.close()
     }
 
-    // Disable for now, test is of questionable utility
-    /*
-    func testPerformance() throws {
-        let db = PostgresConnectionSource(sqlConfiguration: .test)
-        let pool = EventLoopGroupConnectionPool(
-            source: db,
-            maxConnectionsPerEventLoop: 2,
-            on: MultiThreadedEventLoopGroup.singleton
-        )
-        defer { pool.shutdown() }
-        // Postgres seems to take much longer on initial connections when using SCRAM-SHA-256 auth,
-        // which causes XCTest to bail due to the first measurement having a very high deviation.
-        // Spin the pool a bit before running the measurement to warm it up.
-        for _ in 1...25 {
-            _ = try pool.withConnection { conn in
-                conn.query("SELECT 1")
-            }.wait()
-        }
-        self.measure {
-            for _ in 1...100 {
-                _ = try! pool.withConnection { conn in
-                    conn.query("SELECT 1")
-                }.wait()
-            }
-        }
-    }
-    */
-    
-    func testLeak() throws {
+    @Test
+    func leak() async throws {
         struct Foo: Codable {
             var id: String
             var description: String?
@@ -61,29 +35,22 @@ final class PostgresKitTests: XCTestCase {
             var modified_at: Date
         }
         
-        let conn = try PostgresConnection.test(on: self.eventLoop).wait()
-        defer { try! conn.close().wait() }
-        
+        let conn = try await PostgresConnection.test(on: self.eventLoop)
         let db = conn.sql()
-        
-        do {
-            try db.raw("DROP TABLE IF EXISTS \(ident: "foos")").run().wait()
-            try db.raw("""
-            CREATE TABLE \(ident: "foos") (
-                \(ident: "id") TEXT PRIMARY KEY,
-                \(ident: "description") TEXT,
-                \(ident: "latitude") DOUBLE PRECISION,
-                \(ident: "longitude") DOUBLE PRECISION,
-                \(ident: "created_by") TEXT,
-                \(ident: "created_at") TIMESTAMPTZ,
-                \(ident: "modified_by") TEXT,
-                \(ident: "modified_at") TIMESTAMPTZ
-            )
-            """).run().wait()
-            defer {
-                try? db.raw("DROP TABLE IF EXISTS \(ident: "foos")").run().wait()
-            }
-            
+
+        await #expect(throws: Never.self) {
+            try await db.drop(table: "foos").ifExists().run()
+            try await db.create(table: "foos")
+                .column("id", type: .text, .primaryKey(autoIncrement: false))
+                .column("description", type: .text)
+                .column("latitude", type: .custom(SQLRaw("DOUBLE PRECISION")))
+                .column("longitude", type: .custom(SQLRaw("DOUBLE PRECISION")))
+                .column("created_by", type: .text)
+                .column("created_at", type: .custom(SQLRaw("TIMESTAMPTZ")))
+                .column("modified_by", type: .text)
+                .column("modified_at", type: .custom(SQLRaw("TIMESTAMPTZ")))
+                .run()
+
             for i in 0..<5_000 {
                 let zipcode = Foo(
                     id: UUID().uuidString,
@@ -95,79 +62,91 @@ final class PostgresKitTests: XCTestCase {
                     modified_by: "test",
                     modified_at: Date()
                 )
-                try db.insert(into: "foos")
+                try await db.insert(into: "foos")
                     .model(zipcode)
-                    .run().wait()
+                    .run()
             }
-        } catch {
-            XCTFail("Caught error: \(String(reflecting: error))")
         }
+        try? await db.raw("DROP TABLE IF EXISTS \(ident: "foos")").run()
+        try await conn.close()
     }
 
-    func testArrayEncoding() throws {
-        let conn = try PostgresConnection.test(on: self.eventLoop).wait()
-        defer { try! conn.close().wait() }
-        
+    @Test
+    func arrayEncoding() async throws {
+        let conn = try await PostgresConnection.test(on: self.eventLoop)
+
         struct Foo: Codable {
             var bar: Int
         }
-        let foos: [Foo] = [.init(bar: 1), .init(bar: 2)]
-        try conn.sql().raw("SELECT \(bind: foos)::JSONB[] as \(ident: "foos")")
-            .run().wait()
-    }
 
-    func testDecodeModelWithNil() throws {
-        let conn = try PostgresConnection.test(on: self.eventLoop).wait()
-        defer { try! conn.close().wait() }
-
-        let rows = try conn.sql().raw("SELECT \(literal: "foo")::text as \(ident: "foo"), \(SQLLiteral.null) as \(ident: "bar"), \(literal: "baz")::text as \(ident: "baz")").all().wait()
-        let row = rows[0]
-        
-        struct Test: Codable {
-            var foo: String
-            var bar: String?
-            var baz: String?
+        await #expect(throws: Never.self) {
+            let foos: [Foo] = [.init(bar: 1), .init(bar: 2)]
+            try await conn.sql().raw("SELECT \(bind: foos)::JSONB[] as \(ident: "foos")").run()
         }
-
-        let test = try row.decode(model: Test.self)
-        XCTAssertEqual(test.foo, "foo")
-        XCTAssertEqual(test.bar, nil)
-        XCTAssertEqual(test.baz, "baz")
+        try await conn.close()
     }
 
-    func testEventLoopGroupSQL() throws {
+    @Test
+    func decodeModelWithNil() async throws {
+        let conn = try await PostgresConnection.test(on: self.eventLoop)
+
+        await #expect(throws: Never.self) {
+            let rows = try await conn.sql().raw("SELECT \(literal: "foo")::text as \(ident: "foo"), \(SQLLiteral.null) as \(ident: "bar"), \(literal: "baz")::text as \(ident: "baz")").all()
+            let row = rows[0]
+
+            struct Test: Codable {
+                var foo: String
+                var bar: String?
+                var baz: String?
+            }
+
+            let test = try row.decode(model: Test.self)
+            #expect(test.foo == "foo")
+            #expect(test.bar == nil)
+            #expect(test.baz == "baz")
+        }
+        try await conn.close()
+    }
+
+    @Test
+    func eventLoopGroupSQL() async throws {
         var configuration = SQLPostgresConfiguration.test
         configuration.searchPath = ["foo", "bar", "baz"]
         let source = PostgresConnectionSource(sqlConfiguration: configuration)
         let pool = EventLoopGroupConnectionPool(source: source, on: MultiThreadedEventLoopGroup.singleton)
-        defer { pool.shutdown() }
         let db = pool.database(logger: .init(label: "test")).sql()
 
-        let rows = try db.raw("SELECT version()").all().wait()
-        XCTAssertEqual(rows.count, 1)
+        await #expect(throws: Never.self) {
+            try await #expect(db.raw("SELECT version()").all().count == 1)
+        }
+        try await pool.shutdownAsync()
     }
 
-    func testIntegerArrayEncoding() throws {
-        let connection = try PostgresConnection.test(on: self.eventLoop).wait()
-        defer { try! connection.close().wait() }
-        let sql = connection.sql()
-        _ = try sql.raw("DROP TABLE IF EXISTS \(ident: "foo")").run().wait()
-        _ = try sql.raw("CREATE TABLE \(ident: "foo") (\(ident: "bar") bigint[] not null)").run().wait()
-        defer {
-            _ = try! sql.raw("DROP TABLE IF EXISTS \(ident: "foo")").run().wait()
+    @Test
+    func integerArrayEncoding() async throws {
+        let connection = try await PostgresConnection.test(on: self.eventLoop)
+
+        await #expect(throws: Never.self) {
+            let sql = connection.sql()
+            _ = try await sql.raw("DROP TABLE IF EXISTS \(ident: "foo")").run()
+            try await sql.withSession { db in
+                _ = try await db.create(table: "foo").column("bar", type: .custom(SQLRaw("bigint[]")), .notNull).run()
+                _ = try await db.insert(into: "foo").columns("bar").values(SQLBind([Bar]())).run()
+                let rows = try await connection.query("SELECT bar FROM foo", logger: connection.logger).collect()
+                #expect(rows.count == 1)
+                #expect(rows.first?.count == 1)
+                #expect(rows.first?.first?.dataType == Bar.psqlArrayType)
+                #expect(try rows.first?.first?.decode([Bar].self) == [Bar]())
+            }
         }
-        _ = try sql.raw("INSERT INTO \(ident: "foo") (\(ident: "bar")) VALUES (\(bind: [Bar]()))").run().wait()
-        let rows = try connection.query("SELECT bar FROM foo", logger: connection.logger).wait()
-        XCTAssertEqual(rows.count, 1)
-        XCTAssertEqual(rows.first?.count, 1)
-        XCTAssertEqual(rows.first?.first?.dataType, Bar.psqlArrayType)
-        XCTAssertEqual(try rows.first?.first?.decode([Bar].self), [Bar]())
+        try await connection.close()
     }
     
     /// Tests dealing with encoding of values whose `encode(to:)` implementation calls one of the `superEncoder()`
     /// methods (most notably the implementation of `Codable` for Fluent's `Fields`, which we can't directly test
     /// at this layer).
-    func testValuesThatUseSuperEncoder() throws {
+    @Test
+    func valuesThatUseSuperEncoder() throws {
         struct UnusualType: Codable {
             var prop1: String, prop2: [Bool], prop3: [[Bool]]
             
@@ -207,51 +186,55 @@ final class PostgresKitTests: XCTestCase {
         let encoded1 = try PostgresDataTranslation.encode(codingPath: [], userInfo: [:], value: instance, in: .default, file: #fileID, line: #line)
         let encoded2 = try PostgresDataTranslation.encode(codingPath: [], userInfo: [:], value: [instance, instance], in: .default, file: #fileID, line: #line)
         
-        XCTAssertEqual(encoded1.type, .jsonb)
-        XCTAssertEqual(encoded2.type, .jsonbArray)
-        
+        #expect(encoded1.type == .jsonb)
+        #expect(encoded2.type == .jsonbArray)
+
         let decoded1 = try PostgresDataTranslation.decode(UnusualType.self, from: .init(bytes: encoded1.value, dataType: encoded1.type, format: encoded1.formatCode, columnName: "", columnIndex: -1), in: .default)
         let decoded2 = try PostgresDataTranslation.decode([UnusualType].self, from: .init(bytes: encoded2.value, dataType: encoded2.type, format: encoded2.formatCode, columnName: "", columnIndex: -1), in: .default)
         
-        XCTAssertEqual(decoded1.prop3, instance.prop3)
-        XCTAssertEqual(decoded2.count, 2)
+        #expect(decoded1.prop3 == instance.prop3)
+        #expect(decoded2.count == 2)
     }
-    
-    func testFluentWorkaroundsDecoding() throws {
+
+    @Test
+    func fluentWorkaroundsDecoding() throws {
         // SQLKit benchmarks already test enum handling
         
         // Text encoding for Decimal
         let decimalBuffer = ByteBuffer(string: Decimal(12345.6789).description)
         var decimalValue: Decimal?
-        XCTAssertNoThrow(decimalValue = try PostgresDataTranslation.decode(Decimal.self, from: .init(bytes: decimalBuffer, dataType: .numeric, format: .text, columnName: "", columnIndex: -1), in: .default))
-        XCTAssertEqual(decimalValue, Decimal(12345.6789))
-        
+        #expect(throws: Never.self) { decimalValue = try PostgresDataTranslation.decode(Decimal.self, from: .init(bytes: decimalBuffer, dataType: .numeric, format: .text, columnName: "", columnIndex: -1), in: .default) }
+        #expect(decimalValue == Decimal(12345.6789))
+
         // Decoding Double from NUMERIC
         let numericBuffer = PostgresData(numeric: .init(decimal: 12345.6789)).value
         var numericValue: Double?
-        XCTAssertNoThrow(numericValue = try PostgresDataTranslation.decode(Double.self, from: .init(bytes: numericBuffer, dataType: .numeric, format: .binary, columnName: "", columnIndex: -1), in: .default))
-        XCTAssertEqual(numericValue, Double(Decimal(12345.6789).description))
+        #expect(throws: Never.self) { numericValue = try PostgresDataTranslation.decode(Double.self, from: .init(bytes: numericBuffer, dataType: .numeric, format: .binary, columnName: "", columnIndex: -1), in: .default) }
+        #expect(numericValue == Double(Decimal(12345.6789).description))
     }
-    
-    func testURLWorkaroundDecoding() throws {
+
+    @Test
+    func urlWorkaroundDecoding() throws {
         let url = URL(string: "https://user:pass@www.example.com:8080/path/to/endpoint?query=value#fragment")!
         
         let encodedNormal = try PostgresDataTranslation.encode(codingPath: [], userInfo: [:], value: url, in: .default, file: #fileID, line: #line)
-        XCTAssertEqual(encodedNormal.value?.getString(at: 0, length: encodedNormal.value?.readableBytes ?? 0), url.absoluteString)
-        
+        #expect(encodedNormal.value?.getString(at: 0, length: encodedNormal.value?.readableBytes ?? 0) == url.absoluteString)
+
         let encodedBroken = try PostgresDataTranslation.encode(codingPath: [], userInfo: [:], value: "\"\(url.absoluteString)\"", in: .default, file: #fileID, line: #line)
         
-        XCTAssertEqual(try PostgresDataTranslation.decode(URL.self, from: .init(with: encodedNormal), in: .default), url)
-        XCTAssertEqual(try PostgresDataTranslation.decode(URL.self, from: .init(with: encodedBroken), in: .default), url)
+        #expect(try PostgresDataTranslation.decode(URL.self, from: .init(with: encodedNormal), in: .default) == url)
+        #expect(try PostgresDataTranslation.decode(URL.self, from: .init(with: encodedBroken), in: .default) == url)
     }
 
     var eventLoop: any EventLoop {
         MultiThreadedEventLoopGroup.singleton.any()
     }
 
-    override class func setUp() {
-        XCTAssertTrue(isLoggingConfigured)
+    init() {
+        #expect(isLoggingConfigured)
     }
+}
+
 }
 
 extension PostgresCell {

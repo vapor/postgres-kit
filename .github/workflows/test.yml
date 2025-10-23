@@ -5,22 +5,22 @@ concurrency:
 on:
   pull_request: { types: [opened, reopened, synchronize, ready_for_review] }
   push: { branches: [ main ] }
-  
+permissions:
+  contents: read
 env:
   LOG_LEVEL: info
-  SWIFT_DETERMINISTIC_HASHING: 1
-  POSTGRES_HOSTNAME: 'psql-a'
-  POSTGRES_HOSTNAME_A: 'psql-a'
-  POSTGRES_HOSTNAME_B: 'psql-b'
-  POSTGRES_DB: 'test_database'
-  POSTGRES_DB_A: 'test_database'
-  POSTGRES_DB_B: 'test_database'
-  POSTGRES_USER: 'test_username'
-  POSTGRES_USER_A: 'test_username'
-  POSTGRES_USER_B: 'test_username'
-  POSTGRES_PASSWORD: 'test_password'
-  POSTGRES_PASSWORD_A: 'test_password'
-  POSTGRES_PASSWORD_B: 'test_password'
+  POSTGRES_HOSTNAME_A: &postgres_host_a 'psql-a'
+  POSTGRES_HOSTNAME_B: &postgres_host_b 'psql-b'
+  POSTGRES_HOSTNAME: *postgres_host_a
+  POSTGRES_DB_A: &postgres_db_a 'test_database_a'
+  POSTGRES_DB_B: &postgres_db_b 'test_database_b'
+  POSTGRES_DB: *postgres_db_a
+  POSTGRES_USER_A: &postgres_user_a 'test_username'
+  POSTGRES_USER_B: &postgres_user_b 'test_username'
+  POSTGRES_USER: *postgres_user_a
+  POSTGRES_PASSWORD_A: &postgres_pass_a 'test_password'
+  POSTGRES_PASSWORD_B: &postgres_pass_b 'test_password'
+  POSTGRES_PASSWORD: *postgres_pass_a
 
 jobs:
   api-breakage:
@@ -42,29 +42,29 @@ jobs:
       fail-fast: false
       matrix:
         postgres-image:
-          - postgres:17
-          - postgres:15
-          - postgres:13
+          - postgres:18
+          - postgres:16
+          - postgres:14
         swift-image:
-          - swift:5.10-jammy
           - swift:6.0-noble
           - swift:6.1-noble
+          - swift:6.2-noble
         include:
-          - postgres-image: postgres:17
+          - postgres-image: postgres:18
             postgres-auth: scram-sha-256
-          - postgres-image: postgres:15
+          - postgres-image: postgres:16
             postgres-auth: md5
-          - postgres-image: postgres:13
+          - postgres-image: postgres:14
             postgres-auth: trust
     runs-on: ubuntu-latest
     container: ${{ matrix.swift-image }}
     services:
-      psql-a:
+      *postgres_host_a:
         image: ${{ matrix.postgres-image }}
         env:
-          POSTGRES_USER: test_username
-          POSTGRES_DB: test_database
-          POSTGRES_PASSWORD: test_password
+          POSTGRES_USER: *postgres_user_a
+          POSTGRES_DB: *postgres_db_a
+          POSTGRES_PASSWORD: *postgres_pass_a
           POSTGRES_HOST_AUTH_METHOD: ${{ matrix.postgres-auth }}
           POSTGRES_INITDB_ARGS: --auth-host=${{ matrix.postgres-auth }}
     steps:
@@ -73,7 +73,7 @@ jobs:
       - name: Check out package
         uses: actions/checkout@v5
       - name: Run local tests
-        run: swift test --enable-code-coverage
+        run: swift test --enable-code-coverage --explicit-target-dependency-import-check error -Xswiftc -require-explicit-sendable
       - name: Upload coverage data
         uses: vapor/swift-codecov-action@v0.3
         with:
@@ -82,22 +82,22 @@ jobs:
   linux-integration:
     if: ${{ !(github.event.pull_request.draft || false) }}
     runs-on: ubuntu-latest
-    container: swift:6.1-noble
+    container: swift:6.2-noble
     services:
-      psql-a:
-        image: postgres:17
+      *postgres_host_a:
+        image: postgres:18
         env:
-          POSTGRES_USER: test_username
-          POSTGRES_DB: test_database
-          POSTGRES_PASSWORD: test_password
+          POSTGRES_USER: *postgres_user_a
+          POSTGRES_DB: *postgres_db_a
+          POSTGRES_PASSWORD: *postgres_pass_a
           POSTGRES_HOST_AUTH_METHOD: scram-sha-256
           POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
-      psql-b:
-        image: postgres:15
+      *postgres_host_b:
+        image: postgres:16
         env:
-          POSTGRES_USER: test_username
-          POSTGRES_DB: test_database
-          POSTGRES_PASSWORD: test_password
+          POSTGRES_USER: *postgres_user_b
+          POSTGRES_DB: *postrges_db_b
+          POSTGRES_PASSWORD: *postgres_pass_b
           POSTGRES_HOST_AUTH_METHOD: scram-sha-256
           POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
     steps:
@@ -118,9 +118,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - macos-version: macos-14
-            xcode-version: latest-stable
           - macos-version: macos-15
+            xcode-version: latest-stable
+          - macos-version: macos-26
             xcode-version: latest-stable
     runs-on: ${{ matrix.macos-version }}
     env:
@@ -135,14 +135,14 @@ jobs:
         run: |
           brew upgrade || true
           export PATH="$(brew --prefix)/opt/postgresql@13/bin:$PATH" PGDATA=/tmp/vapor-postgres-test
-          brew install "postgresql@17" && brew link --force "postgresql@17"
+          brew install "postgresql@18" && brew link --force "postgresql@18"
           initdb --locale=C --auth-host "scram-sha-256" -U "${POSTGRES_USER}" --pwfile=<(echo "${POSTGRES_PASSWORD}")
           pg_ctl start --wait
         timeout-minutes: 15
       - name: Checkout code
         uses: actions/checkout@v5
       - name: Run local tests
-        run: swift test --enable-code-coverage
+        run: swift test --enable-code-coverage --explicit-target-dependency-import-check error -Xswiftc -require-explicit-sendable
       - name: Upload coverage data
         uses: vapor/swift-codecov-action@v0.3
         with:
@@ -150,12 +150,12 @@ jobs:
 
   musl:
     runs-on: ubuntu-latest
-    container: swift:6.1-noble
+    container: swift:6.2-noble
     timeout-minutes: 30
     steps:
       - name: Check out code
         uses: actions/checkout@v5
       - name: Install SDK
-        run: swift sdk install https://download.swift.org/swift-6.1.2-release/static-sdk/swift-6.1.2-RELEASE/swift-6.1.2-RELEASE_static-linux-0.0.1.artifactbundle.tar.gz --checksum df0b40b9b582598e7e3d70c82ab503fd6fbfdff71fd17e7f1ab37115a0665b3b
+        run: swift sdk install https://download.swift.org/swift-6.2-release/static-sdk/swift-6.2-RELEASE/swift-6.2-RELEASE_static-linux-0.0.1.artifactbundle.tar.gz --checksum d2225840e592389ca517bbf71652f7003dbf45ac35d1e57d98b9250368769378
       - name: Build
         run: swift build --swift-sdk x86_64-swift-linux-musl
