@@ -55,11 +55,7 @@ extension URL {
     }
 }
 
-#if compiler(>=6.0)
 extension URL: @retroactive PostgresNonThrowingEncodable, @retroactive PostgresDecodable {}
-#else
-extension Foundation.URL: PostgresNIO.PostgresNonThrowingEncodable, PostgresNIO.PostgresDecodable {}
-#endif
 
 struct PostgresDataTranslation {
     /// This typealias serves to limit the deprecation noise caused by `PostgresDataConvertible` to a single
