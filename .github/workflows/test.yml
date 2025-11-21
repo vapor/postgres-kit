@@ -29,7 +29,7 @@ jobs:
     container: swift:noble
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with: { 'fetch-depth': 0 }
       - name: API breaking changes
         run: |
@@ -71,7 +71,7 @@ jobs:
       - name: Install curl
         run: apt-get update -y -q && apt-get install -y curl
       - name: Check out package
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Run local tests
         run: swift test --enable-code-coverage --explicit-target-dependency-import-check error -Xswiftc -require-explicit-sendable
       - name: Upload coverage data
@@ -102,10 +102,10 @@ jobs:
           POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
     steps:
       - name: Check out package
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with: { path: 'postgres-kit' }
       - name: Check out fluent-postgres-driver dependent
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with: { repository: 'vapor/fluent-postgres-driver', path: 'fluent-postgres-driver' }
       - name: Use local package
         run: swift package --package-path fluent-postgres-driver edit postgres-kit --path postgres-kit
@@ -140,7 +140,7 @@ jobs:
           pg_ctl start --wait
         timeout-minutes: 15
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Run local tests
         run: swift test --enable-code-coverage --explicit-target-dependency-import-check error -Xswiftc -require-explicit-sendable
       - name: Upload coverage data
@@ -154,7 +154,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Check out code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Install SDK
         run: swift sdk install https://download.swift.org/swift-6.2-release/static-sdk/swift-6.2-RELEASE/swift-6.2-RELEASE_static-linux-0.0.1.artifactbundle.tar.gz --checksum d2225840e592389ca517bbf71652f7003dbf45ac35d1e57d98b9250368769378
       - name: Build
