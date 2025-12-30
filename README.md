@@ -61,7 +61,7 @@ guard let configuration = SQLPostgresConfiguration(url: "postgres://...") else {
 To connect via unix-domain sockets, use ``SQLPostgresConfiguration/init(unixDomainSocketPath:username:password:database:)`` instead of ``SQLPostgresConfiguration/init(hostname:port:username:password:database:tls:)``.
 
 ```swift
-let configuration = PostgresConfiguration(
+let configuration = SQLPostgresConfiguration(
     unixDomainSocketPath: "/path/to/socket",
     username: "vapor_username",
     password: "vapor_password",
@@ -69,7 +69,64 @@ let configuration = PostgresConfiguration(
 )
 ```
 
-### Connection Pool
+### Connection Pool (Modern PostgresNIO)
+
+You don't need a ``SQLPostgresConfiguration`` to create a `PostgresClient`, an instance of PostgresNIO's modern connection pool. Instead, use `PostgresClient`'s native configuration type:
+
+```swift
+let configuration = PostgresClient.Configuration(
+    host: "localhost",
+    username: "vapor_username",
+    password: "vapor_password",
+    database: "vapor_database",
+    tls: .prefer(.makeClientConfiguration())
+)
+let psqlClient = PostgresClient(configuration: configuration)
+
+// Start a Task to run the client:
+let clientTask = Task { await client.run() }
+// Or, if you're using ServiceLifecycle, add the client to a ServiceGroup:
+await serviceGroup.addServiceUnlessShutdown(client)
+```
+
+You can then lease a `PostgresConnection` from the client:
+
+```swift
+try await client.withConnection { conn in
+    print(conn) // PostgresConnection managed by PostgresClient's connection pool
+}
+```
+
+> [!NOTE]
+> `PostgresClient.Configuration` does not support URL-based configuration. If you want to handle URLs, you can create an instance of `SQLPostgresConfiguration` and translate it into a `PostgresClient.Configuration`:
+> 
+> ```swift
+> extension PostgresClient.Configuration {
+>   init(from configuration: PostgresConnection.Configuration) {
+>     let tls: PostgresClient.Configuration.TLS = switch (configuration.tls.isEnforced, configuration.tls.isAllowed) {
+>       case (true, _): .require(configuration.tls.sslContext!.configuration)
+>       case (_, true): .prefer(configuration.tls.sslContext!.configuration)
+>       default: .disable
+>     }
+> 
+>     if let host = configuration.host, let port = configuration.port {
+>       self.init(host: host, port: port, username: configuration.username, password: configuration.password, database: configuration.database, tls: tls)
+>     } else if let socket = configuration.unixSocketPath {
+>       self.init(unixSocketPath: socket, username: configuration.username, password: configuration.password, database: configuration.database)
+>     } else {
+>       fatalError("Preconfigured channels not supported")
+>     }
+>   }
+> }
+> 
+> guard let sqlConfiguration = SQLPostgresConfiguration(url: "...") else { ... }
+> let clientConfiguration = PostgresClient.Configuration(configuration: sqlConfiguration.coreConfiguration)
+> ```
+
+### Connection Pool (Legacy AsyncKit)
+
+> [!WARNING]
+> AsyncKit is deprecated; using it is strongly discouraged. You should not use this setup unless you are also working with FluentKit, which at the time of this writing is not compatible with `PostgresClient`.
 
 Once you have a ``SQLPostgresConfiguration``, you can use it to create a connection source and pool.
 
