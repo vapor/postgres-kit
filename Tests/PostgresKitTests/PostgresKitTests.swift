@@ -226,6 +226,32 @@ struct PostgresKitTests {
         #expect(try PostgresDataTranslation.decode(URL.self, from: .init(with: encodedBroken), in: .default) == url)
     }
 
+    /// This test is painful to write before Swift 6.1 due to #expect(throws:) not returning the thrown error.
+    ///
+    /// This test cares that:
+    ///
+    /// 1. The Swift type (i.e. `Foo`) is metnioned in the error's debug description.
+    /// 2. The underlying error is included.
+    #if swift(>=6.1)
+    @Test
+    func errorHandlingWhenDecodingNestedDictionary() throws {
+        struct Foo: Codable {
+            struct Bar: Codable { let id: Int }
+            let bar: Bar
+        }
+
+        let error = try #require(throws: DecodingError.self) {
+            _ = try PostgresDataTranslation.decode(Foo.self, from: .init(bytes: .init(integer: 0), dataType: .int8, format: .binary, columnName: "", columnIndex: 0), in: .default)
+        }
+
+        let context = try #require({ if case .dataCorrupted(let context) = error { context } else { nil } }())
+        #expect(context.debugDescription == "Unable to interpret value of PSQL type BIGINT as Swift type Foo: [0000000000000000](8 bytes)")
+
+        let underContext = try #require({ if case .dataCorrupted(let context2) = context.underlyingError as? DecodingError { context2 } else { nil } }())
+        #expect(underContext.debugDescription == "Dictionary containers must be JSON-encoded")
+    }
+    #endif
+
     var eventLoop: any EventLoop {
         MultiThreadedEventLoopGroup.singleton.any()
     }
