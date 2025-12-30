@@ -53,7 +53,7 @@ guard let configuration = SQLPostgresConfiguration(url: "postgres://...") else {
 To connect via unix-domain sockets, use ``SQLPostgresConfiguration/init(unixDomainSocketPath:username:password:database:)`` instead of ``SQLPostgresConfiguration/init(hostname:port:username:password:database:tls:)``.
 
 ```swift
-let configuration = PostgresConfiguration(
+let configuration = SQLPostgresConfiguration(
     unixDomainSocketPath: "/path/to/socket",
     username: "vapor_username",
     password: "vapor_password",
@@ -61,7 +61,62 @@ let configuration = PostgresConfiguration(
 )
 ```
 
-### Connection Pool
+### Connection Pool (Modern PostgresNIO)
+
+You don't need a ``SQLPostgresConfiguration`` to create a `PostgresClient`, an instance of PostgresNIO's modern connection pool. Instead, use `PostgresClient`'s native configuration type:
+
+```swift
+let configuration = PostgresClient.Configuration(
+    host: "localhost",
+    username: "vapor_username",
+    password: "vapor_password",
+    database: "vapor_database",
+    tls: .prefer(.makeClientConfiguration())
+)
+let psqlClient = PostgresClient(configuration: configuration)
+
+// Start a Task to run the client; be sure you cancel this task before exiting:
+let clientTask = Task { await psqlClient.run() }
+// Or, if you're using ServiceLifecycle, add the client to a ServiceGroup:
+await serviceGroup.addServiceUnlessShutdown(psqlClient)
+```
+
+You can then lease a `PostgresConnection` from the client:
+
+```swift
+try await client.withConnection { conn in
+    print(conn) // PostgresConnection managed by PostgresClient's connection pool
+}
+```
+
+> Note: `PostgresClient.Configuration` does not support URL-based configuration. If you want to handle URLs, you can create an instance of `SQLPostgresConfiguration` and translate it into a `PostgresClient.Configuration`:
+> 
+> ```swift
+> extension PostgresClient.Configuration {
+>   init(from configuration: PostgresConnection.Configuration) {
+>     let tls: PostgresClient.Configuration.TLS = switch (configuration.tls.isEnforced, configuration.tls.isAllowed) {
+>       case (true, _): .require(configuration.tls.sslContext!.configuration)
+>       case (_, true): .prefer(configuration.tls.sslContext!.configuration)
+>       default: .disable
+>     }
+> 
+>     if let host = configuration.host, let port = configuration.port {
+>       self.init(host: host, port: port, username: configuration.username, password: configuration.password, database: configuration.database, tls: tls)
+>     } else if let socket = configuration.unixSocketPath {
+>       self.init(unixSocketPath: socket, username: configuration.username, password: configuration.password, database: configuration.database)
+>     } else {
+>       fatalError("Preconfigured channels not supported")
+>     }
+>   }
+> }
+> 
+> guard let sqlConfiguration = SQLPostgresConfiguration(url: "...") else { ... }
+> let clientConfiguration = PostgresClient.Configuration(configuration: sqlConfiguration.coreConfiguration)
+> ```
+
+### Connection Pool (Legacy AsyncKit)
+
+> Warning: AsyncKit is deprecated; using it is strongly discouraged. You should not use this setup unless you are also working with FluentKit, which at the time of this writing is not compatible with `PostgresClient`.
 
 Once you have a ``SQLPostgresConfiguration``, you can use it to create a connection source and pool.
 
@@ -83,7 +138,7 @@ Next, use the connection source to create an `EventLoopGroupConnectionPool`. You
 `EventLoopGroupConnectionPool` is a collection of pools for each event loop. When using `EventLoopGroupConnectionPool` directly, random event loops will be chosen as needed.
 
 ```swift
-pools.withConnection { conn 
+pools.withConnection { conn in
     print(conn) // PostgresConnection on randomly chosen event loop
 }
 ```
@@ -94,7 +149,7 @@ To get a pool for a specific event loop, use `pool(for:)`. This returns an `Even
 let eventLoop: EventLoop = ...
 let pool = pools.pool(for: eventLoop)
 
-pool.withConnection { conn
+pool.withConnection { conn in
     print(conn) // PostgresConnection on eventLoop
 }
 ```
@@ -105,7 +160,7 @@ Both `EventLoopGroupConnectionPool` and `EventLoopConnectionPool` can be used to
 
 ```swift
 let postgres = pool.database(logger: ...) // PostgresDatabase
-let rows = try postgres.simpleQuery("SELECT version();").wait()
+let rows = try await postgres.simpleQuery("SELECT version()")
 ```
 
 Visit [PostgresNIO's docs] for more information on using `PostgresDatabase`.
@@ -116,7 +171,7 @@ A `PostgresDatabase` can be used to create an instance of `SQLDatabase`.
 
 ```swift
 let sql = postgres.sql() // SQLDatabase
-let planets = try sql.select().column("*").from("planets").all().wait()
+let planets = try await sql.select().column("*").from("planets").all()
 ```
 
 Visit [SQLKit's docs] for more information on using `SQLDatabase`. 

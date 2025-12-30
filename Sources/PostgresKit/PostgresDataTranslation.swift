@@ -156,16 +156,17 @@ struct PostgresDataTranslation {
                     context: context,
                     file: file, line: line
                 ))
-            } catch DecodingError.dataCorrupted {
+            } catch DecodingError.dataCorrupted(let errContext) {
                 /// Glacial path: Attempt to decode as plain JSON.
                 guard cell.dataType == .json || cell.dataType == .jsonb else {
                     throw DecodingError.dataCorrupted(.init(
                         codingPath: codingPath,
-                        debugDescription: "Unable to interpret value of PSQL type \(cell.dataType): \(cell.bytes.map { "\($0)" } ?? "null")"
+                        debugDescription: "Unable to interpret value of PSQL type \(cell.dataType) as Swift type \(T.self): \(cell.bytes.map { "\($0)" } ?? "null")",
+                        underlyingError: DecodingError.dataCorrupted(errContext)
                     ))
                 }
                 if cell.dataType == .jsonb, cell.format == .binary, let buffer = cell.bytes {
-                    // TODO: Un-hardcode this magic knowledge of the JSONB encoding
+                    // Account for the leading JSONB version byte
                     return try context.jsonDecoder.decode(T.self, from: buffer.getSlice(at: buffer.readerIndex + 1, length: buffer.readableBytes - 1) ?? .init())
                 } else {
                     return try context.jsonDecoder.decode(T.self, from: cell.bytes ?? .init())
@@ -202,7 +203,7 @@ struct PostgresDataTranslation {
         /// Legacy "fast"-path: Direct conformance to `PostgresDataConvertible`; use is deprecated.
         else if let legacyPathValue = value as? any PostgresDataTranslation.PostgresLegacyDataConvertible {
             guard let legacyData = legacyPathValue.postgresData else {
-                throw EncodingError.invalidValue(value, .init(codingPath: [], debugDescription: "Couldn't get PSQL encoding from value '\(value)'"))
+                throw EncodingError.invalidValue(value, .init(codingPath: [], debugDescription: "Couldn't get PSQL encoding from value '\(value)' of Swift type \(T.self)/\(type(of: value))"))
             }
             bindings.append(legacyData)
         }
@@ -227,7 +228,7 @@ struct PostgresDataTranslation {
             return PostgresData(type: type(of: fastPathValue).psqlType, typeModifier: nil, formatCode: type(of: fastPathValue).psqlFormat, value: buffer)
         } else if let legacyPathValue = value as? any PostgresDataTranslation.PostgresLegacyDataConvertible {
             guard let legacyData = legacyPathValue.postgresData else {
-                throw EncodingError.invalidValue(value, .init(codingPath: [], debugDescription: "Couldn't get PSQL encoding from value '\(value)'"))
+                throw EncodingError.invalidValue(value, .init(codingPath: [], debugDescription: "Couldn't get PSQL encoding from value '\(value)' of Swift type \(T.self)/\(type(of: value))"))
             }
             return legacyData
         }
@@ -240,7 +241,7 @@ struct PostgresDataTranslation {
             case .scalar(let scalar): return scalar
             case .indexed(let ref):
                 let elementType = ref.contents.first?.type ?? .jsonb
-                assert(ref.contents.allSatisfy { $0.type == elementType }, "Type \(type(of: value)) was encoded as a heterogenous array; this is unsupported.")
+                assert(ref.contents.allSatisfy { $0.type == elementType }, "Type \(T.self)/\(type(of: value)) was encoded as a heterogenous array; this is unsupported.")
                 return PostgresData(array: ref.contents, elementType: elementType)
             }
         } catch is ArrayAwareBoxWrappingPostgresEncoder<E>.FallbackSentinel {
