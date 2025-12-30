@@ -149,7 +149,7 @@ To get a pool for a specific event loop, use `pool(for:)`. This returns an `Even
 let eventLoop: EventLoop = ...
 let pool = pools.pool(for: eventLoop)
 
-pool.withConnection { conn
+pool.withConnection { conn in
     print(conn) // PostgresConnection on eventLoop
 }
 ```
@@ -160,7 +160,7 @@ Both `EventLoopGroupConnectionPool` and `EventLoopConnectionPool` can be used to
 
 ```swift
 let postgres = pool.database(logger: ...) // PostgresDatabase
-let rows = try postgres.simpleQuery("SELECT version();").wait()
+let rows = try await postgres.simpleQuery("SELECT version()")
 ```
 
 Visit [PostgresNIO's docs] for more information on using `PostgresDatabase`.
@@ -171,7 +171,7 @@ A `PostgresDatabase` can be used to create an instance of `SQLDatabase`.
 
 ```swift
 let sql = postgres.sql() // SQLDatabase
-let planets = try sql.select().column("*").from("planets").all().wait()
+let planets = try await sql.select().column("*").from("planets").all()
 ```
 
 Visit [SQLKit's docs] for more information on using `SQLDatabase`. 
