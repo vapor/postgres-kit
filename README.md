@@ -187,9 +187,9 @@ let planets = try await sql.select().column("*").from("planets").all()
 Visit [SQLKit's docs] for more information on using `SQLDatabase`. 
 
 [SQLKit]: https://github.com/vapor/sql-kit
-[SQLKit's docs]: https://api.vapor.codes/sqlkit/documentation/sqlkit
+[SQLKit's docs]: https://api.vapor.codes/sqlkit/
 [PostgresNIO]: https://github.com/vapor/postgres-nio
-[PostgresNIO's docs]: https://api.vapor.codes/postgresnio/documentation/postgresnio
+[PostgresNIO's docs]: https://api.vapor.codes/postgresnio/
 [AsyncKit]: https://github.com/vapor/async-kit
-[PostgresClient]: https://api.vapor.codes/postgresnio/documentation/postgresnio/postgresclient 
+[PostgresClient]: https://api.vapor.codes/postgresnio/postgresclient 
 [SwiftNIO's documentation]: https://swiftpackageindex.com/apple/swift-nio/documentation/nio
