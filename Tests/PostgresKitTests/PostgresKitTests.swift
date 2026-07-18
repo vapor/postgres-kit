@@ -226,13 +226,10 @@ struct PostgresKitTests {
         #expect(try PostgresDataTranslation.decode(URL.self, from: .init(with: encodedBroken), in: .default) == url)
     }
 
-    /// This test is painful to write before Swift 6.1 due to #expect(throws:) not returning the thrown error.
-    ///
     /// This test cares that:
     ///
-    /// 1. The Swift type (i.e. `Foo`) is metnioned in the error's debug description.
+    /// 1. The Swift type (i.e. `Foo`) is mentioned in the error's debug description.
     /// 2. The underlying error is included.
-    #if swift(>=6.1)
     @Test
     func errorHandlingWhenDecodingNestedDictionary() throws {
         struct Foo: Codable {
@@ -250,7 +247,47 @@ struct PostgresKitTests {
         let underContext = try #require({ if case .dataCorrupted(let context2) = context.underlyingError as? DecodingError { context2 } else { nil } }())
         #expect(underContext.debugDescription == "Dictionary containers must be JSON-encoded")
     }
-    #endif
+
+    @Test
+    func encodingArraysContainingNilValues() async throws {
+        let encoded1 = try PostgresDataTranslation.encode(codingPath: [], userInfo: [:], value: [-1, nil, nil, nil] as [Int?], in: .default, file: #fileID, line: #line)
+        #expect(encoded1.type == .int8Array)
+        #expect(encoded1.array?.count == 4)
+        #expect(encoded1.array?.dropFirst(0).first?.type == .int8)
+        #expect(encoded1.array?.dropFirst(0).first?.int == -1)
+        #expect(encoded1.array?.dropFirst(1).first?.type == .int8)
+        #expect(encoded1.array?.dropFirst(1).first?.value == nil)
+        #expect(encoded1.array?.dropFirst(2).first?.type == .int8)
+        #expect(encoded1.array?.dropFirst(2).first?.value == nil)
+        #expect(encoded1.array?.dropFirst(3).first?.type == .int8)
+        #expect(encoded1.array?.dropFirst(3).first?.value == nil)
+        let encoded2 = try PostgresDataTranslation.encode(codingPath: [], userInfo: [:], value: [nil, nil, nil, nil] as [Int?], in: .default, file: #fileID, line: #line)
+        #expect(encoded2.type == .int8Array)
+        #expect(encoded2.array?.count == 4)
+        #expect(encoded2.array?.dropFirst(0).first?.type == .int8)
+        #expect(encoded2.array?.dropFirst(0).first?.value == nil)
+        #expect(encoded2.array?.dropFirst(1).first?.type == .int8)
+        #expect(encoded2.array?.dropFirst(1).first?.value == nil)
+        #expect(encoded2.array?.dropFirst(2).first?.type == .int8)
+        #expect(encoded2.array?.dropFirst(2).first?.value == nil)
+        #expect(encoded2.array?.dropFirst(3).first?.type == .int8)
+        #expect(encoded2.array?.dropFirst(3).first?.value == nil)
+
+        let connection = try await PostgresConnection.test(on: self.eventLoop)
+
+        await #expect(throws: Never.self) {
+            let sql = connection.sql()
+            _ = try await sql.raw("DROP TABLE IF EXISTS \(ident: "foo")").run()
+            try await sql.withSession { db in
+                _ = try await db.create(table: "foo").column("bar", type: .custom(SQLRaw("bigint[]")), .notNull).run()
+                _ = try await db.insert(into: "foo").columns("bar").values(SQLBind([-1, nil, nil, nil] as [Int?])).values(SQLBind([nil, nil, nil, nil] as [Int?])).run()
+                let rows = try await db.select().column("bar").from("foo").all(decodingColumn: "bar", as: [Int?].self)
+                #expect(rows.dropFirst(0).first == [-1, nil, nil, nil])
+                #expect(rows.dropFirst(1).first == [nil, nil, nil, nil])
+            }
+        }
+        try await connection.close()
+    }
 
     var eventLoop: any EventLoop {
         MultiThreadedEventLoopGroup.singleton.any()
