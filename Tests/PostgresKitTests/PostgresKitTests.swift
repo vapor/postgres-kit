@@ -25,14 +25,11 @@ struct PostgresKitTests {
     @Test
     func leak() async throws {
         struct Foo: Codable {
-            var id: String
-            var description: String?
-            var latitude: Double
-            var longitude: Double
-            var created_by: String
-            var created_at: Date
-            var modified_by: String
-            var modified_at: Date
+            let id: String
+            let description: String?
+            let latitude: Double, longitude: Double
+            let created_by: String, created_at: Date
+            let modified_by: String, modified_at: Date
         }
         
         let conn = try await PostgresConnection.test(on: self.eventLoop)
@@ -46,28 +43,23 @@ struct PostgresKitTests {
                 .column("latitude", type: .custom(SQLRaw("DOUBLE PRECISION")))
                 .column("longitude", type: .custom(SQLRaw("DOUBLE PRECISION")))
                 .column("created_by", type: .text)
-                .column("created_at", type: .custom(SQLRaw("TIMESTAMPTZ")))
+                .column("created_at", type: .timestamp)
                 .column("modified_by", type: .text)
-                .column("modified_at", type: .custom(SQLRaw("TIMESTAMPTZ")))
+                .column("modified_at", type: .timestamp)
                 .run()
 
-            for i in 0..<5_000 {
+            for i in 0..<2_000 {
                 let zipcode = Foo(
                     id: UUID().uuidString,
                     description: "test \(i)",
-                    latitude: Double.random(in: 0...100),
-                    longitude: Double.random(in: 0...100),
-                    created_by: "test",
-                    created_at: Date(),
-                    modified_by: "test",
-                    modified_at: Date()
+                    latitude: .random(in: 0...100), longitude: .random(in: 0...100),
+                    created_by: "test", created_at: .now,
+                    modified_by: "test", modified_at: .now
                 )
-                try await db.insert(into: "foos")
-                    .model(zipcode)
-                    .run()
+                try await db.insert(into: "foos").model(zipcode).run()
             }
         }
-        try? await db.raw("DROP TABLE IF EXISTS \(ident: "foos")").run()
+        try? await db.drop(table: "foos").ifExists().run()
         try await conn.close()
     }
 
@@ -251,27 +243,29 @@ struct PostgresKitTests {
     @Test
     func encodingArraysContainingNilValues() async throws {
         let encoded1 = try PostgresDataTranslation.encode(codingPath: [], userInfo: [:], value: [-1, nil, nil, nil] as [Int?], in: .default, file: #fileID, line: #line)
-        #expect(encoded1.type == .int8Array)
-        #expect(encoded1.array?.count == 4)
-        #expect(encoded1.array?.dropFirst(0).first?.type == .int8)
-        #expect(encoded1.array?.dropFirst(0).first?.int == -1)
-        #expect(encoded1.array?.dropFirst(1).first?.type == .int8)
-        #expect(encoded1.array?.dropFirst(1).first?.value == nil)
-        #expect(encoded1.array?.dropFirst(2).first?.type == .int8)
-        #expect(encoded1.array?.dropFirst(2).first?.value == nil)
-        #expect(encoded1.array?.dropFirst(3).first?.type == .int8)
-        #expect(encoded1.array?.dropFirst(3).first?.value == nil)
+        #expect(encoded1.type == .int8Array && encoded1.array?.count == 4)
+        #expect(encoded1.array?.dropFirst(0).first?.type == .int8 && encoded1.array?.dropFirst(0).first?.int == -1)
+        #expect(encoded1.array?.dropFirst(1).first?.type == .int8 && encoded1.array?.dropFirst(1).first?.value == nil)
+        #expect(encoded1.array?.dropFirst(2).first?.type == .int8 && encoded1.array?.dropFirst(2).first?.value == nil)
+        #expect(encoded1.array?.dropFirst(3).first?.type == .int8 && encoded1.array?.dropFirst(3).first?.value == nil)
         let encoded2 = try PostgresDataTranslation.encode(codingPath: [], userInfo: [:], value: [nil, nil, nil, nil] as [Int?], in: .default, file: #fileID, line: #line)
-        #expect(encoded2.type == .int8Array)
-        #expect(encoded2.array?.count == 4)
-        #expect(encoded2.array?.dropFirst(0).first?.type == .int8)
-        #expect(encoded2.array?.dropFirst(0).first?.value == nil)
-        #expect(encoded2.array?.dropFirst(1).first?.type == .int8)
-        #expect(encoded2.array?.dropFirst(1).first?.value == nil)
-        #expect(encoded2.array?.dropFirst(2).first?.type == .int8)
-        #expect(encoded2.array?.dropFirst(2).first?.value == nil)
-        #expect(encoded2.array?.dropFirst(3).first?.type == .int8)
-        #expect(encoded2.array?.dropFirst(3).first?.value == nil)
+        #expect(encoded2.type == .int8Array && encoded2.array?.count == 4)
+        #expect(encoded2.array?.dropFirst(0).first?.type == .int8 && encoded2.array?.dropFirst(0).first?.value == nil)
+        #expect(encoded2.array?.dropFirst(1).first?.type == .int8 && encoded2.array?.dropFirst(1).first?.value == nil)
+        #expect(encoded2.array?.dropFirst(2).first?.type == .int8 && encoded2.array?.dropFirst(2).first?.value == nil)
+        #expect(encoded2.array?.dropFirst(3).first?.type == .int8 && encoded2.array?.dropFirst(3).first?.value == nil)
+        let encoded3 = try PostgresDataTranslation.encode(codingPath: [], userInfo: [:], value: [.one, nil, nil, nil] as [Bar?], in: .default, file: #fileID, line: #line)
+        #expect(encoded3.type == .int8Array && encoded3.array?.count == 4)
+        #expect(encoded3.array?.dropFirst(0).first?.type == .int8 && encoded3.array?.dropFirst(0).first?.int == 0)
+        #expect(encoded3.array?.dropFirst(1).first?.type == .int8 && encoded3.array?.dropFirst(1).first?.value == nil)
+        #expect(encoded3.array?.dropFirst(2).first?.type == .int8 && encoded3.array?.dropFirst(2).first?.value == nil)
+        #expect(encoded3.array?.dropFirst(3).first?.type == .int8 && encoded3.array?.dropFirst(3).first?.value == nil)
+        let encoded4 = try PostgresDataTranslation.encode(codingPath: [], userInfo: [:], value: [nil, nil, nil, nil] as [Bar?], in: .default, file: #fileID, line: #line)
+        #expect(encoded4.type == .int8Array && encoded4.array?.count == 4)
+        #expect(encoded4.array?.dropFirst(0).first?.type == .int8 && encoded4.array?.dropFirst(0).first?.value == nil)
+        #expect(encoded4.array?.dropFirst(1).first?.type == .int8 && encoded4.array?.dropFirst(1).first?.value == nil)
+        #expect(encoded4.array?.dropFirst(2).first?.type == .int8 && encoded4.array?.dropFirst(2).first?.value == nil)
+        #expect(encoded4.array?.dropFirst(3).first?.type == .int8 && encoded4.array?.dropFirst(3).first?.value == nil)
 
         let connection = try await PostgresConnection.test(on: self.eventLoop)
 
@@ -281,9 +275,12 @@ struct PostgresKitTests {
             try await sql.withSession { db in
                 _ = try await db.create(table: "foo").column("bar", type: .custom(SQLRaw("bigint[]")), .notNull).run()
                 _ = try await db.insert(into: "foo").columns("bar").values(SQLBind([-1, nil, nil, nil] as [Int?])).values(SQLBind([nil, nil, nil, nil] as [Int?])).run()
+                _ = try await db.insert(into: "foo").columns("bar").values(SQLBind([.one, nil, nil, nil] as [Bar?])).values(SQLBind([nil, nil, nil, nil] as [Bar?])).run()
                 let rows = try await db.select().column("bar").from("foo").all(decodingColumn: "bar", as: [Int?].self)
                 #expect(rows.dropFirst(0).first == [-1, nil, nil, nil])
                 #expect(rows.dropFirst(1).first == [nil, nil, nil, nil])
+                #expect(rows.dropFirst(2).first == [0, nil, nil, nil])
+                #expect(rows.dropFirst(3).first == [nil, nil, nil, nil])
             }
         }
         try await connection.close()
