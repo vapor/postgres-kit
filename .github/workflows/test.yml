@@ -46,9 +46,9 @@ jobs:
           - postgres:16
           - postgres:14
         swift-image:
-          - swift:6.0-noble
           - swift:6.1-noble
           - swift:6.2-noble
+          - swift:6.3-noble
         include:
           - postgres-image: postgres:18
             postgres-auth: scram-sha-256
@@ -75,14 +75,14 @@ jobs:
       - name: Run local tests
         run: swift test --enable-code-coverage --explicit-target-dependency-import-check error -Xswiftc -require-explicit-sendable
       - name: Upload coverage data
-        uses: vapor/swift-codecov-action@v0.3
+        uses: vapor/swift-codecov-action@2f478f2fd22e06ca363967d0fb6c6593a8548cee # v0.3.5
         with:
           codecov_token: ${{ secrets.CODECOV_TOKEN || '' }}
 
   linux-integration:
     if: ${{ !(github.event.pull_request.draft || false) }}
     runs-on: ubuntu-latest
-    container: swift:6.2-noble
+    container: swift:6.3-noble
     services:
       *postgres_host_a:
         image: postgres:18
@@ -128,7 +128,7 @@ jobs:
       POSTGRES_DB: postgres
     steps:
       - name: Select latest available Xcode
-        uses: maxim-lobanov/setup-xcode@v1
+        uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
         with:
           xcode-version: ${{ matrix.xcode-version }}
       - name: Install Postgres, setup DB and auth, and wait for server start
@@ -144,18 +144,26 @@ jobs:
       - name: Run local tests
         run: swift test --enable-code-coverage --explicit-target-dependency-import-check error -Xswiftc -require-explicit-sendable
       - name: Upload coverage data
-        uses: vapor/swift-codecov-action@v0.3
+        uses: vapor/swift-codecov-action@2f478f2fd22e06ca363967d0fb6c6593a8548cee # v0.3.5
         with:
           codecov_token: ${{ secrets.CODECOV_TOKEN || '' }}
 
   musl:
     runs-on: ubuntu-latest
-    container: swift:6.2-noble
+    container: swift:6.3-noble
     timeout-minutes: 30
     steps:
       - name: Check out code
         uses: actions/checkout@v7
+      - name: Install linux dependencies
+        run: apt-get update && apt-get install -y curl jq
       - name: Install SDK
-        run: swift sdk install https://download.swift.org/swift-6.2.3-release/static-sdk/swift-6.2.3-RELEASE/swift-6.2.3-RELEASE_static-linux-0.0.1.artifactbundle.tar.gz --checksum f30ec724d824ef43b5546e02ca06a8682dafab4b26a99fbb0e858c347e507a2c
+        run: |
+          version_num="$(swiftc --version | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -1)"
+          tag="swift-${version_num}-RELEASE"
+          sdk_info="$(curl -s https://www.swift.org/api/v1/install/releases.json | jq -r --arg tag "$tag" '.[] | select(.tag == $tag).platforms[] | select(.platform == "static-sdk") | [.version, .checksum] | @tsv')"
+          version="$(echo "$sdk_info" | cut -f1)"
+          checksum="$(echo "$sdk_info" | cut -f2)"
+          swift sdk install "https://download.swift.org/$(echo $tag | tr [A-Z] [a-z])/static-sdk/$tag/${tag}_static-linux-${version}.artifactbundle.tar.gz" --checksum "$checksum"
       - name: Build
         run: swift build --swift-sdk x86_64-swift-linux-musl

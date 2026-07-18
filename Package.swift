@@ -1,4 +1,4 @@
-// swift-tools-version:6.0
+// swift-tools-version:6.1
 import PackageDescription
 
 let package = Package(
@@ -13,8 +13,8 @@ let package = Package(
         .library(name: "PostgresKit", targets: ["PostgresKit"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/vapor/postgres-nio.git", from: "1.27.0"),
-        .package(url: "https://github.com/vapor/sql-kit.git", from: "3.33.2"),
+        .package(url: "https://github.com/vapor/postgres-nio.git", from: "1.30.1"),
+        .package(url: "https://github.com/vapor/sql-kit.git", from: "3.34.0"),
         .package(url: "https://github.com/vapor/async-kit.git", from: "1.21.0"),
     ],
     targets: [

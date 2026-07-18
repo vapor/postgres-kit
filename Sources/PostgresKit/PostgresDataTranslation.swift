@@ -1,18 +1,10 @@
 import Foundation
 import PostgresNIO
-
-/// Quick and dirty `CodingKey`, borrowed from FluentKit. If `CodingKeyRepresentable` wasn't broken by design
-/// (specifically, it can't be back-deployed before macOS 12.3 etc., even though it was introduced in Swift 5.6),
-/// we'd use that instead.
-private struct SomeCodingKey: CodingKey, Hashable {
-    let stringValue: String, intValue: Int?
-    init(stringValue: String) { (self.stringValue, self.intValue) = (stringValue, Int(stringValue)) }
-    init(intValue: Int) { (self.stringValue, self.intValue) = ("\(intValue)", intValue) }
-}
+import SQLKit
 
 extension PostgresCell {
     fileprivate var codingKey: any CodingKey {
-        PostgresKit.SomeCodingKey(stringValue: !self.columnName.isEmpty ? "\(self.columnName) (\(self.columnIndex))" : "\(self.columnIndex)")
+        SomeCodingKey(stringValue: !self.columnName.isEmpty ? "\(self.columnName) (\(self.columnIndex))" : "\(self.columnIndex)")
     }
 }
 
@@ -196,8 +188,12 @@ struct PostgresDataTranslation {
         file: String = #fileID,
         line: Int = #line
     ) throws {
-        /// Preferred modern fast-path: Direct conformance to `PostgresEncodable`
-        if let fastPathValue = value as? any PostgresEncodable {
+        /// Nil bypass-path: Skip the entire machinery for nil optionals.
+        if (value as Optional<Any>) == nil {
+            bindings.appendNull()
+        }
+        /// Preferred modern fast-path: Direct conformance to the `PostgresEncodable` family.
+        else if let fastPathValue = value as? any PostgresThrowingDynamicTypeEncodable {
             try bindings.append(fastPathValue, context: context)
         }
         /// Legacy "fast"-path: Direct conformance to `PostgresDataConvertible`; use is deprecated.
@@ -240,8 +236,8 @@ struct PostgresDataTranslation {
             case .invalid: throw ArrayAwareBoxWrappingPostgresEncoder<E>.FallbackSentinel()
             case .scalar(let scalar): return scalar
             case .indexed(let ref):
-                let elementType = ref.contents.first?.type ?? .jsonb
-                assert(ref.contents.allSatisfy { $0.type == elementType }, "Type \(T.self)/\(type(of: value)) was encoded as a heterogenous array; this is unsupported.")
+                let elementType = (ref.contents.first)??.type ?? .jsonb
+                assert(ref.contents.allSatisfy { $0.map { $0.type == elementType } ?? true }, "Type \(T.self)/\(type(of: value)) was encoded as a heterogenous array; this is unsupported.")
                 return PostgresData(array: ref.contents, elementType: elementType)
             }
         } catch is ArrayAwareBoxWrappingPostgresEncoder<E>.FallbackSentinel {
@@ -343,7 +339,7 @@ private final class ArrayAwareBoxWrappingPostgresEncoder<E: PostgresJSONEncoder>
         final class ArrayRef<T> { var contents: [T] = [] }
 
         case invalid
-        case indexed(ArrayRef<PostgresData>)
+        case indexed(ArrayRef<PostgresData?>)
         case scalar(PostgresData)
         
         var isValid: Bool { if case .invalid = self { return false }; return true }
@@ -366,7 +362,7 @@ private final class ArrayAwareBoxWrappingPostgresEncoder<E: PostgresJSONEncoder>
             else { preconditionFailure("Internal error in encoder (requested indexed count from non-indexed state)") }
         }
 
-        mutating func store(indexedScalar: PostgresData) {
+        mutating func store(indexedScalar: PostgresData?) {
             if case .indexed(let ref) = self { ref.contents.append(indexedScalar) }
             else { preconditionFailure("Internal error in encoder (attempted store to indexed in non-indexed state)") }
         }
@@ -406,7 +402,7 @@ private final class ArrayAwareBoxWrappingPostgresEncoder<E: PostgresJSONEncoder>
         let encoder: ArrayAwareBoxWrappingPostgresEncoder
         var codingPath: [any CodingKey] { self.encoder.codingPath }
         var count: Int { self.encoder.value.indexedCount }
-        mutating func encodeNil() throws { self.encoder.value.store(indexedScalar: .null) }
+        mutating func encodeNil() throws { self.encoder.value.store(indexedScalar: nil) }
         mutating func encode<T: Encodable>(_ value: T) throws {
             self.encoder.value.store(indexedScalar: try PostgresDataTranslation.encode(
                 codingPath: self.codingPath + [PostgresKit.SomeCodingKey(intValue: self.count)], userInfo: self.encoder.userInfo,
