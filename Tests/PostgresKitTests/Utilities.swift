@@ -41,8 +41,8 @@ struct QuickLogHandler: LogHandler {
     var logLevel = Logger.Level.info, metadataProvider = LoggingSystem.metadataProvider, metadata = Logger.Metadata()
     subscript(metadataKey key: String) -> Logger.Metadata.Value? { get { self.metadata[key] } set { self.metadata[key] = newValue } }
     init(label: String, level: Logger.Level) { (self.label, self.logLevel) = (label, level) }
-    func log(level: Logger.Level, message: Logger.Message, metadata: Logger.Metadata?, source: String, file: String, function: String, line: UInt) {
-        print("\(self.timestamp()) \(level) \(self.label):\(self.prettify(metadata ?? [:]).map { " \($0)" } ?? "") [\(source)] \(message)")
+    func log(event: LogEvent) {
+        print("\(self.timestamp()) \(event.level) \(self.label):\(self.prettify(event.metadata ?? [:]).map { " \($0)" } ?? "") [\(event.source)] \(event.message)")
     }
     private func prettify(_ metadata: Logger.Metadata) -> String? {
         self.metadata.merging(self.metadataProvider?.get() ?? [:]) { $1 }.merging(metadata) { $1 }.sorted { $0.0 < $1.0 }.map { "\($0)=\($1.mvDesc)" }.joined(separator: " ")
