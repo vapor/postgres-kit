@@ -122,12 +122,18 @@ struct PostgresDataTranslation {
                 )
             } else if cell.format == .binary && cell.dataType == .numeric && T.self is Double.Type {
                 /// Workaround for Fluent's expectation that Postgres's `numeric/decimal` can be decoded as `Double`:
-                ///
-                /// If the cell is a binary-format numeric value and we're trying to decode a `Double`, use
-                /// `PostgresData` to manually interpret the cell as a `PostgresNumeric` and use that result to convert
-                /// to `Double`.
-                guard let value = PostgresData(type: cell.dataType, formatCode: cell.format, value: cell.bytes).numeric?.double else {
-                    throw DecodingError.dataCorrupted(.init(codingPath: codingPath, debugDescription: "Invalid numeric value encoding"))
+                /// decode the cell as `Decimal` (which understands binary numeric) and convert.
+                guard var bytes = cell.bytes else {
+                    throw DecodingError.valueNotFound(T.self, .init(codingPath: codingPath, debugDescription: "Binary numeric cell has no bytes"))
+                }
+                let decimal: Decimal
+                do {
+                    decimal = try Decimal(from: &bytes, type: cell.dataType, format: cell.format, context: context)
+                } catch {
+                    throw DecodingError.dataCorrupted(.init(codingPath: codingPath, debugDescription: "Invalid numeric value encoding", underlyingError: error))
+                }
+                guard let value = Double(decimal.description) else {
+                    throw DecodingError.dataCorrupted(.init(codingPath: codingPath, debugDescription: "Numeric value \(decimal) is not representable as Double"))
                 }
                 return value as! T
             } else {
@@ -211,38 +217,39 @@ struct PostgresDataTranslation {
             guard let legacyData = legacyPathValue.postgresData else {
                 throw EncodingError.invalidValue(value, .init(codingPath: [], debugDescription: "Couldn't get PSQL encoding from value '\(value)' of Swift type \(type(of: value))"))
             }
-            bindings.append(legacyData)
+            try bindings.append(legacyData.value == nil ? nil : LegacyDataBox(data: legacyData))
         }
         /// Slow path: Descend through the `Encodable` machinery.
         else {
-            try bindings.append(self.encode(codingPath: [], userInfo: [:], value: value, in: context, file: file, line: line))
+            guard let encodable = try self.encode(codingPath: [], userInfo: [:], value: value, in: context, file: file, line: line) else {
+                bindings.appendNull()
+                return
+            }
+            try bindings.append(encodable, context: context)
         }
     }
 
-    internal /*fileprivate*/ static func encode<T: Encodable, E: PostgresJSONEncoder>(
+    internal /* fileprivate */ static func encode<T: Encodable, E: PostgresJSONEncoder>(
         codingPath: [any CodingKey],
         userInfo: [CodingUserInfoKey: Any],
         value: T,
         in context: PostgresEncodingContext<E>,
         file: String,
         line: Int
-    ) throws -> PostgresData {
+    ) throws -> any PostgresThrowingDynamicTypeEncodable? {
         /// Nil bypass-path: Skip the entire machinery for nil optionals.
-        if (value as Optional<Any>) == nil {
-            return .null
+        if (value as Optional<Any>) == nil { 
+            return nil 
         }
         /// Preferred fast-path: Direct conformance to the `PostgresEncodable` family.
         else if let fastPathValue = value as? any PostgresThrowingDynamicTypeEncodable {
-            var buffer = ByteBuffer()
-            try fastPathValue.encode(into: &buffer, context: context)
-            return PostgresData(type: fastPathValue.psqlType, typeModifier: nil, formatCode: fastPathValue.psqlFormat, value: buffer)
+            return fastPathValue
         } else if let legacyPathValue = value as? any PostgresDataTranslation.PostgresLegacyDataConvertible {
             guard let legacyData = legacyPathValue.postgresData else {
-                throw EncodingError.invalidValue(value, .init(codingPath: [], debugDescription: "Couldn't get PSQL encoding from value '\(value)' of Swift type \(type(of: value))"))
+                throw EncodingError.invalidValue(value, .init(codingPath: codingPath, debugDescription: "Couldn't get PSQL encoding from value '\(value)' of Swift type \(type(of: value))"))
             }
-            return legacyData
+            return legacyData.value == nil ? nil : LegacyDataBox(data: legacyData)
         }
-        // TODO: Make all of this work without relying on the legacy PostgresData array machinery
         do {
             let encoder = ArrayAwareBoxWrappingPostgresEncoder(codingPath: codingPath, userInfo: userInfo, context: context, file: file, line: line)
             try value.encode(to: encoder)
@@ -252,19 +259,93 @@ struct PostgresDataTranslation {
             case .scalar(let scalar):
                 return scalar
             case .indexed(let ref):
-                let contents = ref.contents.map { $0.type == .null ? nil : $0 }
-                let elementType = (T.self as? any OptionalPostgresArrayEncodableCollection.Type)?.psqlArrayType.psqlkit_elementType ?? (contents.first)??.type ?? .jsonb
-
+                let elementType = (T.self as? any OptionalPostgresArrayEncodableCollection.Type)?.psqlArrayType.psqlkit_elementType ?? (ref.contents.first)??.psqlType ?? .jsonb
                 assert(
-                    contents.allSatisfy { $0.map { $0.type == elementType } ?? true },
-                    "Type \(type(of: value)) at \(codingPath.map(\.description).joined(separator: ".")) contains heterogenous elements; this is unsupported."
+                    ref.contents.allSatisfy { $0.map { $0.psqlType == elementType } ?? true },
+                    "Type \(Swift.type(of: value)) at \(codingPath.map(\.description).joined(separator: ".")) contains heterogenous elements; this is unsupported."
                 )
-                return PostgresData(array: contents, elementType: elementType)
+                guard let array = PostgresDynamicArray(elementType: elementType, elements: ref.contents) else {
+                    throw EncodingError.invalidValue(ref.contents, .init(codingPath: [], debugDescription: "Couldn't get OID type from value '\(value)' of Swift type \(type(of: value))"))
+                }
+                return array
             }
         } catch is ArrayAwareBoxWrappingPostgresEncoder<E>.FallbackSentinel {
             /// Glacial path: Fall back to encoding directly to JSON.
-            return try PostgresData(jsonb: context.jsonEncoder.encode(value))
+            return PostgresJSONBBox(value: value)
         }
+    }
+}
+
+struct LegacyDataBox: PostgresThrowingDynamicTypeEncodable {
+    let data: PostgresData  // non-null; nulls are handled before boxing
+
+    var psqlType: PostgresDataType { self.data.type }
+    var psqlFormat: PostgresFormat { self.data.formatCode }
+
+    func encode<JSONEncoder: PostgresJSONEncoder>(
+        into buffer: inout ByteBuffer,
+        context: PostgresEncodingContext<JSONEncoder>
+    ) throws {
+        var value = self.data.value!  // guarded by the caller
+        buffer.writeBuffer(&value)
+    }
+}
+
+struct PostgresDynamicArray: PostgresThrowingDynamicTypeEncodable {
+    var psqlFormat: PostgresFormat { .binary }
+    var psqlType: PostgresDataType { self.arrayType }
+
+    let arrayType: PostgresDataType
+
+    init?(elementType: PostgresDataType, elements: [any PostgresThrowingDynamicTypeEncodable?]) {
+        // If we don't know the OID upfront we cannot encode it and have to fall back
+        guard let arrayType = elementType.psqlkit_arrayType else { return nil }
+        self.arrayType = arrayType
+        self.elementType = elementType
+        self.elements = elements
+    }
+
+    let elementType: PostgresDataType
+    let elements: [any PostgresThrowingDynamicTypeEncodable?]
+
+    func encode<JSONEncoder>(
+        into byteBuffer: inout ByteBuffer,
+        context: PostgresEncodingContext<JSONEncoder>
+    ) throws where JSONEncoder: PostgresJSONEncoder {
+        byteBuffer.writeInteger(self.elements.isEmpty ? 0 : 1, as: UInt32.self)
+        byteBuffer.writeInteger(0, as: Int32.self)
+        byteBuffer.writeInteger(self.elementType.rawValue)
+        
+        guard !self.elements.isEmpty else { return }
+        byteBuffer.writeInteger(Int32(elements.count))
+        byteBuffer.writeInteger(1, as: Int32.self)
+
+        for element in self.elements {
+            if let element {
+                let lengthIndex = byteBuffer.writerIndex
+                byteBuffer.writeInteger(0, as: Int32.self)
+                let start = byteBuffer.writerIndex
+                try element.encode(into: &byteBuffer, context: context)
+                byteBuffer.setInteger(Int32(byteBuffer.writerIndex - start), at: lengthIndex)
+            } else {
+                byteBuffer.writeInteger(-1, as: Int32.self)
+            }
+        }
+    }
+}
+
+struct PostgresJSONBBox<T: Encodable>: PostgresEncodable {
+    static var psqlType: PostgresDataType { .jsonb }
+    static var psqlFormat: PostgresFormat { .binary }
+
+    let value: T
+
+    func encode<JSONEncoder>(
+        into byteBuffer: inout ByteBuffer,
+        context: PostgresEncodingContext<JSONEncoder>
+    ) throws where JSONEncoder: PostgresJSONEncoder {
+        byteBuffer.writeInteger(1, as: UInt8.self)
+        try context.jsonEncoder.encode(value, into: &byteBuffer)
     }
 }
 
@@ -285,7 +366,7 @@ private final class ArrayAwareBoxUwrappingDecoder<T0: Decodable, D: PostgresJSON
     }
 
     struct ArrayContainer: UnkeyedDecodingContainer {
-        let data: [PostgresData]
+        let cells: [PostgresCell]
         let decoder: ArrayAwareBoxUwrappingDecoder
 
         var codingPath: [any CodingKey] {
@@ -293,27 +374,23 @@ private final class ArrayAwareBoxUwrappingDecoder<T0: Decodable, D: PostgresJSON
         }
 
         var count: Int? {
-            self.data.count
+            self.cells.count
         }
 
         var isAtEnd: Bool {
-            self.currentIndex >= self.data.count
+            self.currentIndex >= self.cells.count
         }
 
         var currentIndex = 0
 
         mutating func decodeNil() throws -> Bool {
-            guard self.data[self.currentIndex].value == nil else { return false }
+            guard self.cells[self.currentIndex].bytes == nil else { return false }
             self.currentIndex += 1
             return true
         }
 
         mutating func decode<T: Decodable>(_: T.Type) throws -> T {
-            // TODO: Don't fake a cell.
-            let data = self.data[self.currentIndex], cell = PostgresCell(
-                bytes: data.value, dataType: data.type, format: data.formatCode,
-                columnName: self.decoder.cell.columnName, columnIndex: self.decoder.cell.columnIndex
-            )
+            let cell = self.cells[self.currentIndex]
 
             let result = try PostgresDataTranslation.decode(
                 codingPath: self.codingPath + [SomeCodingKey(intValue: self.currentIndex)],
@@ -336,11 +413,52 @@ private final class ArrayAwareBoxUwrappingDecoder<T0: Decodable, D: PostgresJSON
     }
 
     func unkeyedContainer() throws -> any UnkeyedDecodingContainer {
-        // TODO: Find a better way to figure out arrays
-        guard let array = PostgresData(type: self.cell.dataType, typeModifier: nil, formatCode: self.cell.format, value: self.cell.bytes).array else {
+        // Read cells directly from the wire
+        guard self.cell.format == .binary, var buffer = self.cell.bytes else {
             throw DecodingError.dataCorrupted(.init(codingPath: self.codingPath, debugDescription: "Non-natively typed arrays must be JSON-encoded"))
         }
-        return ArrayContainer(data: array, decoder: self)
+        // Header
+        guard 
+            let (dimensions, _, rawElementType) = buffer.readMultipleIntegers(endianness: .big, as: (Int32, Int32, UInt32).self),
+            0 <= dimensions, dimensions <= 1
+        else {
+            throw DecodingError.dataCorrupted(.init(codingPath: self.codingPath, debugDescription: "Malformed array header for PSQL type \(self.cell.dataType)"))
+        }
+        let elementType = PostgresDataType(rawElementType)
+        guard dimensions == 1 else {
+            return ArrayContainer(cells: [], decoder: self)
+        }
+        // One dimension: element count, then lower bound (always 1)
+        guard 
+            let (count, _) = buffer.readMultipleIntegers(endianness: .big, as: (Int32, Int32).self), 
+            count >= 0 
+        else {
+            throw DecodingError.dataCorrupted(.init(codingPath: self.codingPath, debugDescription: "Malformed array dimensions for PSQL type \(self.cell.dataType)"))
+        }
+
+        // Elements        
+        var cells: [PostgresCell] = []
+        cells.reserveCapacity(Int(count))
+
+        for index in 0..<Int(count) {
+            guard let length = buffer.readInteger(as: Int32.self) else {
+                throw DecodingError.dataCorrupted(.init(codingPath: self.codingPath, debugDescription: "Truncated array element \(index)"))
+            }
+            let bytes: ByteBuffer?
+            if length == -1 {
+                bytes = nil
+            } else {
+                guard let slice = buffer.readSlice(length: Int(length)) else {
+                    throw DecodingError.dataCorrupted(.init(codingPath: self.codingPath, debugDescription: "Truncated array element \(index)"))
+                }
+                bytes = slice
+            }
+            cells.append(PostgresCell(
+                bytes: bytes, dataType: elementType, format: .binary, columnName: self.cell.columnName, columnIndex: self.cell.columnIndex
+            ))
+        }
+
+        return ArrayContainer(cells: cells, decoder: self)
     }
 
     func singleValueContainer() throws -> any SingleValueDecodingContainer { self }
@@ -360,12 +478,12 @@ private final class ArrayAwareBoxWrappingPostgresEncoder<E: PostgresJSONEncoder>
         final class ArrayRef<T> { var contents: [T] = [] }
 
         case invalid
-        case indexed(ArrayRef<PostgresData>)
-        case scalar(PostgresData)
+        case indexed(ArrayRef<any PostgresThrowingDynamicTypeEncodable?>)
+        case scalar(any PostgresThrowingDynamicTypeEncodable?)
 
         var isValid: Bool { if case .invalid = self { return false }; return true }
 
-        mutating func store(scalar: PostgresData) {
+        mutating func store(scalar: any PostgresThrowingDynamicTypeEncodable?) {
             if case .invalid = self { self = .scalar(scalar) } // no existing value, store the incoming
             else { preconditionFailure("Invalid request for multiple containers from the same encoder.") }
         }
@@ -374,17 +492,21 @@ private final class ArrayAwareBoxWrappingPostgresEncoder<E: PostgresJSONEncoder>
             switch self {
             case .scalar(_): preconditionFailure("Invalid request for both single-value and unkeyed containers from the same encoder.")
             case .invalid: self = .indexed(.init()) // no existing value, make new array
-            case .indexed(_): break // existing array, adopt it for appending (support for superEncoder())
+            case .indexed(_): break  // existing array, adopt it for appending (support for superEncoder())
             }
         }
 
         var indexedCount: Int {
-            if case .indexed(let ref) = self { return ref.contents.count }
+            if case .indexed(let ref) = self {
+                return ref.contents.count
+            }
             else { preconditionFailure("Internal error in encoder (requested indexed count from non-indexed state)") }
         }
 
-        mutating func store(indexedScalar: PostgresData) {
-            if case .indexed(let ref) = self { ref.contents.append(indexedScalar) }
+        mutating func store(indexedScalar: any PostgresThrowingDynamicTypeEncodable?) {
+            if case .indexed(let ref) = self {
+                ref.contents.append(indexedScalar)
+            }
             else { preconditionFailure("Internal error in encoder (attempted store to indexed in non-indexed state)") }
         }
     }
@@ -423,7 +545,7 @@ private final class ArrayAwareBoxWrappingPostgresEncoder<E: PostgresJSONEncoder>
         let encoder: ArrayAwareBoxWrappingPostgresEncoder
         var codingPath: [any CodingKey] { self.encoder.codingPath }
         var count: Int { self.encoder.value.indexedCount }
-        mutating func encodeNil() throws { self.encoder.value.store(indexedScalar: .null) }
+        mutating func encodeNil() throws { self.encoder.value.store(indexedScalar: nil) }
         mutating func encode<T: Encodable>(_ value: T) throws {
             self.encoder.value.store(indexedScalar: try PostgresDataTranslation.encode(
                 codingPath: self.codingPath + [SomeCodingKey(intValue: self.count)], userInfo: self.encoder.userInfo,
@@ -441,7 +563,9 @@ private final class ArrayAwareBoxWrappingPostgresEncoder<E: PostgresJSONEncoder>
         ) } // NOT the same as self.encoder
     }
 
-    func encodeNil() throws { self.value.store(scalar: .null) }
+    func encodeNil() throws {
+        self.value.store(scalar: nil)
+    }
     func encode<T: Encodable>(_ value: T) throws {
         self.value.store(scalar: try PostgresDataTranslation.encode(
             codingPath: self.codingPath, userInfo: self.userInfo, value: value, in: self.context, file: self.file, line: self.line
@@ -470,7 +594,7 @@ private final class ArrayAwareBoxWrappingPostgresEncoder<E: PostgresJSONEncoder>
     }
 }
 
-// Taken from PostgresNIO 1.33.0, whuich does not make this useful data public.
+// Taken from PostgresNIO 1.33.0, which does not make this useful data public.
 extension PostgresDataType {
     var psqlkit_elementType: PostgresDataType? {
         switch self {
@@ -499,6 +623,87 @@ extension PostgresDataType {
         case .pointArray: .point                   case .float4Array: .float4                 case .float8Array: .float8
         case .uuidArray: .uuid                     case .jsonbArray: .jsonb                   case .textArray: .text
         case .varcharArray: .varchar               case .int4RangeArray: .int4Range           case .int8RangeArray: .int8Range
+        default: nil
+        }
+    }
+
+    var psqlkit_arrayType: PostgresDataType? {
+        switch self {
+        case .xml: .xmlArray
+        case .json: .jsonArray
+        case .xid8:  .xid8Array
+        case .line: .lineArray
+        case .cidr: .cidrArray
+        case .circle: .circleArray
+        case .macaddr8: .macaddr8Array
+        case .money: .moneyArray
+        case .int2vector: .int2vectorArray
+        case .regproc: .regprocArray
+        case .tid: .tidArray
+        case .xid: .xidArray
+        case .cid: .cidArray
+        case .oidvector: .oidvectorArray
+        case .bpchar: .bpcharArray
+        case .lseg: .lsegArray
+        case .path: .pathArray
+        case .box: .boxArray
+        case .polygon: .polygonArray
+        case .oid: .oidArray
+        case .aclitem: .aclitemArray
+        case .macaddr: .macaddrArray
+        case .inet: .inetArray
+        case .timestamp: .timestampArray
+        case .date: .dateArray
+        case .time: .timeArray
+        case .timestamptz: .timestamptzArray
+        case .interval: .intervalArray
+        case .numeric: .numericArray
+        case .cstring: .cstringArray
+        case .timetz: .timetzArray
+        case .bit: .bitArray
+        case .varbit: .varbitArray
+        case .refcursor: .refcursorArray
+        case .regprocedure: .regprocedureArray
+        case .regoper: .regoperArray
+        case .regoperator: .regoperatorArray
+        case .regclass: .regclassArray
+        case .regtype: .regtypeArray
+        case .record: .recordArray
+        case .pgLSN: .pgLSNArray
+        case .tsvector: .tsvectorArray
+        case .gtsvector: .gtsvectorArray
+        case .tsquery: .tsqueryArray
+        case .regconfig: .regconfigArray
+        case .regdictionary: .regdictionaryArray
+        case .numrange: .numrangeArray
+        case .tsrange: .tsrangeArray
+        case .tstzrange: .tstzrangeArray
+        case .daterange: .daterangeArray
+        case .jsonpath: .jsonpathArray
+        case .regnamespace: .regnamespaceArray
+        case .regrole: .regroleArray
+        case .regcollation: .regcollationArray
+        case .int4multirange: .int4multirangeArray
+        case .tsmultirange: .tsmultirangeArray
+        case .tstzmultirange: .tstzmultirangeArray
+        case .datemultirange: .datemultirangeArray
+        case .int8multirange: .int8multirangeArray
+        case .bool: .boolArray
+        case .bytea: .byteaArray
+        case .char: .charArray
+        case .name: .nameArray
+        case .int2: .int2Array
+        case .int4: .int4Array
+        case .int8: .int8Array
+        case .point: .pointArray
+        case .float4: .float4Array
+        case .float8: .float8Array
+        case .uuid: .uuidArray
+        case .jsonb: .jsonbArray
+        case .text: .textArray
+        case .varchar: .varcharArray
+        case .int4Range: .int4RangeArray
+        case .int8Range: .int8RangeArray
         default: nil
         }
     }
