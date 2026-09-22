@@ -1,6 +1,7 @@
 import Foundation
 import Logging
 import NIOCore
+import NIOConcurrencyHelpers
 import PostgresNIO
 import SQLKitBenchmark
 import Testing
@@ -10,20 +11,53 @@ extension AllSuites {
 
 @Suite
 struct PostgresKitTests {
-    @Test
-    func sqlKitBenchmark() async throws {
-        let conn = try await PostgresConnection.test(on: self.eventLoop)
-
-        await #expect(throws: Never.self) {
-            let benchmark = SQLBenchmarker(on: conn.sql())
-
-            try await benchmark.runAllTests()
-        }
-        try await conn.close()
+    enum ConnectionKind: Sendable, CaseIterable {
+        case postgresDatabase
+        case postgresConnection
     }
 
-    @Test
-    func leak() async throws {
+    init() {
+        #expect(isLoggingConfigured)
+    }
+
+    func withSQLDatabase<Result>(ofKind kind: ConnectionKind, _ closure: (any SQLDatabase) async throws -> Result) async throws -> Result {
+        try await self.withSQLDatabase(ofKind: kind) { _, sql in try await closure(sql) }
+    }
+
+    func withSQLDatabase<Result>(ofKind kind: ConnectionKind, _ closure: (PostgresConnection, any SQLDatabase) async throws -> Result) async throws -> Result {
+        try await self.withConnection { connection in
+            switch kind {
+            case .postgresConnection: try await closure(connection, connection.sql())
+            case .postgresDatabase: try await closure(connection, (connection as any PostgresDatabase).sql())
+            }
+        }
+    }
+
+    func withConnection<Result>(_ closure: (PostgresConnection) async throws -> Result) async throws -> Result {
+        let connection = try await PostgresConnection.test(on: MultiThreadedEventLoopGroup.singleton.any())
+        do {
+            let result = try await closure(connection)
+            try await connection.close()
+            return result
+        } catch {
+            try? await connection.close()
+            throw error
+        }
+    }
+
+    @Test(arguments: ConnectionKind.allCases)
+    func sqlKitBenchmark(connectionKind: ConnectionKind) async throws {
+        try await withSQLDatabase(ofKind: connectionKind) { sql in
+            await #expect(throws: Never.self) {
+                let benchmark = SQLBenchmarker(on: sql)
+
+                try await benchmark.runAllTests()
+            }
+        }
+    }
+
+    @Test(arguments: ConnectionKind.allCases)
+    func leak(connectionKind: ConnectionKind) async throws {
         struct Foo: Codable {
             let id: String
             let description: String?
@@ -31,73 +65,69 @@ struct PostgresKitTests {
             let created_by: String, created_at: Date
             let modified_by: String, modified_at: Date
         }
-        
-        let conn = try await PostgresConnection.test(on: self.eventLoop)
-        let db = conn.sql()
 
-        await #expect(throws: Never.self) {
-            try await db.drop(table: "foos").ifExists().run()
-            try await db.create(table: "foos")
-                .column("id", type: .text, .primaryKey(autoIncrement: false))
-                .column("description", type: .text)
-                .column("latitude", type: .custom(SQLRaw("DOUBLE PRECISION")))
-                .column("longitude", type: .custom(SQLRaw("DOUBLE PRECISION")))
-                .column("created_by", type: .text)
-                .column("created_at", type: .timestamp)
-                .column("modified_by", type: .text)
-                .column("modified_at", type: .timestamp)
-                .run()
+        try await withSQLDatabase(ofKind: connectionKind) { db in
+            await #expect(throws: Never.self) {
+                try await db.drop(table: "foos").ifExists().run()
+                try await db.create(table: "foos")
+                    .column("id", type: .text, .primaryKey(autoIncrement: false))
+                    .column("description", type: .text)
+                    .column("latitude", type: .custom(SQLRaw("DOUBLE PRECISION")))
+                    .column("longitude", type: .custom(SQLRaw("DOUBLE PRECISION")))
+                    .column("created_by", type: .text)
+                    .column("created_at", type: .timestamp)
+                    .column("modified_by", type: .text)
+                    .column("modified_at", type: .timestamp)
+                    .run()
 
-            for i in 0..<2_000 {
-                let zipcode = Foo(
-                    id: UUID().uuidString,
-                    description: "test \(i)",
-                    latitude: .random(in: 0...100), longitude: .random(in: 0...100),
-                    created_by: "test", created_at: .now,
-                    modified_by: "test", modified_at: .now
-                )
-                try await db.insert(into: "foos").model(zipcode).run()
+                for i in 0..<2_000 {
+                    let zipcode = Foo(
+                        id: UUID().uuidString,
+                        description: "test \(i)",
+                        latitude: .random(in: 0...100), longitude: .random(in: 0...100),
+                        created_by: "test", created_at: .now,
+                        modified_by: "test", modified_at: .now
+                    )
+                    try await db.insert(into: "foos").model(zipcode).run()
+                }
             }
+            try? await db.drop(table: "foos").ifExists().run()
         }
-        try? await db.drop(table: "foos").ifExists().run()
-        try await conn.close()
     }
 
-    @Test
-    func arrayEncoding() async throws {
-        let conn = try await PostgresConnection.test(on: self.eventLoop)
-
+    @Test(arguments: ConnectionKind.allCases)
+    func arrayEncoding(connectionKind: ConnectionKind) async throws {
         struct Foo: Codable {
             var bar: Int
         }
 
-        await #expect(throws: Never.self) {
-            let foos: [Foo] = [.init(bar: 1), .init(bar: 2)]
-            try await conn.sql().raw("SELECT \(bind: foos)::JSONB[] as \(ident: "foos")").run()
+        try await withSQLDatabase(ofKind: connectionKind) { sql in
+            await #expect(throws: Never.self) {
+                let foos: [Foo] = [.init(bar: 1), .init(bar: 2)]
+                try await sql.raw("SELECT \(bind: foos)::JSONB[] as \(ident: "foos")").run()
+            }
         }
-        try await conn.close()
     }
 
-    @Test
-    func decodeModelWithNil() async throws {
-        let conn = try await PostgresConnection.test(on: self.eventLoop)
+    @Test(arguments: ConnectionKind.allCases)
+    func decodeModelWithNil(connectionKind: ConnectionKind) async throws {
+        try await withSQLDatabase(ofKind: connectionKind) { sql in
+            await #expect(throws: Never.self) {
+                let rows = try await sql.raw("SELECT \(literal: "foo")::text as \(ident: "foo"), \(SQLLiteral.null) as \(ident: "bar"), \(literal: "baz")::text as \(ident: "baz")").all()
+                let row = rows[0]
 
-        await #expect(throws: Never.self) {
-            let rows = try await conn.sql().raw("SELECT \(literal: "foo")::text as \(ident: "foo"), \(SQLLiteral.null) as \(ident: "bar"), \(literal: "baz")::text as \(ident: "baz")").all()
-            let row = rows[0]
+                struct Test: Codable {
+                    var foo: String
+                    var bar: String?
+                    var baz: String?
+                }
 
-            struct Test: Codable {
-                var foo: String
-                var bar: String?
-                var baz: String?
+                let test = try row.decode(model: Test.self)
+                #expect(test.foo == "foo")
+                #expect(test.bar == nil)
+                #expect(test.baz == "baz")
             }
-
-            let test = try row.decode(model: Test.self)
-            #expect(test.foo == "foo")
-            #expect(test.bar == nil)
-            #expect(test.baz == "baz")
         }
-        try await conn.close()
     }
 
     @Test
@@ -114,24 +144,22 @@ struct PostgresKitTests {
         try await pool.shutdownAsync()
     }
 
-    @Test
-    func integerArrayEncoding() async throws {
-        let connection = try await PostgresConnection.test(on: self.eventLoop)
-
-        await #expect(throws: Never.self) {
-            let sql = connection.sql()
-            _ = try await sql.raw("DROP TABLE IF EXISTS \(ident: "foo")").run()
-            try await sql.withSession { db in
-                _ = try await db.create(table: "foo").column("bar", type: .custom(SQLRaw("bigint[]")), .notNull).run()
-                _ = try await db.insert(into: "foo").columns("bar").values(SQLBind([Bar]())).run()
-                let rows = try await connection.query("SELECT bar FROM foo", logger: connection.logger).collect()
-                #expect(rows.count == 1)
-                #expect(rows.first?.count == 1)
-                #expect(rows.first?.first?.dataType == Bar.psqlArrayType)
-                #expect(try rows.first?.first?.decode([Bar].self) == [Bar]())
+    @Test(arguments: ConnectionKind.allCases)
+    func integerArrayEncoding(connectionKind: ConnectionKind) async throws {
+        try await withSQLDatabase(ofKind: connectionKind) { connection, sql in
+            await #expect(throws: Never.self) {
+                _ = try await sql.raw("DROP TABLE IF EXISTS \(ident: "foo")").run()
+                try await sql.withSession { db in
+                    _ = try await db.create(table: "foo").column("bar", type: .custom(SQLRaw("bigint[]")), .notNull).run()
+                    _ = try await db.insert(into: "foo").columns("bar").values(SQLBind([Bar]())).run()
+                    let rows = try await connection.query("SELECT bar FROM foo", logger: connection.logger).collect()
+                    #expect(rows.count == 1)
+                    #expect(rows.first?.count == 1)
+                    #expect(rows.first?.first?.dataType == Bar.psqlArrayType)
+                    #expect(try rows.first?.first?.decode([Bar].self) == [Bar]())
+                }
             }
         }
-        try await connection.close()
     }
     
     /// Tests dealing with encoding of values whose `encode(to:)` implementation calls one of the `superEncoder()`
@@ -240,8 +268,8 @@ struct PostgresKitTests {
         #expect(underContext.debugDescription == "Dictionary containers must be JSON-encoded")
     }
 
-    @Test
-    func encodingArraysContainingNilValues() async throws {
+    @Test(arguments: ConnectionKind.allCases)
+    func encodingArraysContainingNilValues(connectionKind: ConnectionKind) async throws {
         let encoded1 = try PostgresDataTranslation.encode(codingPath: [], userInfo: [:], value: [-1, nil, nil, nil] as [Int?], in: .default, file: #fileID, line: #line)
         #expect(encoded1.type == .int8Array && encoded1.array?.count == 4)
         #expect(encoded1.array?.dropFirst(0).first?.type == .int8 && encoded1.array?.dropFirst(0).first?.int == -1)
@@ -267,34 +295,62 @@ struct PostgresKitTests {
         #expect(encoded4.array?.dropFirst(2).first?.type == .int8 && encoded4.array?.dropFirst(2).first?.value == nil)
         #expect(encoded4.array?.dropFirst(3).first?.type == .int8 && encoded4.array?.dropFirst(3).first?.value == nil)
 
-        let connection = try await PostgresConnection.test(on: self.eventLoop)
-
-        await #expect(throws: Never.self) {
-            let sql = connection.sql()
-            _ = try await sql.raw("DROP TABLE IF EXISTS \(ident: "foo")").run()
-            try await sql.withSession { db in
-                _ = try await db.create(table: "foo").column("bar", type: .custom(SQLRaw("bigint[]")), .notNull).run()
-                _ = try await db.insert(into: "foo").columns("bar").values(SQLBind([-1, nil, nil, nil] as [Int?])).values(SQLBind([nil, nil, nil, nil] as [Int?])).run()
-                _ = try await db.insert(into: "foo").columns("bar").values(SQLBind([.one, nil, nil, nil] as [Bar?])).values(SQLBind([nil, nil, nil, nil] as [Bar?])).run()
-                let rows = try await db.select().column("bar").from("foo").all(decodingColumn: "bar", as: [Int?].self)
-                #expect(rows.dropFirst(0).first == [-1, nil, nil, nil])
-                #expect(rows.dropFirst(1).first == [nil, nil, nil, nil])
-                #expect(rows.dropFirst(2).first == [0, nil, nil, nil])
-                #expect(rows.dropFirst(3).first == [nil, nil, nil, nil])
+        try await withSQLDatabase(ofKind: connectionKind) { sql in
+            await #expect(throws: Never.self) {
+                _ = try await sql.raw("DROP TABLE IF EXISTS \(ident: "foo")").run()
+                try await sql.withSession { db in
+                    _ = try await db.create(table: "foo").column("bar", type: .custom(SQLRaw("bigint[]")), .notNull).run()
+                    _ = try await db.insert(into: "foo").columns("bar").values(SQLBind([-1, nil, nil, nil] as [Int?])).values(SQLBind([nil, nil, nil, nil] as [Int?])).run()
+                    _ = try await db.insert(into: "foo").columns("bar").values(SQLBind([.one, nil, nil, nil] as [Bar?])).values(SQLBind([nil, nil, nil, nil] as [Bar?])).run()
+                    let rows = try await db.select().column("bar").from("foo").all(decodingColumn: "bar", as: [Int?].self)
+                    #expect(rows.dropFirst(0).first == [-1, nil, nil, nil])
+                    #expect(rows.dropFirst(1).first == [nil, nil, nil, nil])
+                    #expect(rows.dropFirst(2).first == [0, nil, nil, nil])
+                    #expect(rows.dropFirst(3).first == [nil, nil, nil, nil])
+                }
             }
         }
-        try await connection.close()
     }
 
-    var eventLoop: any EventLoop {
-        MultiThreadedEventLoopGroup.singleton.any()
-    }
+    @Test
+    func queryLogsGoToInjectedLogger() async throws {
+        let recorder = LogRecorder()
+        let logger = Logger(label: "injected") { _ in recorder }
 
-    init() {
-        #expect(isLoggingConfigured)
+        try await self.withConnection { connection in
+            let sql = connection.sql(queryLogLevel: .info, logger: logger)
+            _ = try await sql.raw("SELECT 1").all()
+        }
+
+        #expect(recorder.recordedEvents.contains { $0.message == "Executing query" && $0.level == .info })
     }
 }
 
+}
+
+
+private struct LogRecorder: LogHandler {
+    private let events: NIOLockedValueBox<[LogEvent]>
+
+    var metadata: Logger.Metadata = [:]
+    var logLevel: Logger.Level = .trace
+
+    init() {
+        self.events = .init([])
+    }
+
+    var recordedEvents: [LogEvent] {
+        self.events.withLockedValue { $0 }
+    }
+
+    func log(event: LogEvent) {
+        self.events.withLockedValue { $0.append(event) }
+    }
+
+    subscript(metadataKey key: String) -> Logger.Metadata.Value? {
+        get { self.metadata[key] }
+        set { self.metadata[key] = newValue }
+    }
 }
 
 extension PostgresCell {
