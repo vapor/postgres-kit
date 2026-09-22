@@ -229,7 +229,7 @@ struct PostgresDataTranslation {
         }
     }
 
-    internal /* fileprivate */ static func encode<T: Encodable, E: PostgresJSONEncoder>(
+    internal /*fileprivate*/ static func encode<T: Encodable, E: PostgresJSONEncoder>(
         codingPath: [any CodingKey],
         userInfo: [CodingUserInfoKey: Any],
         value: T,
