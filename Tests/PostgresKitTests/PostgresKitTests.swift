@@ -308,7 +308,7 @@ extension PostgresCell {
 }
 
 extension PostgresCell {
-    fileprivate init(with element: any PostgresThrowingDynamicTypeEncodable?) throws {
+    fileprivate init(with element: (any PostgresThrowingDynamicTypeEncodable)?) throws {
         guard let element else {
             self.init(bytes: nil, dataType: .null, format: .binary, columnName: "", columnIndex: -1)
             return
