@@ -236,7 +236,7 @@ struct PostgresDataTranslation {
         in context: PostgresEncodingContext<E>,
         file: String,
         line: Int
-    ) throws -> any PostgresThrowingDynamicTypeEncodable? {
+    ) throws -> (any PostgresThrowingDynamicTypeEncodable)? {
         /// Nil bypass-path: Skip the entire machinery for nil optionals.
         if (value as Optional<Any>) == nil { 
             return nil 
@@ -297,7 +297,7 @@ struct PostgresDynamicArray: PostgresThrowingDynamicTypeEncodable {
 
     let arrayType: PostgresDataType
 
-    init?(elementType: PostgresDataType, elements: [any PostgresThrowingDynamicTypeEncodable?]) {
+    init?(elementType: PostgresDataType, elements: [(any PostgresThrowingDynamicTypeEncodable)?]) {
         // If we don't know the OID upfront we cannot encode it and have to fall back
         guard let arrayType = elementType.psqlkit_arrayType else { return nil }
         self.arrayType = arrayType
@@ -306,7 +306,7 @@ struct PostgresDynamicArray: PostgresThrowingDynamicTypeEncodable {
     }
 
     let elementType: PostgresDataType
-    let elements: [any PostgresThrowingDynamicTypeEncodable?]
+    let elements: [(any PostgresThrowingDynamicTypeEncodable)?]
 
     func encode<JSONEncoder>(
         into byteBuffer: inout ByteBuffer,
@@ -478,12 +478,12 @@ private final class ArrayAwareBoxWrappingPostgresEncoder<E: PostgresJSONEncoder>
         final class ArrayRef<T> { var contents: [T] = [] }
 
         case invalid
-        case indexed(ArrayRef<any PostgresThrowingDynamicTypeEncodable?>)
-        case scalar(any PostgresThrowingDynamicTypeEncodable?)
+        case indexed(ArrayRef<(any PostgresThrowingDynamicTypeEncodable)?>)
+        case scalar((any PostgresThrowingDynamicTypeEncodable)?)
 
         var isValid: Bool { if case .invalid = self { return false }; return true }
 
-        mutating func store(scalar: any PostgresThrowingDynamicTypeEncodable?) {
+        mutating func store(scalar: (any PostgresThrowingDynamicTypeEncodable)?) {
             if case .invalid = self { self = .scalar(scalar) } // no existing value, store the incoming
             else { preconditionFailure("Invalid request for multiple containers from the same encoder.") }
         }
@@ -503,7 +503,7 @@ private final class ArrayAwareBoxWrappingPostgresEncoder<E: PostgresJSONEncoder>
             else { preconditionFailure("Internal error in encoder (requested indexed count from non-indexed state)") }
         }
 
-        mutating func store(indexedScalar: any PostgresThrowingDynamicTypeEncodable?) {
+        mutating func store(indexedScalar: (any PostgresThrowingDynamicTypeEncodable)?) {
             if case .indexed(let ref) = self {
                 ref.contents.append(indexedScalar)
             }
