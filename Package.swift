@@ -16,6 +16,7 @@ let package = Package(
         .package(url: "https://github.com/vapor/postgres-nio.git", from: "1.30.1"),
         .package(url: "https://github.com/vapor/sql-kit.git", from: "3.34.0"),
         .package(url: "https://github.com/vapor/async-kit.git", from: "1.21.0"),
+        .package(url: "https://github.com/apple/swift-log.git", from: "1.14.0")
     ],
     targets: [
         .target(
@@ -32,6 +33,7 @@ let package = Package(
             dependencies: [
                 .target(name: "PostgresKit"),
                 .product(name: "SQLKitBenchmark", package: "sql-kit"),
+                .product(name: "InMemoryLogging", package: "swift-log")
             ],
             swiftSettings: swiftSettings
         ),

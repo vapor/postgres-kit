@@ -6,6 +6,7 @@ import PostgresNIO
 import SQLKitBenchmark
 import Testing
 @testable import PostgresKit
+import InMemoryLogging
 
 extension AllSuites {
 
@@ -314,7 +315,7 @@ struct PostgresKitTests {
 
     @Test
     func queryLogsGoToInjectedLogger() async throws {
-        let recorder = LogRecorder()
+        let recorder = InMemoryLogHandler()
         let logger = Logger(label: "injected") { _ in recorder }
 
         try await self.withConnection { connection in
@@ -322,35 +323,10 @@ struct PostgresKitTests {
             _ = try await sql.raw("SELECT 1").all()
         }
 
-        #expect(recorder.recordedEvents.contains { $0.message == "Executing query" && $0.level == .info })
+        #expect(recorder.entries.contains { $0.message == "Executing query" && $0.level == .info })
     }
 }
 
-}
-
-
-private struct LogRecorder: LogHandler {
-    private let events: NIOLockedValueBox<[LogEvent]>
-
-    var metadata: Logger.Metadata = [:]
-    var logLevel: Logger.Level = .trace
-
-    init() {
-        self.events = .init([])
-    }
-
-    var recordedEvents: [LogEvent] {
-        self.events.withLockedValue { $0 }
-    }
-
-    func log(event: LogEvent) {
-        self.events.withLockedValue { $0.append(event) }
-    }
-
-    subscript(metadataKey key: String) -> Logger.Metadata.Value? {
-        get { self.metadata[key] }
-        set { self.metadata[key] = newValue }
-    }
 }
 
 extension PostgresCell {
