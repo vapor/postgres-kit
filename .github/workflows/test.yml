@@ -46,9 +46,9 @@ jobs:
           - postgres:16
           - postgres:14
         swift-image:
-          - swift:6.1-noble
           - swift:6.2-noble
           - swift:6.3-noble
+          - swift:6.4-noble
         include:
           - postgres-image: postgres:18
             postgres-auth: scram-sha-256
@@ -82,7 +82,7 @@ jobs:
   linux-integration:
     if: ${{ !(github.event.pull_request.draft || false) }}
     runs-on: ubuntu-latest
-    container: swift:6.3-noble
+    container: swift:6.4-noble
     services:
       *postgres_host_a:
         image: postgres:18
@@ -118,9 +118,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - macos-version: macos-15
-            xcode-version: latest-stable
           - macos-version: macos-26
+            xcode-version: latest-stable
+          - macos-version: xcode-27
             xcode-version: latest-stable
     runs-on: ${{ matrix.macos-version }}
     env:
@@ -150,7 +150,7 @@ jobs:
 
   musl:
     runs-on: ubuntu-latest
-    container: swift:6.3-noble
+    container: swift:6.4-noble
     timeout-minutes: 30
     steps:
       - name: Check out code
@@ -160,6 +160,9 @@ jobs:
       - name: Install SDK
         run: |
           version_num="$(swiftc --version | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -1)"
+          if [[ -z "${version_num/???/}" ]]; then
+            version_num="${version_num}.0"
+          fi
           tag="swift-${version_num}-RELEASE"
           sdk_info="$(curl -s https://www.swift.org/api/v1/install/releases.json | jq -r --arg tag "$tag" '.[] | select(.tag == $tag).platforms[] | select(.platform == "static-sdk") | [.version, .checksum] | @tsv')"
           version="$(echo "$sdk_info" | cut -f1)"
@@ -167,3 +170,10 @@ jobs:
           swift sdk install "https://download.swift.org/$(echo $tag | tr [A-Z] [a-z])/static-sdk/$tag/${tag}_static-linux-${version}.artifactbundle.tar.gz" --checksum "$checksum"
       - name: Build
         run: swift build --swift-sdk x86_64-swift-linux-musl
+
+  submit-dependencies:
+    permissions:
+      contents: write
+    if: ${{ github.event_name == 'push' }}
+    uses: vapor/ci/.github/workflows/submit-deps.yml@main
+    secrets: inherit
