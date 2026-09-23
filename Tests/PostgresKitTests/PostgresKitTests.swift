@@ -178,11 +178,11 @@ struct PostgresKitTests {
         let encoded1 = try PostgresDataTranslation.encode(codingPath: [], userInfo: [:], value: instance, in: .default, file: #fileID, line: #line)
         let encoded2 = try PostgresDataTranslation.encode(codingPath: [], userInfo: [:], value: [instance, instance], in: .default, file: #fileID, line: #line)
         
-        #expect(encoded1.type == .jsonb)
-        #expect(encoded2.type == .jsonbArray)
+        #expect(encoded1?.psqlType == .jsonb)
+        #expect(encoded2?.psqlType == .jsonbArray)
 
-        let decoded1 = try PostgresDataTranslation.decode(UnusualType.self, from: .init(bytes: encoded1.value, dataType: encoded1.type, format: encoded1.formatCode, columnName: "", columnIndex: -1), in: .default)
-        let decoded2 = try PostgresDataTranslation.decode([UnusualType].self, from: .init(bytes: encoded2.value, dataType: encoded2.type, format: encoded2.formatCode, columnName: "", columnIndex: -1), in: .default)
+        let decoded1 = try PostgresDataTranslation.decode(UnusualType.self, from: .init(with: encoded1), in: .default)
+        let decoded2 = try PostgresDataTranslation.decode([UnusualType].self, from: .init(with: encoded2), in: .default)
         
         #expect(decoded1.prop3 == instance.prop3)
         #expect(decoded2.count == 2)
@@ -210,7 +210,8 @@ struct PostgresKitTests {
         let url = URL(string: "https://user:pass@www.example.com:8080/path/to/endpoint?query=value#fragment")!
         
         let encodedNormal = try PostgresDataTranslation.encode(codingPath: [], userInfo: [:], value: url, in: .default, file: #fileID, line: #line)
-        #expect(encodedNormal.value?.getString(at: 0, length: encodedNormal.value?.readableBytes ?? 0) == url.absoluteString)
+        let cell = try PostgresCell(with: encodedNormal)
+        #expect(cell.bytes?.getString(at: 0, length: cell.bytes?.readableBytes ?? 0) == url.absoluteString)
 
         let encodedBroken = try PostgresDataTranslation.encode(codingPath: [], userInfo: [:], value: "\"\(url.absoluteString)\"", in: .default, file: #fileID, line: #line)
         
@@ -242,30 +243,33 @@ struct PostgresKitTests {
 
     @Test
     func encodingArraysContainingNilValues() async throws {
-        let encoded1 = try PostgresDataTranslation.encode(codingPath: [], userInfo: [:], value: [-1, nil, nil, nil] as [Int?], in: .default, file: #fileID, line: #line)
-        #expect(encoded1.type == .int8Array && encoded1.array?.count == 4)
-        #expect(encoded1.array?.dropFirst(0).first?.type == .int8 && encoded1.array?.dropFirst(0).first?.int == -1)
-        #expect(encoded1.array?.dropFirst(1).first?.type == .int8 && encoded1.array?.dropFirst(1).first?.value == nil)
-        #expect(encoded1.array?.dropFirst(2).first?.type == .int8 && encoded1.array?.dropFirst(2).first?.value == nil)
-        #expect(encoded1.array?.dropFirst(3).first?.type == .int8 && encoded1.array?.dropFirst(3).first?.value == nil)
-        let encoded2 = try PostgresDataTranslation.encode(codingPath: [], userInfo: [:], value: [nil, nil, nil, nil] as [Int?], in: .default, file: #fileID, line: #line)
-        #expect(encoded2.type == .int8Array && encoded2.array?.count == 4)
-        #expect(encoded2.array?.dropFirst(0).first?.type == .int8 && encoded2.array?.dropFirst(0).first?.value == nil)
-        #expect(encoded2.array?.dropFirst(1).first?.type == .int8 && encoded2.array?.dropFirst(1).first?.value == nil)
-        #expect(encoded2.array?.dropFirst(2).first?.type == .int8 && encoded2.array?.dropFirst(2).first?.value == nil)
-        #expect(encoded2.array?.dropFirst(3).first?.type == .int8 && encoded2.array?.dropFirst(3).first?.value == nil)
-        let encoded3 = try PostgresDataTranslation.encode(codingPath: [], userInfo: [:], value: [.one, nil, nil, nil] as [Bar?], in: .default, file: #fileID, line: #line)
-        #expect(encoded3.type == .int8Array && encoded3.array?.count == 4)
-        #expect(encoded3.array?.dropFirst(0).first?.type == .int8 && encoded3.array?.dropFirst(0).first?.int == 0)
-        #expect(encoded3.array?.dropFirst(1).first?.type == .int8 && encoded3.array?.dropFirst(1).first?.value == nil)
-        #expect(encoded3.array?.dropFirst(2).first?.type == .int8 && encoded3.array?.dropFirst(2).first?.value == nil)
-        #expect(encoded3.array?.dropFirst(3).first?.type == .int8 && encoded3.array?.dropFirst(3).first?.value == nil)
-        let encoded4 = try PostgresDataTranslation.encode(codingPath: [], userInfo: [:], value: [nil, nil, nil, nil] as [Bar?], in: .default, file: #fileID, line: #line)
-        #expect(encoded4.type == .int8Array && encoded4.array?.count == 4)
-        #expect(encoded4.array?.dropFirst(0).first?.type == .int8 && encoded4.array?.dropFirst(0).first?.value == nil)
-        #expect(encoded4.array?.dropFirst(1).first?.type == .int8 && encoded4.array?.dropFirst(1).first?.value == nil)
-        #expect(encoded4.array?.dropFirst(2).first?.type == .int8 && encoded4.array?.dropFirst(2).first?.value == nil)
-        #expect(encoded4.array?.dropFirst(3).first?.type == .int8 && encoded4.array?.dropFirst(3).first?.value == nil)
+        let value1 = [-1, nil, nil, nil]
+        let encoded1 = try PostgresDataTranslation.encode(
+            codingPath: [], userInfo: [:], value: value1, in: .default, file: #fileID, line: #line
+        )
+        #expect(encoded1?.psqlType == .int8Array)
+        #expect(try PostgresDataTranslation.decode([Int?].self, from: .init(with: encoded1), in: .default) == value1)
+
+        let value2: [Int?] = [nil, nil, nil, nil]
+        let encoded2 = try PostgresDataTranslation.encode(
+            codingPath: [], userInfo: [:], value: value2, in: .default, file: #fileID, line: #line
+        )
+        #expect(encoded2?.psqlType == .int8Array)
+        #expect(try PostgresDataTranslation.decode([Int?].self, from: .init(with: encoded2), in: .default) == value2)
+
+        let value3: [Bar?] = [.one, nil, nil, nil]
+        let encoded3 = try PostgresDataTranslation.encode(
+            codingPath: [], userInfo: [:], value: value3, in: .default, file: #fileID, line: #line
+        )
+        #expect(encoded3?.psqlType == .int8Array)
+        #expect(try PostgresDataTranslation.decode([Bar?].self, from: .init(with: encoded3), in: .default) == value3)
+
+        let value4: [Bar?] = [nil, nil, nil, nil]
+        let encoded4 = try PostgresDataTranslation.encode(
+            codingPath: [], userInfo: [:], value: value4, in: .default, file: #fileID, line: #line
+        )
+        #expect(encoded4?.psqlType == .int8Array)
+        #expect(try PostgresDataTranslation.decode([Bar?].self, from: .init(with: encoded4), in: .default) == value4)
 
         let connection = try await PostgresConnection.test(on: self.eventLoop)
 
@@ -300,6 +304,18 @@ struct PostgresKitTests {
 extension PostgresCell {
     fileprivate init(with data: PostgresData) {
         self.init(bytes: data.value, dataType: data.type, format: data.formatCode, columnName: "", columnIndex: -1)
+    }
+}
+
+extension PostgresCell {
+    fileprivate init(with element: (any PostgresThrowingDynamicTypeEncodable)?) throws {
+        guard let element else {
+            self.init(bytes: nil, dataType: .null, format: .binary, columnName: "", columnIndex: -1)
+            return
+        }
+        var byteBuffer = ByteBuffer()
+        try element.encode(into: &byteBuffer, context: .default)
+        self.init(bytes: byteBuffer, dataType: element.psqlType, format: element.psqlFormat, columnName: "", columnIndex: -1)
     }
 }
 
